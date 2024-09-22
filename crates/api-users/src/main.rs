@@ -1,3 +1,39 @@
-fn main() {
-    println!("Hello, world!");
+use std::path::PathBuf;
+
+use anyhow::Result;
+use infra::{config::Configuration, tracing::Telemetry, Services};
+
+use clap::Parser;
+
+/// api-users
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Path to config file
+    #[arg(short, long)]
+    config_file: PathBuf,
+}
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    let args = Args::parse();
+
+    let config = config::Config::builder()
+        .add_source(config::File::new(
+            args.config_file
+                .to_str()
+                .expect("config file path is not valid"),
+            config::FileFormat::Toml,
+        ))
+        .build()?;
+    let config = config.try_deserialize::<Configuration>()?;
+
+    let _tracing = Telemetry::builder().build();
+
+    let services = Services::builder()
+        .with_postgres(config.database)
+        .await?
+        .build()?;
+
+    Ok(())
 }

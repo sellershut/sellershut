@@ -7,12 +7,16 @@ repository.workspace = true
 
 [dependencies]
 axum = { workspace = true, features = ["http2", "macros"] }
+secrecy = { workspace = true, features = ["serde"] }
+serde = { workspace = true, features = ["derive"] }
 sqlx = { optional = true, workspace = true }
+thiserror.workspace = true
 tracing = { optional = true, workspace = true }
 tracing-subscriber = { optional = true, version = "0.3.18" }
 
 [features]
 default = []
+api = []
 postgres = ["sqlx/postgres"]
 telemetry = ["tracing"]
 tracing = ["dep:tracing", "tracing-subscriber/env-filter"]

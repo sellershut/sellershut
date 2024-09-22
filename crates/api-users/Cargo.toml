@@ -6,7 +6,28 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+anyhow.workspace = true
 axum = { workspace = true, features = ["http2", "macros"] }
-infra = { workspace = true, features = ["telemetry", "tracing"] }
-sellershut-core = { workspace = true, features = ["rpc-server-users", "serde", "time"] }
+clap = { workspace = true, features = ["derive"] }
+config = { version = "0.14.0", default-features = false, features = ["toml"] }
+infra = { workspace = true, features = [
+    "api",
+    "postgres",
+    "telemetry",
+    "tracing",
+] }
+sellershut-core = { workspace = true, features = [
+    "rpc-server-users",
+    "serde",
+    "time",
+] }
+sqlx = { workspace = true, features = [
+    "macros",
+    "migrate",
+    "postgres",
+    "runtime-tokio",
+    "time",
+    "tls-rustls",
+] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "signal"] }
 tracing.workspace = true
