@@ -1,0 +1,16 @@
+[package]
+name = "sellershut-core"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+tonic = { optional = true, workspace = true }
+
+[features]
+default = []
+
+[build-dependencies]
+tonic-build = { version = "0.12.2", features = ["cleanup-markdown"] }

@@ -4,5 +4,12 @@ version = "0.1.0"
 edition = "2021"
 license.workspace = true
 repository.workspace = true
+publish = false
 
 [dependencies]
+activitypub_federation = { version = "0.6.0-alpha", default-features = false, features = [
+    "axum", # alpha-> axum 0.7
+] }
+prost.workspace = true
+sellershut-core = { workspace = true }
+tonic.workspace = true
