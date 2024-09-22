@@ -1,0 +1,7 @@
+environment = "development"
+port = 1304
+
+[hosts]
+users = "http://localhost:1304"
+
+# vim:ft=toml

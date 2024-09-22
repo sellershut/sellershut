@@ -13,6 +13,8 @@ async-graphql = "7.0.9"
 async-graphql-axum = "7.0.9"
 axum = "0.7.6"
 clap = "4.5.18"
+config = { version = "0.14.0", default-features = false }
+futures-util = "0.3.30"
 infra = { path = "crates/infra" }
 secrecy = "0.10.2"
 sellershut-core = { path = "crates/sellershut-core" }

@@ -40,9 +40,7 @@ pub async fn serve(services: Services, config: Configuration) -> Result<()> {
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
 
-    let socket_addr = listener
-        .local_addr()
-        .expect("should get socket_addr from listener");
+    let socket_addr = listener.local_addr()?;
 
     info!(addr = ?socket_addr, "listening");
 

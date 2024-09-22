@@ -10,6 +10,8 @@ pub struct Configuration {
     pub database: postgres::PgConfig,
     #[cfg(feature = "api")]
     pub port: u16,
+    #[cfg(feature = "client")]
+    pub hosts: Hosts,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]
@@ -17,4 +19,11 @@ pub struct Configuration {
 pub enum Environment {
     Development,
     Production,
+}
+
+#[cfg(feature = "client")]
+#[derive(Debug, Deserialize, Clone)]
+pub struct Hosts {
+    #[cfg(feature = "users-client")]
+    pub users: String,
 }

@@ -9,10 +9,19 @@ publish = false
 [dependencies]
 activitypub_federation = { workspace = true, features = ["axum"] }
 anyhow.workspace = true
-infra = { workspace = true, features = ["telemetry", "tracing"] }
+config = { workspace = true, features = ["toml"] }
+clap = { workspace = true, features = ["derive"] }
+futures-util.workspace = true
+infra = { workspace = true, features = [
+    "api",
+    "telemetry",
+    "tracing",
+    "users-client",
+] }
 prost.workspace = true
 sellershut-core = { workspace = true, features = ["rpc-client-users", "serde"] }
 serde = { workspace = true, features = ["derive"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "signal"] }
 tonic.workspace = true
 tracing.workspace = true
 url.workspace = true

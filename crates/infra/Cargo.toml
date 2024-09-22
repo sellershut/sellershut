@@ -17,6 +17,8 @@ tracing-subscriber = { optional = true, version = "0.3.18" }
 [features]
 default = []
 api = []
+client = []
+users-client = ["client"]
 postgres = ["sqlx/postgres"]
 telemetry = ["tracing"]
 tracing = ["dep:tracing", "tracing-subscriber/env-filter"]

@@ -12,7 +12,7 @@ async-graphql = { workspace = true, features = ["playground", "time", "url"] }
 async-graphql-axum.workspace = true
 axum = { workspace = true, features = ["http2", "macros"] }
 clap = { workspace = true, features = ["derive"] }
-config = { version = "0.14.0", default-features = false, features = ["toml"] }
+config = { workspace = true, features = ["toml"] }
 infra = { workspace = true, features = [
     "api",
     "postgres",
