@@ -1,0 +1,9 @@
+[workspace]
+members = ["crates/*"]
+resolver = "2"
+
+[workspace.package]
+license = "AGPL-3.0-only"
+repository = "https://git.kanjala.com/sellershut"
+
+[workspace.dependencies]
