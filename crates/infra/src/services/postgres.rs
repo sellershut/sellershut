@@ -4,7 +4,7 @@ impl ServicesBuilder {
     #[cfg(feature = "postgres")]
     pub async fn with_postgres(
         mut self,
-        config: crate::config::postgres::PgConfig,
+        config: &crate::config::postgres::PgConfig,
     ) -> Result<Self, crate::ServiceError> {
         self.postgres = Some(
             sqlx::postgres::PgPoolOptions::new()

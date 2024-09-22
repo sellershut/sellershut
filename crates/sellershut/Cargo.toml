@@ -7,9 +7,7 @@ repository.workspace = true
 publish = false
 
 [dependencies]
-activitypub_federation = { version = "0.6.0-alpha", default-features = false, features = [
-    "axum", # alpha-> axum 0.7
-] }
+activitypub_federation = { workspace = true, features = ["axum"] }
 anyhow.workspace = true
 infra = { workspace = true, features = ["telemetry", "tracing"] }
 prost.workspace = true

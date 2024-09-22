@@ -59,3 +59,7 @@ service MutateUsers {
   rpc UpdateUser (UpdateUserRequest) returns (UpdateUserResponse) {}
   rpc UpsertUser (UpsertUserRequest) returns (UpsertUserResponse) {}
 }
+
+service QueryUsers {
+  rpc QueryUsers (CreateUserRequest) returns (CreateUserResponse) {}
+}

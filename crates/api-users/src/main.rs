@@ -31,9 +31,9 @@ async fn main() -> Result<()> {
     let _tracing = Telemetry::builder().build();
 
     let services = Services::builder()
-        .with_postgres(config.database)
+        .with_postgres(&config.database)
         .await?
         .build()?;
 
-    Ok(())
+    api_users::serve(services, config).await
 }

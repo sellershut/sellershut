@@ -7,18 +7,25 @@ license = "AGPL-3.0-only"
 repository = "https://git.kanjala.com/sellershut"
 
 [workspace.dependencies]
+activitypub_federation = { version = "0.6.0-alpha", default-features = false }
 anyhow = "1.0.89"
+async-graphql = "7.0.9"
+async-graphql-axum = "7.0.9"
 axum = "0.7.6"
 clap = "4.5.18"
 infra = { path = "crates/infra" }
 secrecy = "0.10.2"
 sellershut-core = { path = "crates/sellershut-core" }
 serde = "1.0.210"
+serde_json = "1.0.128"
 sqlx = { version = "0.8.2", default-features = false }
 prost = "0.13.3"
 thiserror = "1.0.63"
 time = "0.3.36"
 tokio = "1.40.0"
 tonic = "0.12.2"
+tonic-reflection = "0.12.2"
+tower = "0.5.1"
+tower-http = "0.6.0"
 tracing = "0.1.40"
 url = "2.5.2"
