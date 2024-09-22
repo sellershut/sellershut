@@ -10,6 +10,8 @@ publish = false
 activitypub_federation = { version = "0.6.0-alpha", default-features = false, features = [
     "axum", # alpha-> axum 0.7
 ] }
+infra = { workspace = true, features = ["telemetry", "tracing"] }
 prost.workspace = true
 sellershut-core = { workspace = true }
 tonic.workspace = true
+tracing.workspace = true

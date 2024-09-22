@@ -1,0 +1,16 @@
+[package]
+name = "infra"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+tracing = { optional = true, workspace = true }
+tracing-subscriber = { optional = true, version = "0.3.18" }
+
+[features]
+default = []
+postgres = []
+telemetry = ["tracing"]
+tracing = ["dep:tracing", "tracing-subscriber/env-filter"]

@@ -7,6 +7,8 @@ license = "AGPL-3.0-only"
 repository = "https://git.kanjala.com/sellershut"
 
 [workspace.dependencies]
+infra = { path = "crates/infra" }
 sellershut-core = { path = "crates/sellershut-core" }
 prost = "0.13.3"
 tonic = "0.12.2"
+tracing = "0.1.40"
