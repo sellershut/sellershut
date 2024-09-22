@@ -12,6 +12,6 @@ activitypub_federation = { version = "0.6.0-alpha", default-features = false, fe
 ] }
 infra = { workspace = true, features = ["telemetry", "tracing"] }
 prost.workspace = true
-sellershut-core = { workspace = true }
+sellershut-core = { workspace = true, features = ["rpc-server-users"] }
 tonic.workspace = true
 tracing.workspace = true

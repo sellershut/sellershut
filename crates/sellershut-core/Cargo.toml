@@ -7,10 +7,20 @@ repository.workspace = true
 publish = false
 
 [dependencies]
+prost = { optional = true, workspace = true }
+serde = { optional = true, workspace = true }
+time = { version = "0.3.36", optional = true }
 tonic = { optional = true, workspace = true }
+tonic-types = { optional = true, version = "0.12.2" }
 
 [features]
 default = []
+base = ["dep:tonic", "dep:tonic-types", "dep:prost"]
+users = ["base"]
+rpc-server-users = ["users"]
+rpc-client-users = ["users"]
+serde = ["serde/derive"]
+time = ["dep:time"]
 
 [build-dependencies]
 tonic-build = { version = "0.12.2", features = ["cleanup-markdown"] }
