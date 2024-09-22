@@ -9,16 +9,16 @@ publish = false
 [dependencies]
 prost = { optional = true, workspace = true }
 serde = { optional = true, workspace = true }
-time = { version = "0.3.36", optional = true }
+time = { optional = true, workspace = true }
 tonic = { optional = true, workspace = true }
 tonic-types = { optional = true, version = "0.12.2" }
 
 [features]
 default = []
-base = ["dep:tonic", "dep:tonic-types", "dep:prost"]
+base = ["dep:tonic", "dep:prost"]
 users = ["base"]
-rpc-server-users = ["users"]
-rpc-client-users = ["users"]
+rpc-server-users = ["users", "dep:tonic-types"]
+rpc-client-users = ["users", "dep:tonic-types"]
 serde = ["serde/derive"]
 time = ["dep:time"]
 

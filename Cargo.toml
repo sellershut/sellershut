@@ -7,9 +7,12 @@ license = "AGPL-3.0-only"
 repository = "https://git.kanjala.com/sellershut"
 
 [workspace.dependencies]
+axum = "0.7.6"
 infra = { path = "crates/infra" }
 sellershut-core = { path = "crates/sellershut-core" }
 serde = "1.0.210"
+sqlx = { version = "0.8.2", default-features = false }
 prost = "0.13.3"
+time = "0.3.36"
 tonic = "0.12.2"
 tracing = "0.1.40"

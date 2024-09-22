@@ -6,11 +6,13 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+axum = { workspace = true, features = ["http2", "macros"] }
+sqlx = { optional = true, workspace = true }
 tracing = { optional = true, workspace = true }
 tracing-subscriber = { optional = true, version = "0.3.18" }
 
 [features]
 default = []
-postgres = []
+postgres = ["sqlx/postgres"]
 telemetry = ["tracing"]
 tracing = ["dep:tracing", "tracing-subscriber/env-filter"]

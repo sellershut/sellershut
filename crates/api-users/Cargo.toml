@@ -1,0 +1,12 @@
+[package]
+name = "api-users"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+axum = { workspace = true, features = ["http2", "macros"] }
+infra = { workspace = true, features = ["telemetry", "tracing"] }
+sellershut-core = { workspace = true, features = ["rpc-server-users", "serde", "time"] }
+tracing.workspace = true
