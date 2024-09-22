@@ -176,6 +176,7 @@ dependencies = [
  "sellershut-core",
  "sqlx",
  "tokio",
+ "tonic",
  "tracing",
 ]
 

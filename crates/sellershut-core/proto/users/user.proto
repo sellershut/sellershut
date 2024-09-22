@@ -13,6 +13,9 @@ message User {
   google.protobuf.Timestamp last_refreshed_at = 6;
   repeated string followers = 7;
   bool local = 8;
+  string ap_id = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
 }
 
 message Session {
@@ -35,6 +38,24 @@ message CreateUserResponse {
   User user = 1;
 }
 
+message UpdateUserRequest {
+  User user = 1;
+}
+
+message UpdateUserResponse {
+  User user = 1;
+}
+
+message UpsertUserRequest {
+  User user = 1;
+}
+
+message UpsertUserResponse {
+  User user = 1;
+}
+
 service MutateUsers {
   rpc CreateUser (CreateUserRequest) returns (CreateUserResponse) {}
+  rpc UpdateUser (UpdateUserRequest) returns (UpdateUserResponse) {}
+  rpc UpsertUser (UpsertUserRequest) returns (UpsertUserResponse) {}
 }

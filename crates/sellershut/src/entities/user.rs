@@ -8,7 +8,7 @@ use activitypub_federation::{
     protocol::public_key::PublicKey,
     traits::{Actor, Object},
 };
-use sellershut_core::users::{CreateUserRequest, User as DbUser};
+use sellershut_core::users::{UpsertUserRequest, User as DbUser};
 use serde::{Deserialize, Serialize};
 use tonic::IntoRequest;
 use tracing::{info_span, Instrument};
@@ -99,13 +99,13 @@ impl Object for LocalUser {
             id: json.id.to_string(),
             ..Default::default()
         };
-        let request = CreateUserRequest { user: Some(user) };
+        let request = UpsertUserRequest { user: Some(user) };
 
         let mut client = data.mutate_users_client.clone();
 
         let response = client
-            .create_user(request.into_request())
-            .instrument(info_span!("rpc-create-user"))
+            .upsert_user(request.into_request())
+            .instrument(info_span!("rpc-upsert-user"))
             .await?
             .into_inner()
             .user;

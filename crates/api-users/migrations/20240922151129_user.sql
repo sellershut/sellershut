@@ -1,11 +1,13 @@
 create table user (
     id varchar(21) primary key,
     username varchar(20) not null,
-    display_name varchar(50) not null,
     inbox text not null,
     public_key text not null,
     private_key text,
     last_refreshed_at timestamptz not null,
+    followers varchar[] not null default '{}',
+    local boolean not null,
+    ap_id varchar not null,
     created_at timestamptz default current_timestamp not null,
     updated_at timestamptz default current_timestamp not null
 )
