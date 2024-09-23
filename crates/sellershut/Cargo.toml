@@ -9,11 +9,13 @@ publish = false
 [dependencies]
 activitypub_federation = { workspace = true, features = ["axum"] }
 anyhow.workspace = true
+async-nats.workspace = true
 config = { workspace = true, features = ["toml"] }
 clap = { workspace = true, features = ["derive"] }
 futures-util.workspace = true
 infra = { workspace = true, features = [
     "api",
+    "nats-jetstream",
     "telemetry",
     "tracing",
     "users-client",

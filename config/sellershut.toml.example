@@ -4,4 +4,19 @@ port = 2210
 [hosts]
 users = "http://localhost:1304"
 
+[nats]
+hosts = ["nats://localhost:4222"]
+
+[[nats.jetstream]]
+name = "stream"
+subjects = [""]
+max_msgs = 1000
+max_bytes = 10485760
+
+[[nats.jetstream.consumers]]
+name = "consumer"
+dispatch = "pull"
+durable = true
+deliver_subject = "consumer.deliver"
+
 # vim:ft=toml

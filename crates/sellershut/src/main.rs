@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use infra::{config::Configuration, tracing::Telemetry, Services};
 
+use sellershut::state::AppState;
 use sellershut_core::users::{
     mutate_users_client::MutateUsersClient, query_users_client::QueryUsersClient,
 };
@@ -39,5 +40,17 @@ async fn main() -> Result<()> {
         MutateUsersClient::connect(config.hosts.users.to_string())
     )?;
 
-    Ok(())
+    let services = Services::builder()
+        .with_nats_jetstream(&config.nats)
+        .await?
+        .build()?;
+
+    let state = AppState {
+        query_users_client: query_users,
+        mutate_users_client: mutate_users,
+        services: services,
+        config,
+    };
+
+    sellershut::serve(state).await
 }

@@ -1,1 +1,2 @@
+mod nats;
 mod postgres;

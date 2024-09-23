@@ -19,8 +19,21 @@ services:
       timeout: 5s
       retries: 3
 
+  nats:
+    image: nats:2.10.18-alpine
+    entrypoint: nats-server
+    command: ["--js", "-m", "8222"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    volumes:
+      - nats-data:/data
+    networks:
+      - sellershut
+
 networks:
   sellershut:
 
 volumes:
   sellershut-db:
+  nats-data:

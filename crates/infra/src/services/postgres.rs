@@ -6,6 +6,8 @@ impl ServicesBuilder {
         mut self,
         config: &crate::config::postgres::PgConfig,
     ) -> Result<Self, crate::ServiceError> {
+        log::trace!("initialising postgres");
+
         self.postgres = Some(
             sqlx::postgres::PgPoolOptions::new()
                 // The default connection limit for a Postgres server is 100 connections, with 3 reserved for superusers.

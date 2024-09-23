@@ -1,7 +1,13 @@
 use serde::Deserialize;
 
+#[cfg(feature = "client")]
+pub mod hosts;
+
 #[cfg(feature = "postgres")]
 pub mod postgres;
+
+#[cfg(any(feature = "nats-core", feature = "nats-jetstream"))]
+pub mod nats;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Configuration {
@@ -11,7 +17,9 @@ pub struct Configuration {
     #[cfg(feature = "api")]
     pub port: u16,
     #[cfg(feature = "client")]
-    pub hosts: Hosts,
+    pub hosts: hosts::Hosts,
+    #[cfg(any(feature = "nats-core", feature = "nats-jetstream"))]
+    pub nats: nats::Nats,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]
@@ -19,11 +27,4 @@ pub struct Configuration {
 pub enum Environment {
     Development,
     Production,
-}
-
-#[cfg(feature = "client")]
-#[derive(Debug, Deserialize, Clone)]
-pub struct Hosts {
-    #[cfg(feature = "users-client")]
-    pub users: String,
 }
