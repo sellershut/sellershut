@@ -5,13 +5,13 @@ use activitypub_federation::{
     config::Data,
     fetch::object_id::ObjectId,
     kinds::actor::PersonType,
-    protocol::public_key::PublicKey,
+    protocol::{public_key::PublicKey, verification::verify_domains_match},
     traits::{Actor, Object},
 };
-use sellershut_core::users::{UpsertUserRequest, User as DbUser};
+use sellershut_core::users::{QueryUserByApIdRequest, UpsertUserRequest, User as DbUser};
 use serde::{Deserialize, Serialize};
 use tonic::IntoRequest;
-use tracing::{info_span, Instrument};
+use tracing::{info_span, instrument, Instrument};
 use url::Url;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -55,11 +55,24 @@ impl Object for LocalUser {
     #[doc = ""]
     #[doc = " Should return `Ok(None)` if not found."]
     #[must_use]
+    #[instrument(skip(data))]
     async fn read_from_id(
         object_id: Url,
         data: &Data<Self::DataType>,
     ) -> Result<Option<Self>, Self::Error> {
-        todo!()
+        let mut client = data.query_users_client.clone();
+        let query = QueryUserByApIdRequest {
+            ap_id: object_id.to_string(),
+        };
+
+        let response = client
+            .query_user_by_ap_id(query.into_request())
+            .instrument(info_span!("grpc.user.by.apid"))
+            .await?
+            .into_inner()
+            .user;
+
+        Ok(response.map(Self::from))
     }
 
     #[doc = " Convert database type to Activitypub type."]
@@ -67,7 +80,7 @@ impl Object for LocalUser {
     #[doc = " Called when a local object gets fetched by another instance over HTTP, or when an object"]
     #[doc = " gets sent in an activity."]
     #[must_use]
-    async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
+    async fn into_json(self, _data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
         let id: ObjectId<LocalUser> = ObjectId::from_str(&self.0.id).unwrap();
         Ok(User {
             preferred_username: self.0.username.clone(),
@@ -89,9 +102,11 @@ impl Object for LocalUser {
     async fn verify(
         json: &Self::Kind,
         expected_domain: &Url,
-        data: &Data<Self::DataType>,
+        _data: &Data<Self::DataType>,
     ) -> Result<(), Self::Error> {
-        todo!()
+        verify_domains_match(json.id.inner(), expected_domain)
+            .map_err(|_e| tonic::Status::failed_precondition("domains do not match"))?;
+        Ok(())
     }
 
     #[doc = " Convert object from ActivityPub type to database type."]
