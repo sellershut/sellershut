@@ -1,0 +1,93 @@
+on:
+  push:
+    branches: [master, renovate/**]
+  pull_request:
+name: rust
+
+# cancel on going checks when new code is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    name: ubuntu / stable / check
+    steps:
+      - uses: actions/checkout@v4
+      - name: install stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: install protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: cargo generate-lockfile
+        if: hashFiles('Cargo.lock') == ''
+        run: cargo generate-lockfile
+      - name: install sqlx
+        run: cargo install sqlx-cli --no-default-features --features native-tls,postgres
+      - name: check migrations
+        run: cargo sqlx prepare --check --workspace
+      - name: cargo check
+        run: cargo check
+
+  hack:
+    runs-on: ubuntu-latest
+    name: ubuntu / stable / features
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: install protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: cargo install cargo-hack
+        uses: taiki-e/install-action@cargo-hack
+      - name: cargo hack
+        run: cargo hack --feature-powerset check
+
+  doc:
+    runs-on: ubuntu-latest
+    name: nightly / doc
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install nightly
+        uses: dtolnay/rust-toolchain@nightly
+      - name: install protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: cargo doc
+        run: cargo doc --no-deps --all-features
+        env:
+          RUSTDOCFLAGS: --cfg docsrs
+
+  msrv:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        msrv: ["1.75.0"]
+    name: ubuntu / ${{ matrix.msrv }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install ${{ matrix.msrv }}
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.msrv }}
+      - name: install protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: cargo +${{ matrix.msrv }} check
+        run: cargo check --all-features
