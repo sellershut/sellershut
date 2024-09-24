@@ -13,7 +13,7 @@ use tracing::info_span;
 use crate::state::AppState;
 
 pub fn router(state: AppState) -> Router {
-    let env = state.config.environment;
+    let env = state.config.application.env;
     let schema = ApiSchemaBuilder::build(state);
     let router = Router::new().route("/health", get(health_check));
 

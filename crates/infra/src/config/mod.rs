@@ -1,3 +1,6 @@
+use std::fmt::Display;
+
+use app_metadata::AppMetadata;
 use serde::Deserialize;
 
 #[cfg(feature = "client")]
@@ -9,9 +12,11 @@ pub mod postgres;
 #[cfg(any(feature = "nats-core", feature = "nats-jetstream"))]
 pub mod nats;
 
+pub mod app_metadata;
+
 #[derive(Clone, Debug, Deserialize)]
 pub struct Configuration {
-    pub environment: Environment,
+    pub application: AppMetadata,
     #[cfg(feature = "postgres")]
     pub database: postgres::PgConfig,
     #[cfg(feature = "api")]
@@ -27,4 +32,17 @@ pub struct Configuration {
 pub enum Environment {
     Development,
     Production,
+}
+
+impl Display for Environment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Environment::Development => "development",
+                Environment::Production => "production",
+            }
+        )
+    }
 }

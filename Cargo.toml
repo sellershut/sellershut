@@ -17,6 +17,7 @@ clap = "4.5.18"
 config = { version = "0.14.0", default-features = false }
 futures-util = "0.3.30"
 infra = { path = "crates/infra" }
+opentelemetry = "0.25.0"
 secrecy = "0.10.2"
 sellershut-core = { path = "crates/sellershut-core" }
 serde = "1.0.210"
@@ -25,10 +26,11 @@ sqlx = { version = "0.8.2", default-features = false }
 prost = "0.13.3"
 thiserror = "1.0.63"
 time = "0.3.36"
-tokio = "1.40.0"
+tokio = "=1.38.0"
 tonic = "0.12.2"
 tonic-reflection = "0.12.2"
 tower = "0.5.1"
 tower-http = "0.6.0"
 tracing = "0.1.40"
+tracing-opentelemetry = "0.26.0"
 url = "2.5.2"

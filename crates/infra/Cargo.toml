@@ -10,11 +10,16 @@ publish = false
 async-nats = { optional = true, workspace = true }
 axum = { workspace = true, features = ["http2", "macros"] }
 log = "0.4.22"
+opentelemetry = { workspace = true, optional = true }
+opentelemetry_sdk = { version = "0.25.0", optional = true }
+opentelemetry-otlp = { version = "0.25.0", optional = true }
+opentelemetry-semantic-conventions = { version = "0.25.0", optional = true }
 secrecy = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive", "rc"] }
 sqlx = { optional = true, workspace = true }
 thiserror.workspace = true
 tracing = { optional = true, workspace = true }
+tracing-opentelemetry = { optional = true, workspace = true }
 tracing-subscriber = { optional = true, version = "0.3.18" }
 
 [features]
@@ -25,7 +30,14 @@ nats-core = ["dep:async-nats"]
 nats-jetstream = ["dep:async-nats"]
 users-client = ["client"]
 postgres = ["sqlx/postgres"]
-telemetry = ["tracing"]
+telemetry = [
+    "dep:opentelemetry",
+    "tracing",
+    "dep:tracing-opentelemetry",
+    "opentelemetry_sdk/rt-tokio",
+    "opentelemetry-otlp",
+    "opentelemetry-semantic-conventions",
+]
 tracing = ["dep:tracing", "tracing-subscriber/env-filter"]
 
 [package.metadata.docs.rs]

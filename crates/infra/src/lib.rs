@@ -69,6 +69,10 @@ pub enum ServiceError {
     #[error(transparent)]
     /// Postgres error
     Nats(#[from] async_nats::error::Error<async_nats::ConnectErrorKind>),
+    #[cfg(feature = "telemetry")]
+    #[error(transparent)]
+    /// When creating the tracing layer
+    Opentelemetry(#[from] opentelemetry::trace::TraceError),
 }
 
 impl ServicesBuilder {

@@ -33,7 +33,9 @@ async fn main() -> Result<()> {
         .build()?;
     let config = config.try_deserialize::<Configuration>()?;
 
-    let _tracing = Telemetry::builder().build();
+    let _tracing = Telemetry::builder()
+        .try_with_opentelemetry(&config.application, "")?
+        .build();
 
     let (query_users, mutate_users) = tokio::try_join!(
         QueryUsersClient::connect(config.hosts.users.to_string()),
