@@ -30,7 +30,7 @@ pub struct Listing {
     #[serde(rename = "type")]
     kind: ObjectType,
     id: ObjectId<LocalListing>,
-    attributed_to: ObjectId<LocalUser>,
+    pub attributed_to: ObjectId<LocalUser>,
     #[serde(deserialize_with = "deserialize_one_or_many")]
     pub to: Vec<Url>,
     content: LocalListing,

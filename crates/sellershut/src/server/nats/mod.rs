@@ -1,5 +1,6 @@
 use std::ops::Deref;
 
+use activitypub_federation::{config::FederationConfig, traits::ActivityHandler};
 use async_nats::jetstream::{
     consumer::{
         pull::{self},
@@ -10,9 +11,9 @@ use async_nats::jetstream::{
 use futures_util::{Stream, StreamExt, TryFutureExt};
 use tracing::{error, trace};
 
-use crate::state::AppState;
+use crate::{activities::create_listing::CreateListing, state::AppState};
 
-pub async fn start_consumer(state: AppState) {
+pub async fn start_consumer(state: FederationConfig<AppState>) {
     let pull_consumer = state.services.jetstream_pull_consumers.as_ref();
     let push_consumer = state.services.jetstream_push_consumers.as_ref();
     //
@@ -22,7 +23,7 @@ pub async fn start_consumer(state: AppState) {
     );
 }
 
-async fn pull(consumers: &[Consumer<pull::Config>], state: AppState) {
+async fn pull(consumers: &[Consumer<pull::Config>], state: FederationConfig<AppState>) {
     let mut messages = Vec::with_capacity(consumers.len());
 
     for consumer in consumers.to_vec().into_iter() {
@@ -43,19 +44,23 @@ async fn pull(consumers: &[Consumer<pull::Config>], state: AppState) {
 
 async fn process_stream<S, T>(
     mut stream: S,
-    _state: AppState,
+    _state: FederationConfig<AppState>,
 ) -> Result<(), async_nats::error::Error<async_nats::jetstream::consumer::StreamErrorKind>>
 where
     S: Stream<Item = Result<Message, T>> + Unpin,
 {
     while let Some(Ok(event)) = stream.next().await {
         trace!(subject = event.subject.deref(), "received event");
+        /* depending on subject, you may also want to fire some events fed config
+        let data = _state.to_request_data();
+         CreateListing::verify(todo!(), &data);
+        */
     }
 
     Ok(())
 }
 
-async fn push(consumers: &[Consumer<push::Config>], state: AppState) {
+async fn push(consumers: &[Consumer<push::Config>], state: FederationConfig<AppState>) {
     let mut messages = Vec::with_capacity(consumers.len());
 
     for consumer in consumers.to_vec().into_iter() {
