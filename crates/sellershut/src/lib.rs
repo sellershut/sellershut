@@ -3,6 +3,7 @@ use std::net::{Ipv6Addr, SocketAddr};
 use activitypub_federation::config::FederationConfig;
 use state::AppState;
 
+pub mod activities;
 pub mod entities;
 pub mod server;
 pub mod state;

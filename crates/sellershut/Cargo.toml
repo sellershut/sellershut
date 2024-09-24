@@ -22,7 +22,11 @@ infra = { workspace = true, features = [
     "users-client",
 ] }
 prost.workspace = true
-sellershut-core = { workspace = true, features = ["rpc-client-users", "serde"] }
+sellershut-core = { workspace = true, features = [
+    "rpc-client-listings",
+    "rpc-client-users",
+    "serde",
+] }
 serde = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "signal"] }
 tonic.workspace = true

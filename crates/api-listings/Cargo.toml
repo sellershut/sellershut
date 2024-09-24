@@ -1,0 +1,13 @@
+[package]
+name = "api-listings"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+sellershut-core = { workspace = true, features = [
+    "rpc-server-listings",
+    "serde",
+    "time",
+] }
