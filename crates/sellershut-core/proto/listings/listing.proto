@@ -6,9 +6,9 @@ import "google/protobuf/timestamp.proto";
 //import "google/type/money.proto";
 
 enum Status {
-  ACTIVE = 1;
-  SOLD = 2;
-  INACTIVE = 3;
+  ACTIVE = 0;
+  SOLD = 1;
+  INACTIVE = 2;
 }
 
 message Listing {

@@ -11,7 +11,7 @@ create table listing (
     created_at timestamptz default current_timestamp not null,
     updated_at timestamptz default current_timestamp not null,
     ap_id varchar not null,
-    status status default 'active',
+    status status default 'active'
 );
 
 create or replace function update_updated_at()

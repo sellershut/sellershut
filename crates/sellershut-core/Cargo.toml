@@ -27,3 +27,7 @@ time = ["dep:time"]
 
 [build-dependencies]
 tonic-build = { version = "0.12.2", features = ["cleanup-markdown"] }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

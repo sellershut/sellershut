@@ -1,3 +1,5 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 use thiserror::Error;
 
 #[cfg(feature = "tracing")]
