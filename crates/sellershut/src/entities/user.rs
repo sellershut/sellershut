@@ -17,6 +17,12 @@ use url::Url;
 #[derive(Debug, Deserialize, Serialize)]
 pub struct LocalUser(DbUser);
 
+impl From<DbUser> for LocalUser {
+    fn from(value: DbUser) -> Self {
+        Self(value)
+    }
+}
+
 impl LocalUser {
     pub fn get(&self) -> &DbUser {
         &self.0

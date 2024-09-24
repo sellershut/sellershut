@@ -9,6 +9,7 @@ publish = false
 [dependencies]
 activitypub_federation = { workspace = true, features = ["axum"] }
 anyhow.workspace = true
+axum = { workspace = true, features = ["http2", "macros"] }
 async-nats.workspace = true
 config = { workspace = true, features = ["toml"] }
 clap = { workspace = true, features = ["derive"] }

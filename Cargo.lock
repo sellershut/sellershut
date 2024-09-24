@@ -2520,6 +2520,7 @@ dependencies = [
  "activitypub_federation",
  "anyhow",
  "async-nats",
+ "axum",
  "clap",
  "config",
  "futures-util",

@@ -9,7 +9,7 @@ hosts = ["nats://localhost:4222"]
 
 [[nats.jetstream]]
 name = "stream"
-subjects = [""]
+subjects = ["test.>"]
 max_msgs = 1000
 max_bytes = 10485760
 

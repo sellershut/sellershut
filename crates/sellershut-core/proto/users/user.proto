@@ -54,6 +54,14 @@ message UpsertUserResponse {
   User user = 1;
 }
 
+message QueryUserByNameRequest {
+  string username = 1;
+}
+
+message QueryUserByNameResponse {
+  User user = 1;
+}
+
 service MutateUsers {
   rpc CreateUser (CreateUserRequest) returns (CreateUserResponse) {}
   rpc UpdateUser (UpdateUserRequest) returns (UpdateUserResponse) {}
@@ -62,4 +70,5 @@ service MutateUsers {
 
 service QueryUsers {
   rpc QueryUsers (CreateUserRequest) returns (CreateUserResponse) {}
+  rpc QueryUserByName (QueryUserByNameRequest) returns (QueryUserByNameResponse) {}
 }

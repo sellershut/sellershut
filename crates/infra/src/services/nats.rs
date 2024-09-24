@@ -26,7 +26,10 @@ impl ServicesBuilder {
 
         let jetstream = async_nats::jetstream::new(client);
 
-        let mut consumers = vec![];
+        let mut pull_consumers_config = vec![];
+        let mut push_consumers_config = vec![];
+        let mut pull_consumers = vec![];
+        let mut push_consumers = vec![];
 
         for stream_config in config.jetstream.as_ref() {
             log::debug!("creating stream");
@@ -46,8 +49,6 @@ impl ServicesBuilder {
                 .await
                 .unwrap();
 
-            // create stream
-            //
             for consumer in stream_config.consumers.as_ref() {
                 let durable_name = consumer.durable.as_ref().map(|v| v.to_string());
                 let deliver_subject = consumer.deliver_subject.as_ref().map(|v| {
@@ -55,25 +56,48 @@ impl ServicesBuilder {
                     v.to_string()
                 });
 
-                let config: async_nats::jetstream::consumer::Config =
-                    async_nats::jetstream::consumer::Config {
-                        durable_name,
-                        deliver_subject,
-                        ..Default::default()
-                    };
+                match deliver_subject {
+                    Some(deliver_subject) => {
+                        let cons = async_nats::jetstream::consumer::push::Config {
+                            durable_name,
+                            deliver_subject,
+                            ..Default::default()
+                        };
+                        push_consumers_config.push((consumer.name.clone(), cons));
+                    }
+                    None => {
+                        let cons = async_nats::jetstream::consumer::pull::Config {
+                            durable_name,
+                            ..Default::default()
+                        };
+                        pull_consumers_config.push((consumer.name.clone(), cons))
+                    }
+                }
+            }
 
+            pull_consumers = Vec::with_capacity(pull_consumers.len());
+            for (name, config) in pull_consumers_config.iter() {
                 let consumer = stream
-                    .get_or_create_consumer(consumer.name.as_ref(), config)
+                    .get_or_create_consumer(&name, config.clone())
                     .await
                     .unwrap();
+                pull_consumers.push(consumer);
+            }
 
-                consumers.push(consumer);
+            push_consumers = Vec::with_capacity(push_consumers.len());
+            for (name, config) in push_consumers_config.iter() {
+                let consumer = stream
+                    .get_or_create_consumer(&name, config.clone())
+                    .await
+                    .unwrap();
+                push_consumers.push(consumer);
             }
         }
-        log::debug!("[NATS] {} consumers configured", consumers.len());
+        log::debug!("[NATS] {} pull consumers configured", pull_consumers.len());
 
         self.nats_jetstream = Some(jetstream);
-        self.nats_jetstream_consumers = consumers;
+        self.nats_jetstream_pull_consumers = pull_consumers;
+        self.nats_jetstream_push_consumers = push_consumers;
         Ok(self)
     }
 }
