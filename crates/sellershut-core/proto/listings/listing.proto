@@ -5,9 +5,15 @@ package listings;
 import "google/protobuf/timestamp.proto";
 //import "google/type/money.proto";
 
+enum Status {
+  ACTIVE = 1;
+  SOLD = 2;
+  INACTIVE = 3;
+}
+
 message Listing {
   string id = 1;
-  string owner = 2;
+  string user_id = 2;
   bool local = 3;
   string title = 4;
   string description = 5;
@@ -16,7 +22,9 @@ message Listing {
   google.protobuf.Timestamp updated_at = 8;
   string ap_id = 9;
   bool active = 10;
- // google.type.Money price = 11;
+  int32 quantity = 11;
+  Status status = 12;
+ // google.type.Money price = 13;
 }
 
 message CreateListingRequest {

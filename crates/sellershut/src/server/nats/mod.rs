@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use activitypub_federation::{config::FederationConfig, traits::ActivityHandler};
+use activitypub_federation::config::FederationConfig;
 use async_nats::jetstream::{
     consumer::{
         pull::{self},
@@ -11,7 +11,7 @@ use async_nats::jetstream::{
 use futures_util::{Stream, StreamExt, TryFutureExt};
 use tracing::{error, trace};
 
-use crate::{activities::create_listing::CreateListing, state::AppState};
+use crate::state::AppState;
 
 pub async fn start_consumer(state: FederationConfig<AppState>) {
     let pull_consumer = state.services.jetstream_pull_consumers.as_ref();
