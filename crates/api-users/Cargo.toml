@@ -35,6 +35,7 @@ sqlx = { workspace = true, features = [
     "time",
     "tls-rustls",
 ] }
+time = { workspace = true, features = ["serde"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "signal"] }
 tonic.workspace = true
 tonic-reflection.workspace = true
