@@ -7,7 +7,7 @@ use std::net::{Ipv6Addr, SocketAddr};
 use anyhow::Result;
 use axum::{extract::Request, http::header::CONTENT_TYPE};
 use infra::{config::Configuration, Services};
-use server::{grpc, web};
+use server::{apply_middleware, grpc, web};
 use state::AppState;
 use tower::{make::Shared, steer::Steer};
 use tracing::info;
@@ -20,8 +20,8 @@ pub async fn serve(services: Services, config: Configuration) -> Result<()> {
     let port = config.port;
     let state = AppState { config, services };
 
-    let web = web::router(state.clone());
-    let grpc = grpc::router(state)?;
+    let web = apply_middleware(web::router(state.clone()));
+    let grpc = apply_middleware(grpc::router(state)?);
 
     let service = Steer::new(vec![web, grpc], |req: &Request, _services: &[_]| {
         if req
@@ -49,12 +49,3 @@ pub async fn serve(services: Services, config: Configuration) -> Result<()> {
 
     Ok(())
 }
-
-// fn on_request<B>(request: &Request<B>, span: &Span) {
-//     let parent_context = global::get_text_map_propagator(|propagator| {
-//         propagator.extract(&HeaderExtractor(request.headers()))
-//     });
-//     span.set_parent(parent_context);
-//     let trace_id = span.context().span().span_context().trace_id();
-//     span.record("trace_id", trace_id.to_string());
-// }

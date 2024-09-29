@@ -16,6 +16,7 @@ axum = "0.7.6"
 clap = "4.5.18"
 config = { version = "0.14.0", default-features = false }
 futures-util = "0.3.30"
+http = "1.1.0"
 infra = { path = "crates/infra" }
 opentelemetry = "0.25.0"
 secrecy = "0.10.2"

@@ -1,3 +1,9 @@
+use http::HeaderMap;
+use opentelemetry::{global, trace::TraceContextExt};
+use opentelemetry_http::HeaderExtractor;
+use tracing::Span;
+use tracing_opentelemetry::OpenTelemetrySpanExt;
+
 use super::TelemetryBuilder;
 
 impl TelemetryBuilder {
@@ -15,12 +21,12 @@ impl TelemetryBuilder {
             trace::{BatchConfig, RandomIdGenerator, Sampler},
             Resource,
         };
-        use tracing_subscriber::Layer;
         use opentelemetry_semantic_conventions::{
             resource::{DEPLOYMENT_ENVIRONMENT_NAME, SERVICE_NAME, SERVICE_VERSION},
             SCHEMA_URL,
         };
         use tracing_opentelemetry::OpenTelemetryLayer;
+        use tracing_subscriber::Layer;
 
         global::set_text_map_propagator(
             opentelemetry_sdk::propagation::TraceContextPropagator::new(),
@@ -61,4 +67,12 @@ impl TelemetryBuilder {
 
         Ok(self)
     }
+}
+
+pub fn on_http_request(headers: &HeaderMap, span: &Span) {
+    let parent_context =
+        global::get_text_map_propagator(|propagator| propagator.extract(&HeaderExtractor(headers)));
+    span.set_parent(parent_context);
+    let trace_id = span.context().span().span_context().trace_id();
+    span.record("trace_id", trace_id.to_string());
 }

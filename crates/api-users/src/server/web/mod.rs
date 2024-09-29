@@ -3,12 +3,10 @@ pub mod routes;
 
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::{GraphQL, GraphQLSubscription};
-use axum::{extract::Request, response::Html, routing::get, Router};
+use axum::{ response::Html, routing::get, Router};
 use graphql::ApiSchemaBuilder;
 use infra::config::Environment;
 use routes::health::health_check;
-use tower_http::trace::TraceLayer;
-use tracing::info_span;
 
 use crate::state::AppState;
 
@@ -40,15 +38,5 @@ pub fn router(state: AppState) -> Router {
         ),
     };
 
-    router
-        .route_service("/ws", GraphQLSubscription::new(schema))
-        .layer(
-            TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
-                info_span!(
-                    "http_request",
-                    method = ?request.method(),
-                    trace_id = tracing::field::Empty,
-                )
-            }), //            .on_request(on_request),
-        )
+    router.route_service("/ws", GraphQLSubscription::new(schema))
 }
