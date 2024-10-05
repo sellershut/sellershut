@@ -19,6 +19,7 @@ infra = { workspace = true, features = [
     "telemetry",
     "tracing",
 ] }
+oauth2 = "4.4.2"
 secrecy = { workspace = true, features = ["serde"] }
 sellershut-core = { workspace = true, features = [
     "rpc-server-users",

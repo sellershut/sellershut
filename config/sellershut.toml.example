@@ -1,4 +1,6 @@
-environment = "development"
+[application]
+env = "development"
+
 port = 2210
 
 [hosts]

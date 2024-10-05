@@ -3,17 +3,20 @@ pub mod routes;
 
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::{GraphQL, GraphQLSubscription};
-use axum::{ response::Html, routing::get, Router};
+use axum::{response::Html, routing::get, Router};
 use graphql::ApiSchemaBuilder;
 use infra::config::Environment;
-use routes::health::health_check;
+use routes::{auth::github::github_auth, health::health_check};
 
 use crate::state::AppState;
 
 pub fn router(state: AppState) -> Router {
     let env = state.config.application.env;
-    let schema = ApiSchemaBuilder::build(state);
-    let router = Router::new().route("/health", get(health_check));
+    let schema = ApiSchemaBuilder::build(state.clone());
+    let router = Router::new()
+        .route("/health", get(health_check))
+        .route("/auth/github", get(github_auth))
+        .with_state(state);
 
     let router = match env {
         Environment::Development => router.route(
