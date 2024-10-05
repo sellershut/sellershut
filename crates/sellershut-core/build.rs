@@ -58,7 +58,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 format!("#[cfg(feature = \"rpc-client-{package}\")] #[cfg_attr(docsrs, doc(cfg(feature = \"rpc-client-{package}\")))]"),
             )
         .compile_well_known_types(true)
-        .compile(&[path], &[""])?;
+        .compile_protos(&[path], &[""])?;
     }
 
     Ok(())
