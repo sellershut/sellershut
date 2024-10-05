@@ -5,14 +5,12 @@ pub mod state;
 use std::net::{Ipv6Addr, SocketAddr};
 
 use anyhow::Result;
-use axum::{extract::Request, http::header::CONTENT_TYPE, routing::get};
-use infra::{config::Configuration, Services};
+use axum::{extract::Request, http::header::CONTENT_TYPE};
+use entity::auth::Configuration;
+use infra::Services;
 use server::{
     apply_middleware, grpc,
-    web::{
-        self,
-        routes::auth::github::{github_auth, github_oauth_client},
-    },
+    web::{self, routes::auth::github::github_oauth_client},
 };
 use state::AppState;
 use tower::{make::Shared, steer::Steer};
@@ -23,11 +21,15 @@ pub async fn serve(services: Services, config: Configuration) -> Result<()> {
         .run(&services.postgres)
         .await?;
 
-    let client = github_oauth_client().unwrap();
+    let client = github_oauth_client(
+        &config.oauth.github,
+        web::routes::auth::OAuthProvider::GitHub,
+    )
+    .unwrap();
 
-    let port = config.port;
+    let port = config.base.port;
     let state = AppState {
-        config,
+        config: config.base,
         services,
         client,
     };
@@ -46,7 +48,6 @@ pub async fn serve(services: Services, config: Configuration) -> Result<()> {
             1
         } else {
             0
-                
         }
     });
 

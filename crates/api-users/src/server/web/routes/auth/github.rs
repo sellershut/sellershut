@@ -1,5 +1,3 @@
-use std::env;
-
 use anyhow::Context;
 use axum::{
     extract::State,
@@ -8,8 +6,11 @@ use axum::{
 use oauth2::{
     basic::BasicClient, AuthUrl, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope, TokenUrl,
 };
+use secrecy::ExposeSecret;
 
-use crate::{server::AppError, state::AppState};
+use crate::{entity::auth::OauthDetails, server::AppError, state::AppState};
+
+use super::OAuthProvider;
 
 pub async fn github_auth(State(state): State<AppState>) -> impl IntoResponse {
     let client = state.client;
@@ -27,25 +28,23 @@ pub async fn github_auth(State(state): State<AppState>) -> impl IntoResponse {
     Redirect::to(auth_url.as_ref())
 }
 
-pub fn github_oauth_client() -> Result<BasicClient, AppError> {
-    let client_id = env::var("CLIENT_ID").context("Missing CLIENT_ID!")?;
-    let client_secret = env::var("CLIENT_SECRET").context("Missing CLIENT_SECRET!")?;
-    let redirect_url = env::var("REDIRECT_URL")
-        .unwrap_or_else(|_| "http://localhost:1304/auth/authorized".to_string());
+pub fn github_oauth_client(oauth: &OauthDetails, provider: OAuthProvider) -> Result<BasicClient, AppError> {
+    let auth_url =
+        AuthUrl::new(oauth.auth_url.to_string()).expect("Invalid authorization endpoint URL");
 
-    let auth_url = AuthUrl::new("https://github.com/login/oauth/authorize".to_string())
-        .expect("Invalid authorization endpoint URL");
-
-    let token_url = TokenUrl::new("https://github.com/login/oauth/access_token".to_string())
+    let token_url = TokenUrl::new(provider.token_url())
         .expect("Invalid token endpoint URL");
 
     Ok(BasicClient::new(
-        ClientId::new(client_id),
-        Some(ClientSecret::new(client_secret)),
+        ClientId::new(oauth.client_id.to_string()),
+        Some(ClientSecret::new(
+            oauth.client_secret.expose_secret().to_string(),
+        )),
         auth_url,
         Some(token_url),
     )
     .set_redirect_uri(
-        RedirectUrl::new(redirect_url).context("failed to create new redirection URL")?,
+        RedirectUrl::new(oauth.redirect_url.to_string())
+            .context("failed to create new redirection URL")?,
     ))
 }

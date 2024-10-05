@@ -1,9 +1,11 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
-use infra::{config::Configuration, tracing::Telemetry, Services};
+use api_users::entity::auth::{Configuration, OauthDetails};
+use infra::{tracing::Telemetry, Services};
 
 use clap::Parser;
+use serde::Deserialize;
 
 /// api-users
 #[derive(Parser, Debug)]
@@ -31,7 +33,7 @@ async fn main() -> Result<()> {
     let _tracing = Telemetry::builder().build();
 
     let services = Services::builder()
-        .with_postgres(&config.database)
+        .with_postgres(&config.base.database)
         .await?
         .build()?;
 

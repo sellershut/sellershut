@@ -11,4 +11,10 @@ host = "localhost"
 user = "postgres"
 password = "password"
 
+[oauth.github]
+client-secret = ""
+client-id = ""
+redirect-url = "http://localhost:1304/auth/authorized"
+auth-url = "http://localhost:1304/auth/authorized"
+
 # vim:ft=toml

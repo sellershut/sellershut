@@ -1,3 +1,5 @@
+pub mod auth;
+
 use sellershut_core::google::protobuf::Timestamp;
 use serde::{Deserialize, Serialize};
 use sqlx::types::time::OffsetDateTime;

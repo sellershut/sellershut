@@ -1,7 +1,4 @@
-use secrecy::SecretString;
 use serde::Deserialize;
-
-use crate::state::AppState;
 
 pub mod github;
 
@@ -11,25 +8,22 @@ pub enum OAuthProvider {
     Discord,
 }
 
+impl OAuthProvider {
+    pub fn token_url(&self) -> String {
+        match self {
+            OAuthProvider::GitHub => "https://github.com/login/oauth/access_token",
+            OAuthProvider::Discord => todo!(),
+        }
+        .to_string()
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)]
 struct AuthRequest {
     code: String,
     state: String,
 }
-
-#[derive(Debug, Deserialize)]
-struct OAuth {
-    github: OAuthConfig,
-    discord: OAuthConfig,
-}
-
-#[derive(Debug, Deserialize)]
-struct OAuthConfig {
-    client_id: String,
-    client_secret: SecretString,
-}
-
 
 // async fn csrf_token_validation_workflow(
 //     auth_request: &AuthRequest,
