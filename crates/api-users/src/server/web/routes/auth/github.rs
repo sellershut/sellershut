@@ -1,6 +1,6 @@
 use anyhow::Context;
 use axum::{
-    extract::State,
+    extract::{Query, State},
     response::{IntoResponse, Redirect},
 };
 use oauth2::{
@@ -10,10 +10,10 @@ use secrecy::ExposeSecret;
 
 use crate::{entity::auth::OauthDetails, server::AppError, state::AppState};
 
-use super::OAuthProvider;
+use super::{login_authorised, AuthRequest, OAuthProvider};
 
 pub async fn github_auth(State(state): State<AppState>) -> impl IntoResponse {
-    let client = state.client;
+    let client = state.github_client;
     // TODO: this example currently doesn't validate the CSRF token during login attempts. That
     // makes it vulnerable to cross-site request forgery. If you copy code from this example make
     // sure to add a check for the CSRF token.
@@ -28,12 +28,14 @@ pub async fn github_auth(State(state): State<AppState>) -> impl IntoResponse {
     Redirect::to(auth_url.as_ref())
 }
 
-pub fn github_oauth_client(oauth: &OauthDetails, provider: OAuthProvider) -> Result<BasicClient, AppError> {
+pub fn github_oauth_client(
+    oauth: &OauthDetails,
+    provider: OAuthProvider,
+) -> Result<BasicClient, AppError> {
     let auth_url =
         AuthUrl::new(oauth.auth_url.to_string()).expect("Invalid authorization endpoint URL");
 
-    let token_url = TokenUrl::new(provider.token_url())
-        .expect("Invalid token endpoint URL");
+    let token_url = TokenUrl::new(provider.token_url()).expect("Invalid token endpoint URL");
 
     Ok(BasicClient::new(
         ClientId::new(oauth.client_id.to_string()),
@@ -47,4 +49,11 @@ pub fn github_oauth_client(oauth: &OauthDetails, provider: OAuthProvider) -> Res
         RedirectUrl::new(oauth.redirect_url.to_string())
             .context("failed to create new redirection URL")?,
     ))
+}
+
+pub async fn login_authorised_github(
+    Query(query): Query<AuthRequest>,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    login_authorised(state.github_client, OAuthProvider::GitHub, query, state.session_store.clone()).await
 }

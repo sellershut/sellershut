@@ -6,7 +6,10 @@ use async_graphql_axum::{GraphQL, GraphQLSubscription};
 use axum::{response::Html, routing::get, Router};
 use graphql::ApiSchemaBuilder;
 use infra::config::Environment;
-use routes::{auth::github::github_auth, health::health_check};
+use routes::{
+    auth::github::{github_auth, login_authorised_github},
+    health::health_check,
+};
 
 use crate::state::AppState;
 
@@ -16,6 +19,7 @@ pub fn router(state: AppState) -> Router {
     let router = Router::new()
         .route("/health", get(health_check))
         .route("/auth/github", get(github_auth))
+        .route("/auth/authorised", get(login_authorised_github))
         .with_state(state);
 
     let router = match env {

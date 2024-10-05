@@ -12,6 +12,14 @@ create table "user" (
     updated_at timestamptz default current_timestamp not null
 );
 
+create table if not exists session (
+  id serial primary key,
+  user_id varchar(21) not null unique,
+  session_id varchar not null,
+  expires_at timestamptz not null,
+  foreign key (user_id) references users(id)
+);
+
 create or replace function update_updated_at()
 returns trigger as $$
 begin

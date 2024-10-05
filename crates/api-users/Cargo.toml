@@ -10,6 +10,7 @@ activitypub_federation.workspace = true
 anyhow.workspace = true
 async-graphql = { workspace = true, features = ["playground", "time", "url"] }
 async-graphql-axum.workspace = true
+async-session = "3.0.0"
 axum = { workspace = true, features = ["http2", "macros"] }
 clap = { workspace = true, features = ["derive"] }
 config = { workspace = true, features = ["toml"] }

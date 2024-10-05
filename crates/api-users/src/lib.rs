@@ -2,7 +2,10 @@ pub mod entity;
 pub mod server;
 pub mod state;
 
-use std::net::{Ipv6Addr, SocketAddr};
+use std::{
+    net::{Ipv6Addr, SocketAddr},
+    time::Duration,
+};
 
 use anyhow::Result;
 use axum::{extract::Request, http::header::CONTENT_TYPE};
@@ -10,7 +13,10 @@ use entity::auth::Configuration;
 use infra::Services;
 use server::{
     apply_middleware, grpc,
-    web::{self, routes::auth::github::github_oauth_client},
+    web::{
+        self,
+        routes::auth::{github::github_oauth_client, session::PostgresSessionStore},
+    },
 };
 use state::AppState;
 use tower::{make::Shared, steer::Steer};
@@ -20,6 +26,10 @@ pub async fn serve(services: Services, config: Configuration) -> Result<()> {
     sqlx::migrate!("./migrations")
         .run(&services.postgres)
         .await?;
+
+    let session_store = PostgresSessionStore::from_client(services.postgres.clone());
+
+    session_store.spawn_cleanup_task(Duration::from_secs(1));
 
     let client = github_oauth_client(
         &config.oauth.github,
@@ -31,7 +41,8 @@ pub async fn serve(services: Services, config: Configuration) -> Result<()> {
     let state = AppState {
         config: config.base,
         services,
-        client,
+        github_client: client,
+        session_store,
     };
 
     let web = apply_middleware(web::router(state.clone()));
