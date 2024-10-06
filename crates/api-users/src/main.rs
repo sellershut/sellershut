@@ -1,11 +1,10 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
-use api_users::entity::auth::{Configuration, OauthDetails};
+use api_users::entity::auth::Configuration;
 use infra::{tracing::Telemetry, Services};
 
 use clap::Parser;
-use serde::Deserialize;
 
 /// api-users
 #[derive(Parser, Debug)]

@@ -13,6 +13,7 @@ async-graphql = "7.0.9"
 async-graphql-axum = "7.0.9"
 async-nats = "0.37.0"
 axum = "0.7.6"
+axum-extra = "0.9.4"
 clap = "4.5.18"
 config = { version = "0.14.0", default-features = false }
 futures-util = "0.3.30"

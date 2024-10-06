@@ -3,6 +3,7 @@ use axum::{
     extract::{Query, State},
     response::{IntoResponse, Redirect},
 };
+use axum_extra::{headers, TypedHeader};
 use oauth2::{
     basic::BasicClient, AuthUrl, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope, TokenUrl,
 };
@@ -54,6 +55,14 @@ pub fn github_oauth_client(
 pub async fn login_authorised_github(
     Query(query): Query<AuthRequest>,
     State(state): State<AppState>,
+    TypedHeader(cookies): TypedHeader<headers::Cookie>,
 ) -> impl IntoResponse {
-    login_authorised(state.github_client, OAuthProvider::GitHub, query, state.session_store.clone()).await
+    login_authorised(
+        state.github_client,
+        OAuthProvider::GitHub,
+        query,
+        state.session_store.clone(),
+        &cookies,
+    )
+    .await
 }

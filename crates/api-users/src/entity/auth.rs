@@ -11,8 +11,8 @@ pub struct Configuration {
 }
 
 #[derive(Deserialize)]
-pub struct Oauth{
-    pub github: OauthDetails
+pub struct Oauth {
+    pub github: OauthDetails,
 }
 
 #[derive(Deserialize)]
@@ -24,5 +24,5 @@ pub struct OauthDetails {
     #[serde(rename = "redirect-url")]
     pub redirect_url: Arc<str>,
     #[serde(rename = "auth-url")]
-    pub auth_url: Arc<str>
+    pub auth_url: Arc<str>,
 }

@@ -1,6 +1,11 @@
 use std::time::Duration;
 
-use axum::{extract::Request, http::StatusCode, response::{IntoResponse, Response}, Router};
+use axum::{
+    extract::Request,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Router,
+};
 use infra::tracing::opentelemetry::on_http_request;
 use tower_http::trace::TraceLayer;
 use tracing::{info_span, Span};
