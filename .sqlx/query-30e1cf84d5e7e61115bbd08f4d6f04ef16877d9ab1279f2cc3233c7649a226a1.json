@@ -1,0 +1,61 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                                    select * from category\n                                    where \n                                        ((\n                                            created_at = $1\n                                            and id < $2\n                                        )\n                                        or created_at < $1) and (($4::text is not null and parent_id = $4) or parent_id is null)\n                                    order by\n                                        created_at desc,\n                                        id desc\n                                    limit\n                                        $3\n                                ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "sub_categories",
+        "type_info": "VarcharArray"
+      },
+      {
+        "ordinal": 3,
+        "name": "image_url",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "parent_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Text",
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "30e1cf84d5e7e61115bbd08f4d6f04ef16877d9ab1279f2cc3233c7649a226a1"
+}

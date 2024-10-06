@@ -9,7 +9,10 @@ pub mod users;
 #[cfg(feature = "listings")]
 pub mod listings;
 
-#[cfg(all(feature = "base", any(feature = "users", feature = "listings", feature = "categories")))]
+#[cfg(all(
+    feature = "base",
+    any(feature = "users", feature = "listings", feature = "categories")
+))]
 pub mod google;
 
 #[cfg(feature = "categories")]

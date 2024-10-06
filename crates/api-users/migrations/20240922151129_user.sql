@@ -17,7 +17,7 @@ create table if not exists session (
   user_id varchar(21) not null unique,
   session_id varchar not null,
   expires_at timestamptz not null,
-  foreign key (user_id) references users(id)
+  foreign key (user_id) references "user"(id)
 );
 
 create or replace function update_updated_at()

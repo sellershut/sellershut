@@ -1,0 +1,14 @@
+port = 2304
+
+[application]
+env = "development"
+
+[database]
+pool_size = 100
+port = 5432
+name = "categories"
+host = "localhost"
+user = "postgres"
+password = "password"
+
+# vim:ft=toml

@@ -4,5 +4,41 @@ version = "0.1.0"
 edition = "2021"
 license.workspace = true
 repository.workspace = true
+publish = false
 
 [dependencies]
+anyhow.workspace = true
+async-graphql = { workspace = true, features = ["playground", "time"] }
+async-graphql-axum.workspace = true
+async-nats.workspace = true
+axum.workspace = true
+config = { workspace = true, features = ["toml"] }
+clap = { workspace = true, features = ["derive"] }
+futures-util.workspace = true
+infra = { workspace = true, features = [
+    "api",
+    "cache",
+    "nats-jetstream",
+    "postgres",
+    "telemetry",
+    "tracing",
+] }
+opentelemetry.workspace = true
+prost.workspace = true
+sellershut-core = { workspace = true, features = [
+    "rpc-server-categories",
+    "serde",
+    "time",
+] }
+sellershut-utils.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+sqlx = { workspace = true, features = ["macros", "migrate", "postgres", "runtime-tokio", "time", "tls-rustls"] }
+time = { workspace = true, features = ["serde"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tonic.workspace = true
+tonic-reflection.workspace = true
+tower = { workspace = true, features = ["make", "steer", "util"] }
+tower-http = { workspace = true, features = ["trace"] }
+tracing.workspace = true
+tracing-opentelemetry.workspace = true

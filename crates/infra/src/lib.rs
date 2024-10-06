@@ -9,6 +9,8 @@ pub mod config;
 
 pub mod services;
 
+pub mod events;
+
 #[derive(Clone, Debug)]
 pub struct Services {
     #[cfg(feature = "postgres")]
