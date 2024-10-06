@@ -3,6 +3,9 @@ use std::fmt::Display;
 use app_metadata::AppMetadata;
 use serde::Deserialize;
 
+#[cfg(feature = "cache")]
+pub mod cache;
+
 #[cfg(feature = "client")]
 pub mod hosts;
 
@@ -25,6 +28,8 @@ pub struct Configuration {
     pub hosts: hosts::Hosts,
     #[cfg(any(feature = "nats-core", feature = "nats-jetstream"))]
     pub nats: nats::Nats,
+    #[cfg(feature = "cache")]
+    pub cache: cache::CacheConfig,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]

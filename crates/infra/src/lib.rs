@@ -29,6 +29,8 @@ pub struct Services {
             async_nats::jetstream::consumer::push::Config,
         >],
     >,
+    #[cfg(feature = "cache")]
+    pub cache: services::cache::RedisPool,
 }
 
 impl Services {
@@ -53,6 +55,8 @@ pub struct ServicesBuilder {
     pub(crate) nats_jetstream_push_consumers: Vec<
         async_nats::jetstream::consumer::Consumer<async_nats::jetstream::consumer::push::Config>,
     >,
+    #[cfg(feature = "cache")]
+    pub cache: Option<services::cache::RedisPool>,
 }
 
 #[derive(Error, Debug)]
@@ -73,6 +77,10 @@ pub enum ServiceError {
     #[error(transparent)]
     /// When creating the tracing layer
     Opentelemetry(#[from] opentelemetry::trace::TraceError),
+    #[cfg(feature = "cache")]
+    #[error(transparent)]
+    /// When creating the tracing layer
+    Cache(#[from] redis::RedisError),
 }
 
 impl ServicesBuilder {
@@ -89,6 +97,8 @@ impl ServicesBuilder {
             jetstream_pull_consumers: self.nats_jetstream_pull_consumers.into(),
             #[cfg(feature = "nats-jetstream")]
             jetstream_push_consumers: self.nats_jetstream_push_consumers.into(),
+            #[cfg(feature = "cache")]
+            cache: self.cache.ok_or(ServiceError::NotInitialised)?,
         })
     }
 }
