@@ -31,9 +31,19 @@ services:
     networks:
       - sellershut
 
+  cache:
+    image: 'docker.dragonflydb.io/dragonflydb/dragonfly'
+    ulimits:
+      memlock: -1
+    ports:
+      - "6379:6379"
+    volumes:
+      - dragonflydata:/data
+
 networks:
   sellershut:
 
 volumes:
+  dragonflydata:
   sellershut-db:
   nats-data:
