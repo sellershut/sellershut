@@ -11,7 +11,7 @@ async-nats = { optional = true, workspace = true }
 async-trait = { version = "0.1.81", optional = true }
 axum = { workspace = true, features = ["http2", "macros"] }
 bb8 = { version = "0.8.5", optional = true }
-bb8-redis = { version = "0.16.0", optional = true }
+bb8-redis = { version = "0.17.0", optional = true }
 http = { workspace = true, optional = true }
 log = "0.4.22"
 opentelemetry = { workspace = true, optional = true }
