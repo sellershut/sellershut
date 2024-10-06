@@ -1,4 +1,5 @@
 enum Entity {
+    Category,
     User,
     Listing,
 }
@@ -6,6 +7,7 @@ enum Entity {
 impl Entity {
     fn package(&self) -> String {
         match self {
+            Entity::Category => "categories",
             Entity::User => "users",
             Entity::Listing => "listings",
         }
@@ -13,6 +15,7 @@ impl Entity {
     }
     fn path(&self) -> String {
         match self {
+            Entity::Category => "proto/categories/category.proto",
             Entity::User => "proto/users/user.proto",
             Entity::Listing => "proto/listings/listing.proto",
         }
@@ -31,6 +34,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if cfg!(feature = "listings") {
         protos.push(Entity::Listing);
+    }
+
+    if cfg!(feature = "categories") {
+        protos.push(Entity::Category);
     }
 
     let out_dir = std::path::PathBuf::from(std::env::var("OUT_DIR")?);

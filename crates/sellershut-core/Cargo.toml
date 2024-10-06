@@ -7,6 +7,7 @@ repository.workspace = true
 publish = false
 
 [dependencies]
+base64 = { optional = true, workspace = true }
 prost = { optional = true, workspace = true }
 serde = { optional = true, workspace = true }
 time = { optional = true, workspace = true }
@@ -22,6 +23,9 @@ rpc-client-users = ["users", "dep:tonic-types"]
 listings = ["base"]
 rpc-server-listings = ["listings", "dep:tonic-types"]
 rpc-client-listings = ["listings", "dep:tonic-types"]
+categories = ["base"]
+rpc-server-categories = ["categories", "dep:base64", "dep:tonic-types"]
+rpc-client-categories = ["categories", "dep:tonic-types"]
 serde = ["serde/derive"]
 time = ["dep:time"]
 
