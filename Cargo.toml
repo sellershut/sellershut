@@ -30,7 +30,7 @@ sqlx = { version = "0.8.2", default-features = false }
 prost = "0.13.3"
 thiserror = "1.0.63"
 time = "0.3.36"
-tokio = "=1.38.0"
+tokio = "=1.40.0"
 tonic = "0.12.2"
 tonic-reflection = "0.12.2"
 tower = "0.5.1"
