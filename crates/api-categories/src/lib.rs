@@ -26,14 +26,13 @@ pub async fn run(services: Services, configuration: Configuration) -> anyhow::Re
     let addr = SocketAddr::from((Ipv6Addr::UNSPECIFIED, configuration.port));
 
     let web = router(schema, configuration.application.env).layer(
-        TraceLayer::new_for_http()
-            .make_span_with(|request: &Request<_>| {
-                info_span!(
-                    "http_request",
-                    method = ?request.method(),
-                    trace_id = tracing::field::Empty,
-                )
-            })
+        TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
+            info_span!(
+                "http_request",
+                method = ?request.method(),
+                trace_id = tracing::field::Empty,
+            )
+        }),
     );
 
     let reflection_service = tonic_reflection::server::Builder::configure()
@@ -43,16 +42,17 @@ pub async fn run(services: Services, configuration: Configuration) -> anyhow::Re
     let grpc = Routes::new(reflection_service)
         .add_service(QueryCategoriesServer::new(state.clone()))
         .add_service(MutateCategoriesServer::new(state.clone()));
-    let grpc = grpc.into_axum_router().layer(
-        TraceLayer::new_for_grpc()
-            .make_span_with(|request: &Request<_>| {
+    let grpc = grpc
+        .into_axum_router()
+        .layer(
+            TraceLayer::new_for_grpc().make_span_with(|request: &Request<_>| {
                 info_span!(
                     "grpc_request",
                     method = ?request.method(),
                     trace_id = tracing::field::Empty
                 )
-            })
-    );
+            }),
+        );
 
     let service = Steer::new(vec![web, grpc], |req: &Request, _services: &[_]| {
         if req

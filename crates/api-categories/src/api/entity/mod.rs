@@ -28,8 +28,12 @@ impl TryFrom<sellershut_core::categories::Category> for Category {
     type Error = async_graphql::Error;
 
     fn try_from(value: sellershut_core::categories::Category) -> async_graphql::Result<Self> {
-        let created = value.created_at.ok_or_else(|| async_graphql::Error::new("invalid created at"))?;
-        let updated = value.updated_at.ok_or_else(|| async_graphql::Error::new("invalid updated at"))?;
+        let created = value
+            .created_at
+            .ok_or_else(|| async_graphql::Error::new("invalid created at"))?;
+        let updated = value
+            .updated_at
+            .ok_or_else(|| async_graphql::Error::new("invalid updated at"))?;
         Ok(Self {
             id: value.id,
             name: value.name,
@@ -37,7 +41,7 @@ impl TryFrom<sellershut_core::categories::Category> for Category {
             image_url: value.image_url,
             parent_id: value.parent_id,
             created_at: created.try_into()?,
-            updated_at: updated.try_into()?
+            updated_at: updated.try_into()?,
         })
     }
 }

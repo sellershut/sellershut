@@ -15,46 +15,16 @@
       },
       {
         "ordinal": 2,
-        "name": "inbox",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 3,
-        "name": "public_key_pem",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 4,
-        "name": "private_key_pem",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 5,
-        "name": "last_refreshed_at",
-        "type_info": "Timestamptz"
-      },
-      {
-        "ordinal": 6,
         "name": "followers",
         "type_info": "VarcharArray"
       },
       {
-        "ordinal": 7,
-        "name": "local",
-        "type_info": "Bool"
-      },
-      {
-        "ordinal": 8,
-        "name": "ap_id",
-        "type_info": "Varchar"
-      },
-      {
-        "ordinal": 9,
+        "ordinal": 3,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 10,
+        "ordinal": 4,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -65,12 +35,6 @@
       ]
     },
     "nullable": [
-      false,
-      false,
-      false,
-      false,
-      true,
-      false,
       false,
       false,
       false,

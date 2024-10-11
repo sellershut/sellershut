@@ -10,25 +10,31 @@ publish = false
 activitypub_federation = { workspace = true, features = ["axum"] }
 anyhow.workspace = true
 axum = { workspace = true, features = ["http2", "macros"] }
-async-nats.workspace = true
+bincode.workspace = true
 config = { workspace = true, features = ["toml"] }
 clap = { workspace = true, features = ["derive"] }
 futures-util.workspace = true
 infra = { workspace = true, features = [
     "api",
-    "nats-jetstream",
+    "cache-write",
+    "postgres",
     "telemetry",
     "tracing",
-    "users-client",
 ] }
 prost.workspace = true
-sellershut-core = { workspace = true, features = [
-    "rpc-client-categories",
-    "rpc-client-listings",
-    "rpc-client-users",
-    "serde",
-] }
+redis.workspace = true
+secrecy = { workspace = true, features = ["serde"] }
+sellershut-utils.workspace = true
 serde = { workspace = true, features = ["derive"] }
+sqlx = { workspace = true, features = [
+    "macros",
+    "migrate",
+    "postgres",
+    "runtime-tokio",
+    "time",
+    "tls-rustls",
+] }
+time = { workspace = true, features = ["serde"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "signal"] }
 tonic.workspace = true
 tracing.workspace = true

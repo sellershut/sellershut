@@ -659,8 +659,7 @@ fn parse_categories(
         let dt = OffsetDateTime::try_from(dt)
             .map_err(|e| tonic::Status::invalid_argument(e.to_string()))?;
 
-        dt
-            .to_offset(UtcOffset::UTC)
+        dt.to_offset(UtcOffset::UTC)
             .format(&Rfc3339)
             .map(|dt| {
                 let cursor = CursorBuilder::new(&category.id, &dt);

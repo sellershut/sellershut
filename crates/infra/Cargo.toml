@@ -19,7 +19,7 @@ opentelemetry_sdk = { version = "0.26.0", optional = true }
 opentelemetry-http = { version = "0.26.0", optional = true }
 opentelemetry-otlp = { version = "0.26.0", optional = true }
 opentelemetry-semantic-conventions = { version = "0.26.0", optional = true }
-redis = { version = "0.27.0", optional = true }
+redis = { workspace = true, optional = true }
 secrecy = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive", "rc"] }
 sqlx = { optional = true, workspace = true }
@@ -31,7 +31,15 @@ tracing-subscriber = { optional = true, version = "0.3.18" }
 [features]
 default = []
 api = []
-cache = ["dep:redis", "redis/cluster-async", "redis/connection-manager", "redis/tokio-comp", "dep:bb8", "dep:bb8-redis", "dep:async-trait"]
+cache = [
+    "dep:redis",
+    "redis/cluster-async",
+    "redis/connection-manager",
+    "redis/tokio-comp",
+    "dep:bb8",
+    "dep:bb8-redis",
+    "dep:async-trait",
+]
 cache-write = ["cache"]
 client = []
 nats-core = ["dep:async-nats"]

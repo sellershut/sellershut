@@ -25,7 +25,7 @@ pub async fn webfinger(
 ) -> Result<Json<Webfinger>, AppError> {
     let name = extract_webfinger_name(&query.resource, &data)?;
 
-    let response = get_user_by_name(name, data.query_users_client.clone())
+    let response = get_user_by_name(name, &data)
         .await?
         .context("no user")
         .map(|value| Url::from_str(&value.ap_id))??;

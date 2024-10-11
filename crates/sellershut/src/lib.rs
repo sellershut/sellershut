@@ -18,10 +18,5 @@ pub async fn serve(state: AppState) -> anyhow::Result<()> {
         .build()
         .await?;
 
-    tokio::join!(
-        server::nats::start_consumer(config.clone()),
-        server::web::router(addr, config),
-    );
-
-    Ok(())
+    server::router(addr, config).await
 }

@@ -1,36 +1,105 @@
 use std::str::FromStr;
 
-use crate::state::AppState;
+use crate::state::{cache::CacheKey, AppState};
 use activitypub_federation::{
     config::Data,
     fetch::object_id::ObjectId,
+    http_signatures::generate_actor_keypair,
     kinds::actor::PersonType,
     protocol::{public_key::PublicKey, verification::verify_domains_match},
     traits::{Actor, Object},
 };
-use sellershut_core::users::{QueryUserByApIdRequest, UpsertUserRequest, User as DbUser};
+use infra::services::cache::{PoolLike, PooledConnectionLike};
+use secrecy::{ExposeSecret, SecretString};
+use sellershut_utils::id::generate_id;
 use serde::{Deserialize, Serialize};
-use tonic::IntoRequest;
+use time::OffsetDateTime;
 use tracing::{info_span, instrument, Instrument};
 use url::Url;
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct LocalUser(DbUser);
+#[derive(Debug, Deserialize)]
+pub struct LocalUser {
+    pub id: String,
+    pub public_key: String,
+    pub private_key: Option<SecretString>,
+    pub inbox: Url,
+    pub local: bool,
+    pub ap_id: String,
+    pub last_refreshed_at: OffsetDateTime,
+    pub username: String,
+    pub followers: Vec<Url>,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
+}
 
-impl From<DbUser> for LocalUser {
-    fn from(value: DbUser) -> Self {
-        Self(value)
+#[derive(Debug, Deserialize, Serialize)]
+/// sqlx stuff
+pub struct DbUser {
+    pub id: String,
+    pub public_key: String,
+    pub private_key: Option<String>,
+    pub inbox: String,
+    pub local: bool,
+    pub ap_id: String,
+    pub last_refreshed_at: OffsetDateTime,
+    pub username: String,
+    pub followers: Vec<String>,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
+}
+
+impl TryFrom<DbUser> for LocalUser {
+    type Error = anyhow::Error;
+
+    fn try_from(value: DbUser) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: value.id,
+            ap_id: value.ap_id,
+            public_key: value.public_key,
+            private_key: value.private_key.map(SecretString::from),
+            created_at: value.created_at,
+            updated_at: value.updated_at,
+            last_refreshed_at: value.last_refreshed_at,
+            inbox: Url::from_str(value.inbox.as_str())?,
+            local: value.local,
+            followers: {
+                let res = value
+                    .followers
+                    .iter()
+                    .map(|value| Url::from_str(value.as_str()))
+                    .collect::<Result<Vec<_>, _>>()?;
+                res
+            },
+            username: value.username,
+        })
     }
 }
 
 impl LocalUser {
-    pub fn get(&self) -> &DbUser {
-        &self.0
+    pub fn new(hostname: &str, username: &str) -> anyhow::Result<Self> {
+        let id = generate_id();
+        let ap_id = Url::parse(&format!("https://{}/{}", hostname, &id))?.into();
+        let inbox = Url::parse(&format!("https://{}/{}/inbox", hostname, &id))?;
+        let keypair = generate_actor_keypair()?;
+        let ts = OffsetDateTime::now_utc();
+        Ok(Self {
+            id,
+            ap_id,
+            inbox,
+            public_key: keypair.public_key,
+            private_key: Some(keypair.private_key.into()),
+            last_refreshed_at: ts.clone(),
+            created_at: ts.clone(),
+            updated_at: ts.clone(),
+            username: username.into(),
+            followers: vec![],
+            local: true,
+        })
     }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct User {
+pub struct Person {
     #[serde(rename = "type")]
     kind: PersonType,
     preferred_username: String,
@@ -46,10 +115,10 @@ impl Object for LocalUser {
     type DataType = AppState;
 
     #[doc = " The type of protocol struct which gets sent over network to federate this database struct."]
-    type Kind = User;
+    type Kind = Person;
 
     #[doc = " Error type returned by handler methods"]
-    type Error = tonic::Status;
+    type Error = anyhow::Error;
 
     #[doc = " Try to read the object with given `id` from local database."]
     #[doc = ""]
@@ -60,19 +129,41 @@ impl Object for LocalUser {
         object_id: Url,
         data: &Data<Self::DataType>,
     ) -> Result<Option<Self>, Self::Error> {
-        let mut client = data.query_users_client.clone();
-        let query = QueryUserByApIdRequest {
-            ap_id: object_id.to_string(),
-        };
+        let cache_key = CacheKey::UserById(&object_id);
+        let mut cache = data.services.cache.get().await?;
 
-        let response = client
-            .query_user_by_ap_id(query.into_request())
-            .instrument(info_span!("grpc.user.by.apid"))
-            .await?
-            .into_inner()
-            .user;
+        let results = cache
+            .get::<_, Vec<u8>>(cache_key)
+            .instrument(info_span!("cache.get.user"))
+            .await
+            .and_then(|payload: Vec<u8>| {
+                Ok(bincode::deserialize::<DbUser>(&payload).map(LocalUser::try_from))
+            });
+        match results {
+            Ok(Ok(Ok(data))) => Ok(Some(data)),
+            _ => {
+                let db = &data.services.postgres;
+                let id = object_id.to_string();
+                let result = sqlx::query_as!(DbUser, "select * from \"user\" where id = $1", id)
+                    .fetch_optional(db)
+                    .instrument(info_span!("db.get.user"))
+                    .await?;
 
-        Ok(response.map(Self::from))
+                match result {
+                    Some(data) => {
+                        let encoded: Vec<u8> = bincode::serialize(&data)?;
+                        cache
+                            .set::<_, _, ()>(cache_key, &encoded)
+                            .instrument(info_span!("cache.update.user"))
+                            .await?;
+
+                        let payload = LocalUser::try_from(data)?;
+                        Ok(Some(payload))
+                    }
+                    None => Ok(None),
+                }
+            }
+        }
     }
 
     #[doc = " Convert database type to Activitypub type."]
@@ -81,14 +172,7 @@ impl Object for LocalUser {
     #[doc = " gets sent in an activity."]
     #[must_use]
     async fn into_json(self, _data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
-        let id: ObjectId<LocalUser> = ObjectId::from_str(&self.0.id).unwrap();
-        Ok(User {
-            preferred_username: self.0.username.clone(),
-            kind: Default::default(),
-            id,
-            inbox: Url::from_str(&self.0.inbox).unwrap(),
-            public_key: self.public_key(),
-        })
+        todo!()
     }
 
     #[doc = " Verifies that the received object is valid."]
@@ -116,40 +200,26 @@ impl Object for LocalUser {
     #[doc = " create and update, so an `upsert` operation should be used."]
     #[must_use]
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
-        let user = DbUser {
-            id: json.id.to_string(),
-            ..Default::default()
-        };
-        let request = UpsertUserRequest { user: Some(user) };
-
-        let mut client = data.mutate_users_client.clone();
-
-        let response = client
-            .upsert_user(request.into_request())
-            .instrument(info_span!("rpc-upsert-user"))
-            .await?
-            .into_inner()
-            .user;
-
-        let user = response.expect("user");
-        Ok(LocalUser(user))
+        todo!()
     }
 }
 
 impl Actor for LocalUser {
     fn id(&self) -> Url {
-        Url::from_str(&self.0.id).unwrap()
+        Url::from_str(&self.id).unwrap()
     }
 
     fn public_key_pem(&self) -> &str {
-        &self.0.public_key_pem
+        &self.public_key
     }
 
     fn private_key_pem(&self) -> Option<String> {
-        self.0.private_key_pem.clone()
+        self.private_key
+            .as_ref()
+            .map(|value| value.expose_secret().to_string())
     }
 
     fn inbox(&self) -> Url {
-        Url::from_str(&self.0.inbox).unwrap()
+        self.inbox.clone()
     }
 }

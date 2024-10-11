@@ -1,9 +1,8 @@
 use crate::entity::User as DbUser;
 use axum::async_trait;
 use sellershut_core::users::{
-    query_users_server::QueryUsers, CreateUserRequest, CreateUserResponse, QueryUserByApIdRequest,
-    QueryUserByApIdResponse, QueryUserByIdRequest, QueryUserByIdResponse, QueryUserByNameRequest,
-    QueryUserByNameResponse, User,
+    query_users_server::QueryUsers, CreateUserRequest, CreateUserResponse, QueryUserByIdRequest,
+    QueryUserByIdResponse, QueryUserByNameRequest, QueryUserByNameResponse, User,
 };
 use tonic::{Request, Response, Status};
 use tracing::{info_span, warn, Instrument};
@@ -39,31 +38,6 @@ impl QueryUsers for AppState {
             })?;
 
         let response = QueryUserByNameResponse {
-            user: Some(User::from(user)),
-        };
-
-        Ok(Response::new(response))
-    }
-
-    #[must_use]
-    async fn query_user_by_ap_id(
-        &self,
-        request: Request<QueryUserByApIdRequest>,
-    ) -> Result<Response<QueryUserByApIdResponse>, Status> {
-        let db = &self.services.postgres;
-
-        let params = request.into_inner().ap_id;
-
-        let user = sqlx::query_as!(DbUser, "select * from \"user\" where ap_id = $1", params)
-            .fetch_one(db)
-            .instrument(info_span!("db.user.by.ap_id"))
-            .await
-            .map_err(|e| {
-                warn!("{e}");
-                tonic::Status::not_found("user not found")
-            })?;
-
-        let response = QueryUserByApIdResponse {
             user: Some(User::from(user)),
         };
 

@@ -7,15 +7,9 @@ import "google/protobuf/timestamp.proto";
 message User {
   string id = 1;
   string username = 2;
-  string public_key_pem = 3;
-  optional string private_key_pem = 4;
-  string inbox = 5;
-  google.protobuf.Timestamp last_refreshed_at = 6;
-  repeated string followers = 7;
-  bool local = 8;
-  string ap_id = 9;
-  google.protobuf.Timestamp created_at = 10;
-  google.protobuf.Timestamp updated_at = 11;
+  repeated string followers = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
 }
 
 message Session {
@@ -70,14 +64,6 @@ message QueryUserByIdResponse {
   User user = 1;
 }
 
-message QueryUserByApIdRequest {
-  string ap_id = 1;
-}
-
-message QueryUserByApIdResponse {
-  User user = 1;
-}
-
 service MutateUsers {
   rpc CreateUser (CreateUserRequest) returns (CreateUserResponse) {}
   rpc UpdateUser (UpdateUserRequest) returns (UpdateUserResponse) {}
@@ -88,5 +74,4 @@ service QueryUsers {
   rpc QueryUsers (CreateUserRequest) returns (CreateUserResponse) {}
   rpc QueryUserByName (QueryUserByNameRequest) returns (QueryUserByNameResponse) {}
   rpc QueryUserById (QueryUserByIdRequest) returns (QueryUserByIdResponse) {}
-  rpc QueryUserByApId (QueryUserByApIdRequest) returns (QueryUserByApIdResponse) {}
 }

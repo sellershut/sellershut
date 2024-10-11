@@ -15,12 +15,14 @@ async-nats = "0.37.0"
 axum = "0.7.6"
 axum-extra = "0.9.4"
 base64 = "0.22.1"
+bincode = "1.3.3"
 clap = "4.5.18"
 config = { version = "0.14.0", default-features = false }
 futures-util = "0.3.30"
 http = "1.1.0"
 infra = { path = "crates/infra" }
 opentelemetry = "0.26.0"
+redis = "0.27.0"
 secrecy = "0.10.2"
 sellershut-core = { path = "crates/sellershut-core" }
 sellershut-utils = { path = "crates/sellershut-utils" }

@@ -9,8 +9,9 @@ pub struct ApiState {
 
 impl ApiState {
     pub async fn initialise(services: Services) -> anyhow::Result<Self> {
-
-        sqlx::migrate!("./migrations").run(&services.postgres).await?;
+        sqlx::migrate!("./migrations")
+            .run(&services.postgres)
+            .await?;
 
         Ok(Self { state: services })
     }

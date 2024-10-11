@@ -4,9 +4,6 @@ use anyhow::Result;
 use infra::{config::Configuration, tracing::Telemetry, Services};
 
 use sellershut::state::AppState;
-use sellershut_core::users::{
-    mutate_users_client::MutateUsersClient, query_users_client::QueryUsersClient,
-};
 
 use clap::Parser;
 
@@ -37,19 +34,14 @@ async fn main() -> Result<()> {
         .try_with_opentelemetry(&config.application, "")?
         .build();
 
-    let (query_users, mutate_users) = tokio::try_join!(
-        QueryUsersClient::connect(config.hosts.users.to_string()),
-        MutateUsersClient::connect(config.hosts.users.to_string())
-    )?;
-
     let services = Services::builder()
-        .with_nats_jetstream(&config.nats)
+        .with_postgres(&config.database)
+        .await?
+        .with_cache(&config.cache)
         .await?
         .build()?;
 
     let state = AppState {
-        query_users_client: query_users,
-        mutate_users_client: mutate_users,
         services: services,
         config,
     };
