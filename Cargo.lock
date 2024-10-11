@@ -635,13 +635,13 @@ dependencies = [
 
 [[package]]
 name = "bb8-redis"
-version = "0.16.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c6910977c026bb1d0a6b523508d1a893d6d4c2ba216355e9569d8181d92ccbe"
+checksum = "1781f22daa0ae97d934fdf04a5c66646f154a164c4bdc157ec8d3c11166c05cc"
 dependencies = [
  "async-trait",
  "bb8",
- "redis 0.26.1",
+ "redis",
 ]
 
 [[package]]
@@ -1866,7 +1866,7 @@ dependencies = [
  "opentelemetry-otlp",
  "opentelemetry-semantic-conventions",
  "opentelemetry_sdk",
- "redis 0.27.4",
+ "redis",
  "secrecy",
  "serde",
  "sqlx",
@@ -2732,27 +2732,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ab240315c661615f2ee9f0f2cd32d5a7343a84d5ebcccb99d46e6637565e7b0"
 dependencies = [
  "bitflags 2.6.0",
-]
-
-[[package]]
-name = "redis"
-version = "0.26.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e902a69d09078829137b4a5d9d082e0490393537badd7c91a3d69d14639e115f"
-dependencies = [
- "arc-swap",
- "async-trait",
- "bytes",
- "combine",
- "futures-util",
- "itoa",
- "num-bigint",
- "percent-encoding",
- "pin-project-lite",
- "ryu",
- "tokio",
- "tokio-util",
- "url",
 ]
 
 [[package]]
