@@ -46,7 +46,7 @@ telemetry = [
     "opentelemetry_sdk/rt-tokio",
     "opentelemetry-http",
     "opentelemetry-otlp",
-    "opentelemetry-semantic-conventions",
+    "opentelemetry-semantic-conventions/semconv_experimental",
 ]
 tracing = ["dep:tracing", "tracing-subscriber/env-filter"]
 
