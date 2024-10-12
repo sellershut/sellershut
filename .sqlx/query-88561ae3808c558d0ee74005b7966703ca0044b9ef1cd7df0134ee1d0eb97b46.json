@@ -1,0 +1,82 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "select * from federateduser where username = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "username",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "last_refreshed_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 3,
+        "name": "private_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "public_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "inbox",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "followers",
+        "type_info": "VarcharArray"
+      },
+      {
+        "ordinal": 7,
+        "name": "local",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 8,
+        "name": "ap_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "88561ae3808c558d0ee74005b7966703ca0044b9ef1cd7df0134ee1d0eb97b46"
+}

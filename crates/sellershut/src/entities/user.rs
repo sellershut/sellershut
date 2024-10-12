@@ -32,18 +32,18 @@ pub struct LocalUser {
     pub updated_at: OffsetDateTime,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
 /// sqlx stuff
+#[derive(Debug, Deserialize, Serialize)]
 pub struct DbUser {
     pub id: String,
-    pub public_key: String,
+    pub username: String,
+    pub last_refreshed_at: OffsetDateTime,
     pub private_key: Option<String>,
+    pub public_key: String,
     pub inbox: String,
+    pub followers: Vec<String>,
     pub local: bool,
     pub ap_id: String,
-    pub last_refreshed_at: OffsetDateTime,
-    pub username: String,
-    pub followers: Vec<String>,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
 }
@@ -144,10 +144,11 @@ impl Object for LocalUser {
             _ => {
                 let db = &data.services.postgres;
                 let id = object_id.to_string();
-                let result = sqlx::query_as!(DbUser, "select * from \"user\" where id = $1", id)
-                    .fetch_optional(db)
-                    .instrument(info_span!("db.get.user"))
-                    .await?;
+                let result =
+                    sqlx::query_as!(DbUser, r#"select * from federateduser where username = $1"#, id)
+                        .fetch_optional(db)
+                        .instrument(info_span!("db.get.user"))
+                        .await?;
 
                 match result {
                     Some(data) => {
