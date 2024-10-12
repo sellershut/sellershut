@@ -148,7 +148,7 @@ impl Object for LocalUser {
                 let id = object_id.to_string();
                 let result = sqlx::query_as!(
                     DbUser,
-                    r#"select * from federated_user where username = $1"#,
+                    r#"select * from federated_user where ap_id = $1"#,
                     id
                 )
                 .fetch_optional(db)

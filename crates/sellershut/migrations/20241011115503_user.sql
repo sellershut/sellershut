@@ -4,10 +4,10 @@ create table "federated_user" (
     last_refreshed_at timestamptz not null,
     private_key text,
     public_key text not null,
-    inbox text not null,
+    inbox text not null unique,
     followers varchar[] not null default '{}',
     local boolean not null,
-    ap_id varchar not null,
+    ap_id varchar not null unique,
     created_at timestamptz default current_timestamp not null,
     updated_at timestamptz default current_timestamp not null
 );

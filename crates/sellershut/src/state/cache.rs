@@ -6,6 +6,7 @@ use url::Url;
 #[derive(Debug, Clone, Copy)]
 pub enum CacheKey<'a> {
     UserById(&'a Url),
+    UserByName(&'a str),
 }
 
 impl Display for CacheKey<'_> {
@@ -15,6 +16,7 @@ impl Display for CacheKey<'_> {
             "federated:{}",
             match self {
                 CacheKey::UserById(id) => format!("user:id:{id}"),
+                CacheKey::UserByName(name) => format!("user:name:{name}"),
             }
         )
     }
