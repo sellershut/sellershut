@@ -1,4 +1,4 @@
-create table "federateduser" (
+create table "federated_user" (
     id varchar(21) primary key,
     username varchar(20) not null,
     last_refreshed_at timestamptz not null,
@@ -21,7 +21,7 @@ end;
 $$ language plpgsql;
 
 create trigger set_updated_at
-before update on "federateduser"
+before update on "federated_user"
 for each row
 execute function update_updated_at();
 

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "select * from federateduser where username = $1",
+  "query": "select * from federated_user where username = $1",
   "describe": {
     "columns": [
       {
@@ -78,5 +78,5 @@
       false
     ]
   },
-  "hash": "88561ae3808c558d0ee74005b7966703ca0044b9ef1cd7df0134ee1d0eb97b46"
+  "hash": "fcafb67afb31674a9a02769e920305c388c075fa4202d77b0cc6a9813ff99ec3"
 }

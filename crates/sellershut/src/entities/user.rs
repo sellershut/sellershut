@@ -17,6 +17,8 @@ use time::OffsetDateTime;
 use tracing::{info_span, instrument, Instrument};
 use url::Url;
 
+use super::write_to_cache;
+
 #[derive(Debug, Deserialize)]
 pub struct LocalUser {
     pub id: String,
@@ -144,19 +146,18 @@ impl Object for LocalUser {
             _ => {
                 let db = &data.services.postgres;
                 let id = object_id.to_string();
-                let result =
-                    sqlx::query_as!(DbUser, r#"select * from federateduser where username = $1"#, id)
-                        .fetch_optional(db)
-                        .instrument(info_span!("db.get.user"))
-                        .await?;
+                let result = sqlx::query_as!(
+                    DbUser,
+                    r#"select * from federated_user where username = $1"#,
+                    id
+                )
+                .fetch_optional(db)
+                .instrument(info_span!("db.get.user"))
+                .await?;
 
                 match result {
                     Some(data) => {
-                        let encoded: Vec<u8> = bincode::serialize(&data)?;
-                        cache
-                            .set::<_, _, ()>(cache_key, &encoded)
-                            .instrument(info_span!("cache.update.user"))
-                            .await?;
+                        write_to_cache::<()>(cache_key, &data, cache).await?;
 
                         let payload = LocalUser::try_from(data)?;
                         Ok(Some(payload))
@@ -173,7 +174,15 @@ impl Object for LocalUser {
     #[doc = " gets sent in an activity."]
     #[must_use]
     async fn into_json(self, _data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
-        todo!()
+        let ap_id = Url::from_str(&self.ap_id)?.into();
+
+        Ok(Person {
+            preferred_username: self.username.clone(),
+            kind: Default::default(),
+            id: ap_id,
+            inbox: self.inbox.clone(),
+            public_key: self.public_key(),
+        })
     }
 
     #[doc = " Verifies that the received object is valid."]
@@ -201,7 +210,53 @@ impl Object for LocalUser {
     #[doc = " create and update, so an `upsert` operation should be used."]
     #[must_use]
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
-        todo!()
+        let id = &json.id.into_inner();
+        let cache_key = CacheKey::UserById(id);
+        let cache = data.services.cache.get().await?;
+
+        let db = &data.services.postgres;
+
+        let ap_id_str = id.as_str();
+        let id = ap_id_str.split("/").last().expect("id token from url");
+
+        let username = json.preferred_username;
+
+        let data = sqlx::query_as!(
+            DbUser,
+            r#"
+                insert into federated_user (id, username, last_refreshed_at, private_key, public_key, inbox, followers, local, ap_id)
+                values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                on conflict (id)
+                do update set
+                    username = excluded.username,
+                    last_refreshed_at = excluded.last_refreshed_at,
+                    private_key = excluded.private_key,
+                    public_key = excluded.public_key,
+                    inbox = excluded.inbox,
+                    followers = excluded.followers,
+                    local = excluded.local,
+                    ap_id = excluded.ap_id
+                returning *
+            "#,
+            id,
+            username,
+            OffsetDateTime::now_utc(),
+            None::<String>,
+            json.public_key.public_key_pem,
+            json.inbox.as_str(),
+            &[],
+            false,
+            ap_id_str,
+        )
+        .fetch_one(db)
+        .instrument(info_span!("db.upsert.user"))
+        .await?;
+
+        write_to_cache::<()>(cache_key, &data, cache).await?;
+
+        let payload = LocalUser::try_from(data)?;
+        Ok(payload)
+
     }
 }
 

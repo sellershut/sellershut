@@ -1,0 +1,90 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                insert into federated_user (id, username, last_refreshed_at, private_key, public_key, inbox, followers, local, ap_id)\n                values ($1, $2, $3, $4, $5, $6, $7, $8, $9)\n                on conflict (id)\n                do update set\n                    username = excluded.username,\n                    last_refreshed_at = excluded.last_refreshed_at,\n                    private_key = excluded.private_key,\n                    public_key = excluded.public_key,\n                    inbox = excluded.inbox,\n                    followers = excluded.followers,\n                    local = excluded.local,\n                    ap_id = excluded.ap_id\n                returning *\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "username",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "last_refreshed_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 3,
+        "name": "private_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "public_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "inbox",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "followers",
+        "type_info": "VarcharArray"
+      },
+      {
+        "ordinal": 7,
+        "name": "local",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 8,
+        "name": "ap_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Timestamptz",
+        "Text",
+        "Text",
+        "Text",
+        "VarcharArray",
+        "Bool",
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "86c8b095b1c4a012b4fa477a468ab9a5bae798817f55635bb6c2be380dc542e4"
+}
