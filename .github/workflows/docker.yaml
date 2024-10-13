@@ -12,8 +12,8 @@ concurrency:
 jobs:
   api-categories:
     runs-on: ubuntu-latest
-    name: docker / build
+    name: api-categories / build
     steps:
       - uses: actions/checkout@v4
-      - name: build
+      - name: build image
         run: docker build -f crates/api-categories/Dockerfile .
