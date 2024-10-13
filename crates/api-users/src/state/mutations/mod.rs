@@ -13,6 +13,7 @@ impl MutateUsers for AppState {
         &self,
         request: tonic::Request<CreateUserRequest>,
     ) -> Result<tonic::Response<CreateUserResponse>, tonic::Status> {
+        let data = request.into_inner();
         todo!()
     }
 

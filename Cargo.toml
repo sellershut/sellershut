@@ -23,6 +23,7 @@ http = "1.1.0"
 infra = { path = "crates/infra" }
 opentelemetry = "0.26.0"
 redis = "0.27.0"
+reqwest = { version = "0.12.8", default-features = false }
 secrecy = "0.10.2"
 sellershut-core = { path = "crates/sellershut-core" }
 sellershut-utils = { path = "crates/sellershut-utils" }
