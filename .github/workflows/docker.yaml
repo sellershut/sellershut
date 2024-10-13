@@ -1,0 +1,19 @@
+on:
+  push:
+    branches: [master, renovate/**]
+  pull_request:
+name: docker
+
+# cancel on going checks when new code is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  api-categories:
+    runs-on: ubuntu-latest
+    name: docker / build
+    steps:
+      - uses: actions/checkout@v4
+      - name: build
+        run: docker build -f crates/api-categories/Dockerfile .

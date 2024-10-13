@@ -1,0 +1,5 @@
+/target
+/benches
+**/*.env
+/config
+/.git
