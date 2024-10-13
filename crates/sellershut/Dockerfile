@@ -4,7 +4,7 @@ RUN rustup target add x86_64-unknown-linux-musl
 RUN apt update && apt install -y musl-tools musl-dev protobuf-compiler
 RUN update-ca-certificates
 
-ARG CRATE_SERVER=api-categories
+ARG CRATE_SERVER=sellershut
 ARG CRATE_CORE=sellershut-core
 ARG CRATE_UTILS=sellershut-utils
 ARG CRATE_INFRA=infra
@@ -36,5 +36,5 @@ COPY . .
 RUN cargo build -p ${CRATE_SERVER} --target x86_64-unknown-linux-musl --release
 
 FROM scratch
-COPY --from=builder /usr/src/app/target/x86_64-unknown-linux-musl/release/api-categories ./
-CMD [ "./api-categories" ]
+COPY --from=builder /usr/src/app/target/x86_64-unknown-linux-musl/release/sellershut ./
+CMD [ "./sellershut" ]
