@@ -1,4 +1,3 @@
-pub mod entity;
 pub mod mutation;
 pub mod query;
 

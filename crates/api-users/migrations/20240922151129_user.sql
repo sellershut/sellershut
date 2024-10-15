@@ -1,6 +1,8 @@
 create table "user" (
     id varchar(21) primary key,
     username varchar(20) not null,
+    email varchar(255) unique not null,
+    avatar_url text null,
     followers varchar[] not null default '{}',
     created_at timestamptz default current_timestamp not null,
     updated_at timestamptz default current_timestamp not null
