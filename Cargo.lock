@@ -229,6 +229,7 @@ dependencies = [
  "reqwest 0.12.8",
  "secrecy",
  "sellershut-core",
+ "sellershut-utils",
  "serde",
  "serde_json",
  "sqlx",

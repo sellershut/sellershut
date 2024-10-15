@@ -37,12 +37,15 @@ pub async fn serve(services: Services, config: Configuration) -> Result<()> {
     )
     .unwrap();
 
+    let http_client = reqwest::Client::new();
+
     let port = config.base.port;
     let state = AppState {
         config: config.base,
         services,
         github_client: client,
         session_store,
+        http_client,
     };
 
     let web = apply_middleware(web::router(state.clone()));

@@ -100,7 +100,7 @@ impl LocalUser {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Person {
     #[serde(rename = "type")]
     kind: PersonType,
@@ -256,7 +256,6 @@ impl Object for LocalUser {
 
         let payload = LocalUser::try_from(data)?;
         Ok(payload)
-
     }
 }
 

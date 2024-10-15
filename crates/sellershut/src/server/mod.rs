@@ -17,7 +17,7 @@ use crate::state::AppState;
 pub async fn router(addr: SocketAddr, config: FederationConfig<AppState>) -> anyhow::Result<()> {
     let router = Router::new()
         .route("/.well-known/webfinger", get(webfinger::webfinger))
-        .route("/:user", get(user::get_user))
+        .route("/:user", get(user::get).put(user::upsert))
         .layer(FederationMiddleware::new(config));
 
     let listener = tokio::net::TcpListener::bind(addr).await?;

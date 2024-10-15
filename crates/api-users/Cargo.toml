@@ -29,6 +29,7 @@ sellershut-core = { workspace = true, features = [
     "serde",
     "time",
 ] }
+sellershut-utils.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sqlx = { workspace = true, features = [
