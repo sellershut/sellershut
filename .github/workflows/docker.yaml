@@ -10,18 +10,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  sellerhut:
+  build:
     runs-on: ubuntu-latest
-    name: sellershut / build
+    strategy:
+      matrix:
+        crates: ["api-categories", "api-users", "sellershut"]
+    name: image / ${{ matrix.crates }}
     steps:
       - uses: actions/checkout@v4
       - name: build image
-        run: docker build -f crates/sellershut/Dockerfile .
-
-  api-categories:
-    runs-on: ubuntu-latest
-    name: api-categories / build
-    steps:
-      - uses: actions/checkout@v4
-      - name: build image
-        run: docker build -f crates/api-categories/Dockerfile .
+        run: docker build -f crates/${{matrix.crates}}/Dockerfile .
