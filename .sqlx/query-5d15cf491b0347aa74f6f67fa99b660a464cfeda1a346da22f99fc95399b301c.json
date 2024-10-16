@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "select * from \"user\" where username = $1",
+  "query": "update \"user\" set username = $1, followers = $2, avatar_url = $3, email = $4 where id = $5 returning *",
   "describe": {
     "columns": [
       {
@@ -41,6 +41,10 @@
     ],
     "parameters": {
       "Left": [
+        "Varchar",
+        "VarcharArray",
+        "Varchar",
+        "Varchar",
         "Text"
       ]
     },
@@ -54,5 +58,5 @@
       false
     ]
   },
-  "hash": "8a276c327575605f8486512c11e788a4fd3ed7a39fa30a13950c5a1e257f67f6"
+  "hash": "5d15cf491b0347aa74f6f67fa99b660a464cfeda1a346da22f99fc95399b301c"
 }

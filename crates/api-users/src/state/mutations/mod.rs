@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 
 use axum::async_trait;
-use sellershut_core::users::{
-    mutate_users_server::MutateUsers, CreateUserRequest, CreateUserResponse, UpdateUserRequest,
-    UpdateUserResponse, UpsertUserRequest, UpsertUserResponse, User,
+use sellershut_core::{
+    google::protobuf::Empty,
+    users::{
+        mutate_users_server::MutateUsers, CreateUserRequest, CreateUserResponse, DeleteUserRequest,
+        UpdateUserRequest, UpdateUserResponse, User,
+    },
 };
 use sellershut_utils::id::generate_id;
 use tracing::{debug_span, info_span, Instrument};
@@ -25,11 +28,13 @@ impl MutateUsers for AppState {
 
         let user = sqlx::query_as!(
             entity::User,
-            "insert into \"user\" (id, username, followers)
-                values ($1, $2, $3) returning *",
+            "insert into \"user\" (id, username, followers, avatar_url, email)
+                values ($1, $2, $3, $4, $5) returning *",
             &id,
             &data.username,
             &data.followers,
+            data.avatar_url,
+            &data.email
         )
         .fetch_one(&self.services.postgres)
         .instrument(debug_span!("pg.insert"))
@@ -61,14 +66,76 @@ impl MutateUsers for AppState {
         &self,
         request: tonic::Request<UpdateUserRequest>,
     ) -> Result<tonic::Response<UpdateUserResponse>, tonic::Status> {
-        todo!()
+        let data = request.into_inner().user.expect("user to exist");
+
+        let id = generate_id();
+
+        let user = sqlx::query_as!(
+            entity::User,
+            "update \"user\" set username = $1, followers = $2, avatar_url = $3, email = $4 where id = $5 returning *",
+            &data.username,
+            &data.followers,
+            data.avatar_url,
+            &data.email,
+            &id,
+        )
+        .fetch_one(&self.services.postgres)
+        .instrument(debug_span!("pg.update"))
+        .await
+        .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        let user = User::from(user);
+
+        let mut map = HashMap::new();
+        map.insert("hostname", "api-categories");
+        map.insert("username", &user.username);
+
+        let res = self
+            .http_client
+            .post("http://httpbin.org/post")
+            .json(&map)
+            .send()
+            .instrument(info_span!("upstream.user.create"))
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        let req = UpdateUserResponse { user: Some(user) };
+
+        Ok(tonic::Response::new(req))
     }
 
     #[must_use]
-    async fn upsert_user(
+    async fn delete_user(
         &self,
-        request: tonic::Request<UpsertUserRequest>,
-    ) -> Result<tonic::Response<UpsertUserResponse>, tonic::Status> {
-        todo!()
+        request: tonic::Request<DeleteUserRequest>,
+    ) -> Result<tonic::Response<Empty>, tonic::Status> {
+        let data = request.into_inner().id;
+
+        let user = sqlx::query_as!(
+            entity::User,
+            "delete from \"user\" where id = $1 returning *",
+            &data,
+        )
+        .fetch_one(&self.services.postgres)
+        .instrument(debug_span!("pg.update"))
+        .await
+        .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        let user = User::from(user);
+
+        let mut map = HashMap::new();
+        map.insert("hostname", "api-categories");
+        map.insert("username", &user.username);
+
+        let res = self
+            .http_client
+            .post("http://httpbin.org/post")
+            .json(&map)
+            .send()
+            .instrument(info_span!("upstream.user.create"))
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        Ok(tonic::Response::new(Empty::default()))
     }
 }

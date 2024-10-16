@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "select * from \"user\" where username = $1",
+  "query": "insert into \"user\" (id, username, followers, avatar_url, email)\n                values ($1, $2, $3, $4, $5) returning *",
   "describe": {
     "columns": [
       {
@@ -41,7 +41,11 @@
     ],
     "parameters": {
       "Left": [
-        "Text"
+        "Varchar",
+        "Varchar",
+        "VarcharArray",
+        "Varchar",
+        "Varchar"
       ]
     },
     "nullable": [
@@ -54,5 +58,5 @@
       false
     ]
   },
-  "hash": "8a276c327575605f8486512c11e788a4fd3ed7a39fa30a13950c5a1e257f67f6"
+  "hash": "fd3c0ced757a8227e5f42df578e80a971a3efcead38dbfff92b50cd1fbb9096e"
 }

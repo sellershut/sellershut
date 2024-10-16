@@ -16,7 +16,7 @@ pub struct User {
 }
 
 #[derive(SimpleObject, InputObject, Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
-struct Followers {
+pub struct Followers {
     col: HashSet<String>,
 }
 
