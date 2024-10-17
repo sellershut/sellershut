@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package users;
 
-import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
 message User {
@@ -47,6 +46,10 @@ message DeleteUserRequest {
   string id = 1;
 }
 
+message DeleteUserResponse {
+  User user = 1;
+}
+
 message QueryUserByNameRequest {
   string username = 1;
 }
@@ -66,7 +69,7 @@ message QueryUserByIdResponse {
 service MutateUsers {
   rpc CreateUser (CreateUserRequest) returns (CreateUserResponse) {}
   rpc UpdateUser (UpdateUserRequest) returns (UpdateUserResponse) {}
-  rpc DeleteUser (DeleteUserRequest) returns (google.protobuf.Empty) {}
+  rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse) {}
 }
 
 service QueryUsers {

@@ -57,6 +57,7 @@ pub async fn login_authorised_github(
     State(state): State<AppState>,
     TypedHeader(cookies): TypedHeader<headers::Cookie>,
 ) -> impl IntoResponse {
+    // TODO: save user to db
     login_authorised(
         state.github_client,
         OAuthProvider::GitHub,

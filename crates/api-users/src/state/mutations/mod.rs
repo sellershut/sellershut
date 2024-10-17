@@ -2,10 +2,9 @@ use std::collections::HashMap;
 
 use axum::async_trait;
 use sellershut_core::{
-    google::protobuf::Empty,
     users::{
         mutate_users_server::MutateUsers, CreateUserRequest, CreateUserResponse, DeleteUserRequest,
-        UpdateUserRequest, UpdateUserResponse, User,
+        DeleteUserResponse, UpdateUserRequest, UpdateUserResponse, User,
     },
 };
 use sellershut_utils::id::generate_id;
@@ -108,7 +107,7 @@ impl MutateUsers for AppState {
     async fn delete_user(
         &self,
         request: tonic::Request<DeleteUserRequest>,
-    ) -> Result<tonic::Response<Empty>, tonic::Status> {
+    ) -> Result<tonic::Response<DeleteUserResponse>, tonic::Status> {
         let data = request.into_inner().id;
 
         let user = sqlx::query_as!(
@@ -136,6 +135,8 @@ impl MutateUsers for AppState {
             .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
-        Ok(tonic::Response::new(Empty::default()))
+        let req = DeleteUserResponse { user: Some(user) };
+
+        Ok(tonic::Response::new(req))
     }
 }

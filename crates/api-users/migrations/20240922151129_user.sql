@@ -1,6 +1,6 @@
 create table "user" (
     id varchar(21) primary key,
-    username varchar(20) not null,
+    username varchar(20) unique not null,
     email varchar(255) unique not null,
     avatar_url varchar,
     followers varchar[] not null default '{}',
@@ -9,6 +9,14 @@ create table "user" (
 );
 
 create table if not exists session (
+  id serial primary key,
+  user_id varchar(21) not null unique,
+  session_id varchar not null,
+  expires_at timestamptz not null,
+  foreign key (user_id) references "user"(id)
+);
+
+create table if not exists account (
   id serial primary key,
   user_id varchar(21) not null unique,
   session_id varchar not null,
