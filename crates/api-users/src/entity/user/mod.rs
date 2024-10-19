@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
 #[derive(SimpleObject, InputObject, Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[graphql(input_name = "UserInput")]
+
 pub struct User {
     pub id: String,
     pub username: String,
@@ -16,6 +18,8 @@ pub struct User {
 }
 
 #[derive(SimpleObject, InputObject, Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[graphql(input_name = "FollowersInput")]
+
 pub struct Followers {
     col: HashSet<String>,
 }

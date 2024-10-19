@@ -47,7 +47,7 @@ impl PostgresSessionStore {
     }
 
     pub async fn cleanup(&self) -> sqlx::Result<()> {
-        sqlx::query(&self.substitute_table_name("DELETE FROM %%TABLE_NAME%% WHERE expires < $1"))
+        sqlx::query(&self.substitute_table_name("DELETE FROM %%TABLE_NAME%% WHERE expires_at < $1"))
             .bind(OffsetDateTime::now_utc())
             .execute(&self.client)
             .await?;
@@ -83,7 +83,7 @@ impl SessionStore for PostgresSessionStore {
         let id = Session::id_from_cookie_value(&cookie_value)?;
 
         let result: Option<(String,)> = sqlx::query_as(&self.substitute_table_name(
-            "SELECT session FROM %%TABLE_NAME%% WHERE id = $1 AND (expires IS NULL OR expires > $2)"
+            "SELECT session FROM %%TABLE_NAME%% WHERE id = $1 AND (expires_at IS NULL OR expires_at > $2)"
         ))
         .bind(&id)
         .bind(OffsetDateTime::now_utc())
@@ -105,9 +105,9 @@ impl SessionStore for PostgresSessionStore {
         sqlx::query(&self.substitute_table_name(
             r#"
             INSERT INTO %%TABLE_NAME%%
-              (id, session, expires) SELECT $1, $2, $3
+              (id, session, expires_at) SELECT $1, $2, $3
             ON CONFLICT(id) DO UPDATE SET
-              expires = EXCLUDED.expires,
+              expires_at = EXCLUDED.expires_at,
               session = EXCLUDED.session
             "#,
         ))
