@@ -4,7 +4,7 @@ use tracing::{info_span, Instrument};
 
 use crate::state::cache::CacheKey;
 
-//pub mod category;
+pub mod category;
 //pub mod listing;
 pub mod user;
 

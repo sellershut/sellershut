@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use activitypub_federation::{
     config::Data,
     fetch::webfinger::{build_webfinger_response, extract_webfinger_name, Webfinger},
@@ -12,7 +10,7 @@ use url::Url;
 
 use crate::{
     entities::{
-        user::{DbUser, LocalUser},
+        user::{DbUser, FederatedUser},
         write_to_cache,
     },
     state::{cache::CacheKey, AppState},
@@ -40,9 +38,9 @@ pub async fn webfinger(
         .instrument(info_span!("cache.get.user.by.name"))
         .await
         .and_then(|payload: Vec<u8>| {
-            Ok(bincode::deserialize::<DbUser>(&payload).map(LocalUser::try_from))
+            Ok(bincode::deserialize::<DbUser>(&payload).map(FederatedUser::try_from))
         });
-    let results: Result<Option<String>, anyhow::Error> = match results {
+    let results: Result<Option<Url>, anyhow::Error> = match results {
         Ok(Ok(Ok(data))) => Ok(Some(data.ap_id)),
         _ => {
             let db = &data.services.postgres;
@@ -59,7 +57,7 @@ pub async fn webfinger(
                 Some(data) => {
                     write_to_cache::<()>(cache_key, &data, cache).await?;
 
-                    let payload = LocalUser::try_from(data)?;
+                    let payload = FederatedUser::try_from(data)?;
 
                     Ok(Some(payload.ap_id))
                 }
@@ -69,8 +67,7 @@ pub async fn webfinger(
     };
 
     match results {
-        Ok(Some(results)) => {
-            let url = Url::from_str(&results)?;
+        Ok(Some(url)) => {
             Ok(Json(build_webfinger_response(query.resource, url)))
         }
         _ => Err(AppError(anyhow::Error::msg("no user found"))),

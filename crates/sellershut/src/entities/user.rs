@@ -20,13 +20,12 @@ use url::Url;
 use super::write_to_cache;
 
 #[derive(Debug, Deserialize)]
-pub struct LocalUser {
-    pub id: String,
+pub struct FederatedUser {
     pub public_key: String,
     pub private_key: Option<SecretString>,
     pub inbox: Url,
     pub local: bool,
-    pub ap_id: String,
+    pub ap_id: Url,
     pub last_refreshed_at: OffsetDateTime,
     pub username: String,
     pub followers: Vec<Url>,
@@ -37,7 +36,6 @@ pub struct LocalUser {
 /// sqlx stuff
 #[derive(Debug, Deserialize, Serialize)]
 pub struct DbUser {
-    pub id: String,
     pub username: String,
     pub last_refreshed_at: OffsetDateTime,
     pub private_key: Option<String>,
@@ -50,13 +48,12 @@ pub struct DbUser {
     pub updated_at: OffsetDateTime,
 }
 
-impl TryFrom<DbUser> for LocalUser {
+impl TryFrom<DbUser> for FederatedUser {
     type Error = anyhow::Error;
 
     fn try_from(value: DbUser) -> Result<Self, Self::Error> {
         Ok(Self {
-            id: value.id,
-            ap_id: value.ap_id,
+            ap_id: Url::from_str(&value.ap_id)?,
             public_key: value.public_key,
             private_key: value.private_key.map(SecretString::from),
             created_at: value.created_at,
@@ -77,7 +74,7 @@ impl TryFrom<DbUser> for LocalUser {
     }
 }
 
-impl LocalUser {
+impl FederatedUser {
     pub fn new(hostname: &str, username: &str) -> anyhow::Result<Self> {
         let id = generate_id();
         let ap_id = Url::parse(&format!("https://{}/{}", hostname, &id))?.into();
@@ -85,7 +82,6 @@ impl LocalUser {
         let keypair = generate_actor_keypair()?;
         let ts = OffsetDateTime::now_utc();
         Ok(Self {
-            id,
             ap_id,
             inbox,
             public_key: keypair.public_key,
@@ -105,13 +101,13 @@ pub struct Person {
     #[serde(rename = "type")]
     kind: PersonType,
     preferred_username: String,
-    id: ObjectId<LocalUser>,
+    id: ObjectId<FederatedUser>,
     inbox: Url,
     public_key: PublicKey,
 }
 
 #[tonic::async_trait]
-impl Object for LocalUser {
+impl Object for FederatedUser {
     #[doc = " App data type passed to handlers. Must be identical to"]
     #[doc = " [crate::config::FederationConfigBuilder::app_data] type."]
     type DataType = AppState;
@@ -139,7 +135,7 @@ impl Object for LocalUser {
             .instrument(info_span!("cache.get.user"))
             .await
             .and_then(|payload: Vec<u8>| {
-                Ok(bincode::deserialize::<DbUser>(&payload).map(LocalUser::try_from))
+                Ok(bincode::deserialize::<DbUser>(&payload).map(FederatedUser::try_from))
             });
         match results {
             Ok(Ok(Ok(data))) => Ok(Some(data)),
@@ -159,7 +155,7 @@ impl Object for LocalUser {
                     Some(data) => {
                         write_to_cache::<()>(cache_key, &data, cache).await?;
 
-                        let payload = LocalUser::try_from(data)?;
+                        let payload = FederatedUser::try_from(data)?;
                         Ok(Some(payload))
                     }
                     None => Ok(None),
@@ -174,12 +170,11 @@ impl Object for LocalUser {
     #[doc = " gets sent in an activity."]
     #[must_use]
     async fn into_json(self, _data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
-        let ap_id = Url::from_str(&self.ap_id)?.into();
 
         Ok(Person {
             preferred_username: self.username.clone(),
             kind: Default::default(),
-            id: ap_id,
+            id: self.ap_id.clone().into(),
             inbox: self.inbox.clone(),
             public_key: self.public_key(),
         })
@@ -217,16 +212,15 @@ impl Object for LocalUser {
         let db = &data.services.postgres;
 
         let ap_id_str = id.as_str();
-        let id = ap_id_str.split("/").last().expect("id token from url");
 
         let username = json.preferred_username;
 
         let data = sqlx::query_as!(
             DbUser,
             r#"
-                insert into federated_user (id, username, last_refreshed_at, private_key, public_key, inbox, followers, local, ap_id)
-                values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                on conflict (id)
+                insert into federated_user (username, last_refreshed_at, private_key, public_key, inbox, followers, local, ap_id)
+                values ($1, $2, $3, $4, $5, $6, $7, $8)
+                on conflict (ap_id)
                 do update set
                     username = excluded.username,
                     last_refreshed_at = excluded.last_refreshed_at,
@@ -238,7 +232,6 @@ impl Object for LocalUser {
                     ap_id = excluded.ap_id
                 returning *
             "#,
-            id,
             username,
             OffsetDateTime::now_utc(),
             None::<String>,
@@ -254,14 +247,14 @@ impl Object for LocalUser {
 
         write_to_cache::<()>(cache_key, &data, cache).await?;
 
-        let payload = LocalUser::try_from(data)?;
+        let payload = FederatedUser::try_from(data)?;
         Ok(payload)
     }
 }
 
-impl Actor for LocalUser {
+impl Actor for FederatedUser {
     fn id(&self) -> Url {
-        Url::from_str(&self.id).unwrap()
+        self.ap_id.clone()
     }
 
     fn public_key_pem(&self) -> &str {
