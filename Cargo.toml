@@ -31,7 +31,7 @@ sellershut-utils = { path = "crates/sellershut-utils" }
 serde = "1.0.210"
 serde_json = "1.0.128"
 sqlx = { version = "0.8.2", default-features = false }
-thiserror = "1.0.63"
+thiserror = "2.0.0"
 time = "0.3.36"
 tokio = "1.40.0"
 tonic = "0.12.2"
