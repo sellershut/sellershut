@@ -21,7 +21,7 @@ config = { version = "0.14.0", default-features = false }
 futures-util = "0.3.30"
 http = "1.1.0"
 infra = { path = "crates/infra" }
-opentelemetry = "0.26.0"
+opentelemetry = "0.27.0"
 prost = "0.13.3"
 redis = "0.27.0"
 reqwest = { version = "0.12.8", default-features = false }
