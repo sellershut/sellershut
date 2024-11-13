@@ -39,7 +39,7 @@ tonic-reflection = "0.12.2"
 tower = "0.5.1"
 tower-http = "0.6.0"
 tracing = "0.1.40"
-tracing-opentelemetry = "0.27.0"
+tracing-opentelemetry = "0.28.0"
 url = "2.5.2"
 
 [profile.release]
