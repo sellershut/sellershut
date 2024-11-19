@@ -11,7 +11,7 @@ activitypub_federation = { version = "0.6.0-alpha", default-features = false }
 anyhow = "1.0.89"
 async-graphql = "7.0.9"
 async-graphql-axum = "7.0.9"
-async-nats = "0.37.0"
+async-nats = "0.38.0"
 axum = "0.7.6"
 axum-extra = "0.9.4"
 base64 = "0.22.1"
