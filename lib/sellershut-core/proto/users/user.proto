@@ -3,6 +3,7 @@ syntax = "proto3";
 package users;
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
 
 message User {
   string id = 1;
@@ -66,7 +67,7 @@ service MutateUsers {
 }
 
 service QueryUsers {
-  rpc QueryUsers (CreateUserRequest) returns (CreateUserResponse) {}
+  rpc QueryUsers (google.protobuf.Empty) returns (CreateUserResponse) {}
   rpc QueryUserByName (QueryUserByNameRequest) returns (QueryUserByNameResponse) {}
   rpc QueryUserById (QueryUserByIdRequest) returns (QueryUserByIdResponse) {}
 }

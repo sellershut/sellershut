@@ -7,5 +7,7 @@ license.workspace = true
 [dependencies]
 activitypub_federation = { workspace = true, features = ["axum"] }
 anyhow.workspace = true
-sellershut-core.workspace = true
+prost.workspace = true
+sellershut-core = { workspace = true, features = ["rpc-client-users"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tonic.workspace = true

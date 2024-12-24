@@ -2224,8 +2224,10 @@ version = "0.1.0"
 dependencies = [
  "activitypub_federation",
  "anyhow",
+ "prost",
  "sellershut-core",
  "tokio",
+ "tonic",
 ]
 
 [[package]]

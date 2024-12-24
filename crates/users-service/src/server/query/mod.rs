@@ -1,6 +1,9 @@
-use sellershut_core::users::{
-    CreateUserRequest, CreateUserResponse, QueryUserByIdRequest, QueryUserByIdResponse,
-    QueryUserByNameRequest, QueryUserByNameResponse, query_users_server::QueryUsers,
+use sellershut_core::{
+    google::protobuf::Empty,
+    users::{
+        CreateUserResponse, QueryUserByIdRequest, QueryUserByIdResponse, QueryUserByNameRequest,
+        QueryUserByNameResponse, query_users_server::QueryUsers,
+    },
 };
 
 use super::state::ServiceState;
@@ -10,7 +13,7 @@ impl QueryUsers for ServiceState {
     #[must_use]
     async fn query_users(
         &self,
-        _request: tonic::Request<CreateUserRequest>,
+        _request: tonic::Request<Empty>,
     ) -> Result<tonic::Response<CreateUserResponse>, tonic::Status> {
         todo!()
     }
