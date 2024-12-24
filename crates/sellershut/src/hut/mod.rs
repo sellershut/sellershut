@@ -1,5 +1,7 @@
 use anyhow::Result;
-use sellershut_core::users::query_users_client::QueryUsersClient;
+use sellershut_core::users::{
+    mutate_users_client::MutateUsersClient, query_users_client::QueryUsersClient,
+};
 use tonic::{
     Status,
     service::{Interceptor, interceptor::InterceptedService},
@@ -9,16 +11,19 @@ use tonic::{
 /// Instance
 pub struct Hut {
     pub query_users_client: QueryUsersClient<InterceptedService<Channel, MyInterceptor>>,
+    pub mutate_users_client: MutateUsersClient<InterceptedService<Channel, MyInterceptor>>,
 }
 
 impl Hut {
     pub async fn new() -> Result<Self> {
-        let channel = Endpoint::from_static("http://[::1]:1304")
-            .connect()
-            .await?;
-        let query_users_client = QueryUsersClient::with_interceptor(channel, MyInterceptor);
+        let channel = Endpoint::from_static("http://[::1]:1304").connect().await?;
+        let query_users_client = QueryUsersClient::with_interceptor(channel.clone(), MyInterceptor);
+        let mutate_users_client = MutateUsersClient::with_interceptor(channel, MyInterceptor);
 
-        Ok(Self { query_users_client })
+        Ok(Self {
+            mutate_users_client,
+            query_users_client,
+        })
     }
 }
 

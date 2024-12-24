@@ -1,4 +1,4 @@
-syntax = "proto3";
+syntax = "proto2";
 
 package users;
 
@@ -6,58 +6,58 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
 
 message User {
-  string id = 1;
-  string username = 2;
-  string email = 3;
+  required string id = 1;
+  required string username = 2;
+  required string email = 3;
   optional string avatar_url = 4;
   repeated string followers = 5;
-  google.protobuf.Timestamp created_at = 6;
-  google.protobuf.Timestamp updated_at = 7;
-  string inbox = 8;
-  string public_key = 9;
+  required google.protobuf.Timestamp created_at = 6;
+  required google.protobuf.Timestamp updated_at = 7;
+  required string inbox = 8;
+  required string public_key = 9;
   optional string private_key = 10;
-  bool local = 11;
-  google.protobuf.Timestamp last_refreshed_at = 12;
+  required bool local = 11;
+  required google.protobuf.Timestamp last_refreshed_at = 12;
 }
 
 message CreateUserRequest {
-  User user = 1;
+  required User user = 1;
 }
 
 message CreateUserResponse {
-  User user = 1;
+  required User user = 1;
 }
 
 message UpdateUserRequest {
-  User user = 1;
+  required User user = 1;
 }
 
 message UpdateUserResponse {
-  User user = 1;
+  required User user = 1;
 }
 
 message DeleteUserRequest {
-  string id = 1;
+  required string id = 1;
 }
 
 message DeleteUserResponse {
-  User user = 1;
+ required User user = 1;
 }
 
 message QueryUserByNameRequest {
-  string username = 1;
+ required string username = 1;
 }
 
 message QueryUserByNameResponse {
-  User user = 1;
+ required User user = 1;
 }
 
 message QueryUserByIdRequest {
-  string id = 1;
+ required string id = 1;
 }
 
 message QueryUserByIdResponse {
-  User user = 1;
+ required User user = 1;
 }
 
 service MutateUsers {

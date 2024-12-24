@@ -17,6 +17,7 @@ serde = "1.0.216"
 time = "0.3.37"
 tonic = "0.12.3"
 sellershut-core = { path = "lib/sellershut-core" }
+sellershut-utils = { path = "lib/sellershut-utils" }
 svc-infra = { path = "lib/svc-infra" }
 sqlx = { version = "0.8.2", default-features = false }
 thiserror = "2.0.9"
