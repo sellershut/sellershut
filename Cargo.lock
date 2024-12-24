@@ -3165,10 +3165,12 @@ dependencies = [
  "anyhow",
  "clap",
  "config",
+ "prost",
  "sellershut-core",
  "sqlx",
  "svc-infra",
  "tokio",
+ "tonic",
  "tracing",
 ]
 

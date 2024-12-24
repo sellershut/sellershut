@@ -38,7 +38,6 @@ async fn main() -> Result<()> {
         .postgres(&config.database)
         .await?
         .build();
-    tracing::info!("Hello, world!");
 
-    Ok(())
+    users_service::run(services, config).await
 }

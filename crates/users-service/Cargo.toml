@@ -8,6 +8,7 @@ license.workspace = true
 anyhow.workspace = true
 clap = { workspace = true, features = ["derive"] }
 config = { workspace = true, features = ["toml"] }
+prost.workspace = true
 sellershut-core = { workspace = true, features = ["rpc-server-users"] }
 sqlx = { workspace = true, features = [
     "macros",
@@ -17,6 +18,7 @@ sqlx = { workspace = true, features = [
     "time",
     "tls-rustls",
 ] }
-svc-infra = { workspace = true, features = ["postgres", "tracing"] }
+svc-infra = { workspace = true, features = ["api", "postgres", "tracing"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tonic.workspace = true
 tracing.workspace = true
