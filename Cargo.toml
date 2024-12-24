@@ -9,12 +9,17 @@ license = "AGPL-3.0-only"
 [workspace.dependencies]
 anyhow = "1.0.95"
 activitypub_federation = { version = "0.6.1", default-features = false }
+clap = "4.5.23"
+config = { version = "0.15.4", default-features = false }
 prost = "0.13.4"
+secrecy = "0.10.3"
 serde = "1.0.216"
 time = "0.3.37"
 tonic = "0.12.3"
 sellershut-core = { path = "lib/sellershut-core" }
 svc-infra = { path = "lib/svc-infra" }
 sqlx = { version = "0.8.2", default-features = false }
+thiserror = "2.0.9"
 tokio = "1.42.0"
 tracing = "0.1.41"
+url = "2.5.4"

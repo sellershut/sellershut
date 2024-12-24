@@ -6,6 +6,8 @@ license.workspace = true
 
 [dependencies]
 anyhow.workspace = true
+clap = { workspace = true, features = ["derive"] }
+config = { workspace = true, features = ["toml"] }
 sellershut-core = { workspace = true, features = ["rpc-server-users"] }
 sqlx = { workspace = true, features = [
     "macros",
@@ -15,6 +17,6 @@ sqlx = { workspace = true, features = [
     "time",
     "tls-rustls",
 ] }
-svc-infra = { workspace = true, features = ["tracing"] }
+svc-infra = { workspace = true, features = ["postgres", "tracing"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tracing.workspace = true
