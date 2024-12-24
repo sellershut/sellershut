@@ -1,0 +1,27 @@
+[package]
+name = "sellershut-core"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+prost.workspace = true
+serde = { optional = true, workspace = true }
+time = { optional = true, workspace = true }
+tonic.workspace = true
+tonic-types = { optional = true, version = "0.12.2" }
+
+[features]
+default = []
+users = []
+rpc-server-users = ["users", "dep:tonic-types"]
+rpc-client-users = ["users", "dep:tonic-types"]
+serde = ["serde/derive"]
+time = ["dep:time"]
+
+[build-dependencies]
+tonic-build = { version = "0.12.3", features = ["cleanup-markdown"] }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
