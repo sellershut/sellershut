@@ -21,7 +21,12 @@ message User {
 }
 
 message CreateUserRequest {
-  required User user = 1;
+  required string hostname = 1;
+  required string username = 2;
+  required string email = 3;
+  optional string avatar_url = 4;
+  repeated string followers = 5;
+  required bool local = 6;
 }
 
 message CreateUserResponse {

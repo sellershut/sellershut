@@ -2236,8 +2236,10 @@ dependencies = [
  "anyhow",
  "prost",
  "sellershut-core",
+ "time",
  "tokio",
  "tonic",
+ "tracing",
 ]
 
 [[package]]
@@ -3181,6 +3183,7 @@ dependencies = [
 name = "users-service"
 version = "0.1.0"
 dependencies = [
+ "activitypub_federation",
  "anyhow",
  "clap",
  "config",

@@ -8,6 +8,8 @@ license.workspace = true
 activitypub_federation = { workspace = true, features = ["axum"] }
 anyhow.workspace = true
 prost.workspace = true
-sellershut-core = { workspace = true, features = ["rpc-client-users"] }
+sellershut-core = { workspace = true, features = ["rpc-client-users", "time"] }
+time.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tonic.workspace = true
+tracing.workspace = true

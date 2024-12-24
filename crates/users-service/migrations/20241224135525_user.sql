@@ -1,5 +1,5 @@
 create table "user" (
-    id varchar(21) primary key,
+    id varchar primary key,
     username varchar(20) unique not null,
     email varchar(255) unique not null,
     avatar_url varchar,
