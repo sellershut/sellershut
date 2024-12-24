@@ -2,7 +2,6 @@ use sellershut_core::users::{
     CreateUserRequest, CreateUserResponse, DeleteUserRequest, DeleteUserResponse,
     UpdateUserRequest, UpdateUserResponse, User, mutate_users_server::MutateUsers,
 };
-use time::OffsetDateTime;
 use tonic::async_trait;
 use tracing::{Instrument, debug_span};
 use url::Url;

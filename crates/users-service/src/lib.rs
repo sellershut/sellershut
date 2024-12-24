@@ -8,7 +8,7 @@ use sellershut_core::users::{
 use server::state::ServiceState;
 use svc_infra::{Configuration, Services};
 use tonic::{Request, Status, transport::Server};
-use tracing::info;
+use tracing::{debug, info};
 
 pub async fn run(services: Services, configuration: Configuration) -> Result<()> {
     sqlx::migrate!("./migrations")
@@ -35,7 +35,7 @@ pub async fn run(services: Services, configuration: Configuration) -> Result<()>
 /// is returned, it will cancel the request and return that status to the
 /// client.
 fn intercept(mut req: Request<()>) -> Result<Request<()>, Status> {
-    println!("Intercepting request: {:?}", req);
+    debug!("Intercepting request: {:?}", req);
 
     // Set an extension that can be retrieved by `say_hello`
     req.extensions_mut().insert(MyExtension {

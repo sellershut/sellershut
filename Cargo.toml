@@ -9,6 +9,7 @@ license = "AGPL-3.0-only"
 [workspace.dependencies]
 anyhow = "1.0.95"
 activitypub_federation = { version = "0.6.1", default-features = false }
+axum = "0.7.9"
 clap = "4.5.23"
 config = { version = "0.15.4", default-features = false }
 prost = "0.13.4"

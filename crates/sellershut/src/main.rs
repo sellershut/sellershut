@@ -1,9 +1,11 @@
 use anyhow::Result;
+use svc_infra::tracing::TracingBuilder;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    println!("Hello, world!");
-    sellershut::run().await?;
+    let _tracing = TracingBuilder::new().build();
+
+    sellershut::run().await.unwrap();
 
     Ok(())
 }

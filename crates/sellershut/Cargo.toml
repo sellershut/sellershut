@@ -7,9 +7,15 @@ license.workspace = true
 [dependencies]
 activitypub_federation = { workspace = true, features = ["axum"] }
 anyhow.workspace = true
+axum = { workspace = true, features = ["macros", "http2"] }
+enum_delegate = "0.2.0"
 prost.workspace = true
+secrecy.workspace = true
 sellershut-core = { workspace = true, features = ["rpc-client-users", "time"] }
+serde = { workspace = true, features = ["derive"] }
+svc-infra = { workspace = true, features = ["tracing"] }
 time.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tonic.workspace = true
 tracing.workspace = true
+url.workspace = true

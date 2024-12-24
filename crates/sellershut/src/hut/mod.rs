@@ -1,8 +1,12 @@
-use anyhow::Result;
+use std::sync::Arc;
+pub mod activities;
+pub mod system_user;
+
 use sellershut_core::users::{
-    CreateUserRequest, QueryUserByIdRequest, User, mutate_users_client::MutateUsersClient,
-    query_users_client::QueryUsersClient,
+    CreateUserRequest, QueryUserByIdRequest, QueryUserByNameRequest,
+    mutate_users_client::MutateUsersClient, query_users_client::QueryUsersClient,
 };
+use system_user::HutUser;
 use tonic::{
     IntoRequest, Status,
     service::{Interceptor, interceptor::InterceptedService},
@@ -10,18 +14,22 @@ use tonic::{
 };
 use tracing::{debug, trace};
 
+use crate::server::error::AppError;
+
 /// Instance
+#[derive(Clone)]
 pub struct Hut {
     pub query_users_client: QueryUsersClient<InterceptedService<Channel, MyInterceptor>>,
     pub mutate_users_client: MutateUsersClient<InterceptedService<Channel, MyInterceptor>>,
-    pub system_user: User,
+    pub system_user: HutUser,
+    pub domain: Arc<str>,
 }
 
 impl Hut {
-    pub async fn new() -> Result<Self> {
+    pub async fn new() -> Result<Self, AppError> {
         let channel = Endpoint::from_static("http://[::1]:1304").connect().await?;
 
-        let hostname = "localhost:2210".to_string();
+        let hostname = "localhost:2210";
         let username = "system".to_string();
 
         let user = QueryUserByIdRequest {
@@ -39,7 +47,7 @@ impl Hut {
             trace!("{status:?}");
             debug!("system user does not exist, creating...");
             let request = CreateUserRequest {
-                hostname,
+                hostname: hostname.to_string(),
                 local: true,
                 ..Default::default()
             }
@@ -50,18 +58,35 @@ impl Hut {
                 .into_inner()
                 .user
         } else {
-            println!("query ok: {user:?}");
+            debug!("query ok: {user:?}");
             user?.into_inner().user
         };
 
         Ok(Self {
             mutate_users_client,
             query_users_client,
-            system_user: user,
+            system_user: HutUser::try_from(user)?,
+            domain: hostname.into(),
         })
+    }
+
+    pub async fn read_user(&self, name: &str) -> Result<HutUser, AppError> {
+        let user_by_name = QueryUserByNameRequest {
+            username: name.to_string(),
+        }
+        .into_request();
+        let mut client = self.query_users_client.clone();
+        let resp = client
+            .query_user_by_name(user_by_name)
+            .await?
+            .into_inner()
+            .user;
+
+        HutUser::try_from(resp)
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct MyInterceptor;
 
 impl Interceptor for MyInterceptor {
