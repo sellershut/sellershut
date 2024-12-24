@@ -32,7 +32,17 @@ async fn main() -> Result<()> {
 
     let config = config.try_deserialize::<Configuration>()?;
 
-    let _tracing = TracingBuilder::new().build();
+    let name = env!("CARGO_PKG_NAME");
+    let version = env!("CARGO_PKG_VERSION");
+
+    let _tracing = TracingBuilder::new()
+        .try_with_opentelemetry(
+            name,
+            version,
+            &svc_infra::Environment::Development,
+            "http://localhost:4317",
+        )?
+        .build();
 
     let services = Services::builder()
         .postgres(&config.database)

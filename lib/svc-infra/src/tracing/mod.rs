@@ -1,3 +1,6 @@
+#[cfg(feature = "opentelemetry")]
+pub mod opentelemetry;
+
 use tracing_subscriber::{
     EnvFilter, Layer, Registry, layer::SubscriberExt, util::SubscriberInitExt,
 };

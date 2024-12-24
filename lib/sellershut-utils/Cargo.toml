@@ -6,3 +6,5 @@ license.workspace = true
 
 [dependencies]
 nanoid = "0.4.0"
+tonic.workspace = true
+opentelemetry.workspace = true

@@ -9,13 +9,16 @@ activitypub_federation = { workspace = true, features = ["axum"] }
 anyhow.workspace = true
 axum = { workspace = true, features = ["macros", "http2"] }
 enum_delegate = "0.2.0"
+opentelemetry.workspace = true
 prost.workspace = true
 secrecy.workspace = true
 sellershut-core = { workspace = true, features = ["rpc-client-users", "time"] }
+sellershut-utils.workspace = true
 serde = { workspace = true, features = ["derive"] }
-svc-infra = { workspace = true, features = ["tracing"] }
+svc-infra = { workspace = true, features = ["opentelemetry"] }
 time.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tonic.workspace = true
 tracing.workspace = true
+tracing-opentelemetry.workspace = true
 url.workspace = true

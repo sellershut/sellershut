@@ -9,6 +9,7 @@ activitypub_federation.workspace = true
 anyhow.workspace = true
 clap = { workspace = true, features = ["derive"] }
 config = { workspace = true, features = ["toml"] }
+opentelemetry.workspace = true
 prost.workspace = true
 secrecy = { workspace = true, features = ["serde"] }
 sellershut-core = { workspace = true, features = ["rpc-server-users","serde", "time"] }
@@ -22,9 +23,10 @@ sqlx = { workspace = true, features = [
     "time",
     "tls-rustls",
 ] }
-svc-infra = { workspace = true, features = ["api", "postgres", "tracing"] }
+svc-infra = { workspace = true, features = ["api", "postgres", "opentelemetry"] }
 time = { workspace = true, features = ["serde"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tonic.workspace = true
 tracing.workspace = true
+tracing-opentelemetry.workspace = true
 url = { workspace = true, features = ["serde"] }

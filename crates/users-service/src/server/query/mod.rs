@@ -5,6 +5,7 @@ use sellershut_core::{
         QueryUserByNameResponse, query_users_server::QueryUsers,
     },
 };
+use tracing::instrument;
 
 use crate::entity;
 
@@ -29,6 +30,7 @@ impl QueryUsers for ServiceState {
     }
 
     #[must_use]
+    #[instrument(skip(self))]
     async fn query_user_by_id(
         &self,
         request: tonic::Request<QueryUserByIdRequest>,

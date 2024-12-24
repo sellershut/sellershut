@@ -1,4 +1,8 @@
+use opentelemetry::global;
+use sellershut_utils::grpc::MetadataMap;
 use std::sync::Arc;
+use tracing::{Instrument, Span, info_span};
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 pub mod activities;
 pub mod system_user;
 
@@ -34,15 +38,18 @@ impl Hut {
 
         let user = QueryUserByIdRequest {
             id: format!("http://{hostname}/{username}"),
-        };
+        }
+        .into_request();
 
         let mut query_users_client =
             QueryUsersClient::with_interceptor(channel.clone(), MyInterceptor);
         let mut mutate_users_client = MutateUsersClient::with_interceptor(channel, MyInterceptor);
 
         let user = query_users_client
-            .query_user_by_id(user.into_request())
+            .query_user_by_id(user)
+            .instrument(info_span!("grpc.get.user"))
             .await;
+
         let user = if let Err(status) = user {
             trace!("{status:?}");
             debug!("system user does not exist, creating...");
@@ -52,8 +59,10 @@ impl Hut {
                 ..Default::default()
             }
             .into_request();
+
             mutate_users_client
                 .create_user(request)
+                .instrument(info_span!("grpc.create.user"))
                 .await?
                 .into_inner()
                 .user
@@ -78,6 +87,7 @@ impl Hut {
         let mut client = self.query_users_client.clone();
         let resp = client
             .query_user_by_name(user_by_name)
+            .instrument(info_span!("grpc.get.user"))
             .await?
             .into_inner()
             .user;
@@ -90,7 +100,13 @@ impl Hut {
 pub struct MyInterceptor;
 
 impl Interceptor for MyInterceptor {
-    fn call(&mut self, request: tonic::Request<()>) -> Result<tonic::Request<()>, Status> {
+    fn call(&mut self, mut request: tonic::Request<()>) -> Result<tonic::Request<()>, Status> {
+        let cx = Span::current().context();
+
+        global::get_text_map_propagator(|propagator| {
+            propagator.inject_context(&cx, &mut MetadataMap(request.metadata_mut()))
+        });
+
         Ok(request)
     }
 }

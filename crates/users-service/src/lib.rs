@@ -2,13 +2,16 @@ pub mod entity;
 pub mod server;
 
 use anyhow::Result;
+use opentelemetry::{ global};
 use sellershut_core::users::{
     mutate_users_server::MutateUsersServer, query_users_server::QueryUsersServer,
 };
+use sellershut_utils::grpc::MetadataMap;
 use server::state::ServiceState;
 use svc_infra::{Configuration, Services};
 use tonic::{Request, Status, transport::Server};
-use tracing::{debug, info};
+use tracing::{Span, info, trace};
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 pub async fn run(services: Services, configuration: Configuration) -> Result<()> {
     sqlx::migrate!("./migrations")
@@ -23,6 +26,7 @@ pub async fn run(services: Services, configuration: Configuration) -> Result<()>
     let query_service = QueryUsersServer::with_interceptor(app_state.clone(), intercept);
     let mutate_service = MutateUsersServer::with_interceptor(app_state, intercept);
     Server::builder()
+        .trace_fn(|_| tracing::info_span!("users/server"))
         .add_service(query_service)
         .add_service(mutate_service)
         .serve(addr)
@@ -35,17 +39,14 @@ pub async fn run(services: Services, configuration: Configuration) -> Result<()>
 /// is returned, it will cancel the request and return that status to the
 /// client.
 fn intercept(mut req: Request<()>) -> Result<Request<()>, Status> {
-    debug!("Intercepting request: {:?}", req);
+    trace!("Intercepting request: {:?}", req);
 
-    // Set an extension that can be retrieved by `say_hello`
-    req.extensions_mut().insert(MyExtension {
-        some_piece_of_data: "foo".to_string(),
-    });
+    let parent_cx =
+        global::get_text_map_propagator(|prop| prop.extract(&MetadataMap(req.metadata_mut())));
+
+    let span = Span::current();
+    dbg!(&span);
+    span.set_parent(parent_cx);
 
     Ok(req)
-}
-
-#[derive(Clone)]
-struct MyExtension {
-    some_piece_of_data: String,
 }
