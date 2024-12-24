@@ -5,3 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+activitypub_federation = { workspace = true, features = ["axum"] }
+anyhow.workspace = true
+sellershut-core.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

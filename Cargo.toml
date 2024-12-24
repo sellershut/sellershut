@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/*"]
+members = ["crates/*", "lib/*"]
 resolver = "2"
 
 [workspace.package]
@@ -7,3 +7,14 @@ edition = "2024"
 license = "AGPL-3.0-only"
 
 [workspace.dependencies]
+anyhow = "1.0.95"
+activitypub_federation = { version = "0.6.1", default-features = false }
+prost = "0.13.4"
+serde = "1.0.216"
+time = "0.3.37"
+tonic = "0.12.3"
+sellershut-core = { path = "lib/sellershut-core" }
+svc-infra = { path = "lib/svc-infra" }
+sqlx = { version = "0.8.2", default-features = false }
+tokio = "1.42.0"
+tracing = "0.1.41"

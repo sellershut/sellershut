@@ -1,0 +1,20 @@
+[package]
+name = "users-service"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+sellershut-core = { workspace = true, features = ["rpc-server-users"] }
+sqlx = { workspace = true, features = [
+    "macros",
+    "migrate",
+    "postgres",
+    "runtime-tokio",
+    "time",
+    "tls-rustls",
+] }
+svc-infra = { workspace = true, features = ["tracing"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tracing.workspace = true
