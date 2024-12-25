@@ -8,7 +8,10 @@ use axum::async_trait;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::{hut::{system_user::HutUser, Hut}, server::error::AppError};
+use crate::{
+    hut::{Hut, system_user::HutUser},
+    server::error::AppError,
+};
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]

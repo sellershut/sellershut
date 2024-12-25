@@ -74,5 +74,6 @@ service MutateUsers {
 service QueryUsers {
   rpc QueryUsers (google.protobuf.Empty) returns (CreateUserResponse) {}
   rpc QueryUserByName (QueryUserByNameRequest) returns (QueryUserByNameResponse) {}
+  rpc QueryLocalUserByName (QueryUserByNameRequest) returns (QueryUserByNameResponse) {}
   rpc QueryUserById (QueryUserByIdRequest) returns (QueryUserByIdResponse) {}
 }

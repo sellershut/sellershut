@@ -2,7 +2,7 @@ pub mod entity;
 pub mod server;
 
 use anyhow::Result;
-use opentelemetry::{ global};
+use opentelemetry::global;
 use sellershut_core::users::{
     mutate_users_server::MutateUsersServer, query_users_server::QueryUsersServer,
 };
@@ -45,7 +45,6 @@ fn intercept(mut req: Request<()>) -> Result<Request<()>, Status> {
         global::get_text_map_propagator(|prop| prop.extract(&MetadataMap(req.metadata_mut())));
 
     let span = Span::current();
-    dbg!(&span);
     span.set_parent(parent_cx);
 
     Ok(req)

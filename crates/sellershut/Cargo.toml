@@ -19,6 +19,7 @@ svc-infra = { workspace = true, features = ["opentelemetry"] }
 time.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tonic.workspace = true
+tower-http = { version = "0.6.2", features = ["request-id", "trace"] }
 tracing.workspace = true
 tracing-opentelemetry.workspace = true
 url.workspace = true

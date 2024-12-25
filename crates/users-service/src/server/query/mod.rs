@@ -22,11 +22,48 @@ impl QueryUsers for ServiceState {
     }
 
     #[must_use]
+    #[instrument(skip(self))]
     async fn query_user_by_name(
         &self,
-        _request: tonic::Request<QueryUserByNameRequest>,
+        request: tonic::Request<QueryUserByNameRequest>,
     ) -> Result<tonic::Response<QueryUserByNameResponse>, tonic::Status> {
-        todo!()
+        let username = request.into_inner().username;
+
+        let user = sqlx::query_as!(
+            entity::User,
+            "select * from \"user\" where username = $1",
+            username
+        )
+        .fetch_one(&self.database)
+        .await
+        .map_err(|e| tonic::Status::unavailable(e.to_string()))?;
+
+        let resp = QueryUserByNameResponse { user: user.into() };
+
+        Ok(tonic::Response::new(resp))
+    }
+
+    #[must_use]
+    #[instrument(skip(self))]
+    async fn query_local_user_by_name(
+        &self,
+        request: tonic::Request<QueryUserByNameRequest>,
+    ) -> Result<tonic::Response<QueryUserByNameResponse>, tonic::Status> {
+        let username = request.into_inner().username;
+
+        let user = sqlx::query_as!(
+            entity::User,
+            "select * from \"user\" where username = $1 and local = $2",
+            username,
+            true
+        )
+        .fetch_one(&self.database)
+        .await
+        .map_err(|e| tonic::Status::unavailable(e.to_string()))?;
+
+        let resp = QueryUserByNameResponse { user: user.into() };
+
+        Ok(tonic::Response::new(resp))
     }
 
     #[must_use]

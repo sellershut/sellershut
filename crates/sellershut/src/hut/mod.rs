@@ -86,7 +86,7 @@ impl Hut {
         .into_request();
         let mut client = self.query_users_client.clone();
         let resp = client
-            .query_user_by_name(user_by_name)
+            .query_local_user_by_name(user_by_name)
             .instrument(info_span!("grpc.get.user"))
             .await?
             .into_inner()
