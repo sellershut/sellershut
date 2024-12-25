@@ -3,7 +3,7 @@ use serde::Deserialize;
 use std::{fmt::Display, sync::Arc};
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct AppMetadata {
+pub struct AppConfig {
     #[serde(skip)]
     pub name: Arc<str>,
     #[serde(skip)]
@@ -11,11 +11,16 @@ pub struct AppMetadata {
     pub env: Environment,
     #[cfg(feature = "api")]
     pub port: u16,
+    #[serde(default)]
+    #[serde(rename = "log-level")]
+    #[cfg(feature = "tracing")]
+    pub log_level: Option<Arc<str>>
 }
+
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Configuration {
-    pub application: AppMetadata,
+    pub application: AppConfig,
     #[cfg(feature = "postgres")]
     pub database: crate::postgres::PostgresConfig,
     #[serde(default)]

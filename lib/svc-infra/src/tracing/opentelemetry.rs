@@ -45,8 +45,7 @@ impl TracingBuilder {
         let exporter = SpanExporter::builder()
             .with_tonic()
             .with_endpoint(endpoint)
-            .build()
-            .unwrap();
+            .build()?;
 
         let provider = opentelemetry_sdk::trace::TracerProvider::builder()
             .with_sampler(Sampler::ParentBased(Box::new(Sampler::TraceIdRatioBased(

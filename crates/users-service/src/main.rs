@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
             &config.application.env,
             &app_config.otel_endpoint,
         )?
-        .build();
+        .build(config.application.log_level.clone());
 
     let services = Services::builder()
         .postgres(&config.database)

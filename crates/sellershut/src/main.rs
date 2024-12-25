@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
             &config.application.env,
             &hut_config.otel_endpoint,
         )?
-        .build();
+        .build(config.application.log_level.clone());
 
     sellershut::run(&hut_config, config).await.unwrap();
 

@@ -22,6 +22,7 @@ pub struct HutUser {
     pub id: ObjectId<HutUser>,
     pub username: String,
     pub avatar_url: Option<Url>,
+    pub email: Option<String>,
     pub followers: Vec<Url>,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
@@ -54,6 +55,7 @@ impl TryFrom<User> for HutUser {
             local: value.local,
             private_key: value.private_key,
             public_key: value.public_key,
+            email: value.email,
             followers,
             inbox: Url::parse(&value.inbox)?,
         })

@@ -10,13 +10,14 @@ message User {
   required string username = 2;
   optional string avatar_url = 3;
   repeated string followers = 4;
-  required google.protobuf.Timestamp created_at = 5;
-  required google.protobuf.Timestamp updated_at = 6;
-  required string inbox = 7;
-  required string public_key = 8;
-  optional string private_key = 9;
-  required bool local = 10;
-  required google.protobuf.Timestamp last_refreshed_at = 11;
+  optional string email  = 5;
+  required google.protobuf.Timestamp created_at = 6;
+  required google.protobuf.Timestamp updated_at = 7;
+  required string inbox = 8;
+  required string public_key = 9;
+  optional string private_key = 10;
+  required bool local = 11;
+  required google.protobuf.Timestamp last_refreshed_at = 12;
 }
 
 message CreateUserRequest {

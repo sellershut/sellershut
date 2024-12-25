@@ -18,6 +18,9 @@ pub struct Services {
 pub enum ServiceError {
     #[error("service was not initialised")]
     NotInitialised,
+    #[cfg(feature = "opentelemetry")]
+    #[error(transparent)]
+    Trace(#[from] opentelemetry::trace::TraceError),
     #[error("unknown data store error")]
     Unknown,
     #[error("invalid config `{0}`")]

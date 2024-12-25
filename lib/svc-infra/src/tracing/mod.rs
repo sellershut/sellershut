@@ -37,10 +37,15 @@ impl TracingBuilder {
     }
 
     /// Initialises tracing
-    pub fn build(self) -> Tracing {
+    pub fn build(self, level: Option<std::sync::Arc<str>>) -> Tracing {
+        let level = if let Some(level) = level {
+            level.to_string()
+        } else {
+            "info".to_string()
+        };
         tracing_subscriber::registry()
             .with(self.layer)
-            .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()))
+            .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| level.into()))
             .init();
         Tracing {}
     }

@@ -2,6 +2,7 @@ create table "user" (
     id varchar primary key,
     username varchar not null,
     avatar_url varchar,
+    email varchar,
     inbox varchar not null,
     public_key varchar not null,
     private_key varchar,

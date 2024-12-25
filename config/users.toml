@@ -1,6 +1,7 @@
 [application]
 env = "development"
 port = 1304
+log-level = "debug"
 
 [misc]
 otel-endpoint = "http://localhost:4317"

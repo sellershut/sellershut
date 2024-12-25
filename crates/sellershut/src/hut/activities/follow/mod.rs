@@ -58,6 +58,7 @@ impl ActivityHandler for Follow {
     }
 
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
+        println!("following");
         let mut client = data.mutate_users_client.clone();
         let follow_request = FollowUserRequest {
             url: self.actor.clone().into_inner().to_string(),
@@ -78,7 +79,7 @@ impl ActivityHandler for Follow {
         let id = generate_object_id(data.domain())?;
         let accept = Accept::new(user.id.clone(), self, id.clone());
 
-        user.send(accept, vec![follower.shared_inbox_or_inbox()], false, data)
+        user.send(accept, vec![follower.shared_inbox_or_inbox()], true, data)
             .await?;
 
         Ok(())
