@@ -1,8 +1,5 @@
 use activitypub_federation::{
-    config::Data,
-    fetch::object_id::ObjectId,
-    kinds::activity::FollowType,
-    traits::{ActivityHandler, Actor},
+    config::Data, fetch::object_id::ObjectId, kinds::activity::FollowType, traits::ActivityHandler,
 };
 use axum::async_trait;
 use serde::{Deserialize, Serialize};

@@ -1,13 +1,15 @@
 use opentelemetry::global;
 use sellershut_utils::grpc::MetadataMap;
 use std::sync::Arc;
+use time::OffsetDateTime;
 use tracing::{Instrument, Span, info_span};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
+use url::Url;
 pub mod activities;
 pub mod system_user;
 
 use sellershut_core::users::{
-    CreateUserRequest, QueryUserByIdRequest, QueryUserByNameRequest,
+    CreateUserRequest, QueryUserByIdRequest, QueryUserByNameRequest, User,
     mutate_users_client::MutateUsersClient, query_users_client::QueryUsersClient,
 };
 use system_user::HutUser;
@@ -38,10 +40,8 @@ impl Hut {
         let hostname = hut_config.hostname.as_str();
         let username = "system".to_string();
 
-        let user = QueryUserByIdRequest {
-            id: format!("http://{hostname}/{username}"),
-        }
-        .into_request();
+        let id = format!("http://{hostname}/{username}");
+        let user = QueryUserByIdRequest { id: id.clone() }.into_request();
 
         let mut query_users_client =
             QueryUsersClient::with_interceptor(channel.clone(), MyInterceptor);
@@ -53,15 +53,26 @@ impl Hut {
             .await?
             .into_inner();
 
+        let keypair = activitypub_federation::http_signatures::generate_actor_keypair()?;
+
         let user = if let Some(user) = user.user {
             debug!("query ok: {user:?}");
             user
         } else {
             debug!("system user does not exist, creating...");
             let request = CreateUserRequest {
-                hostname: hostname.to_string(),
-                local: true,
-                ..Default::default()
+                user: User {
+                    id,
+                    inbox: Url::parse(&format!("http://{}/{}/inbox", hostname, &username))?
+                        .to_string(),
+                    username,
+                    public_key: keypair.public_key,
+                    private_key: Some(keypair.private_key),
+                    last_refreshed_at: OffsetDateTime::now_utc().into(),
+                    followers: vec![],
+                    local: true,
+                    ..Default::default()
+                },
             }
             .into_request();
 

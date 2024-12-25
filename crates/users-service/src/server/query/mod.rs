@@ -34,12 +34,12 @@ impl QueryUsers for ServiceState {
             "select * from \"user\" where username = $1",
             username
         )
-        .fetch_one(&self.database)
+        .fetch_optional(&self.database)
         .await
         .map_err(|e| tonic::Status::unavailable(e.to_string()))?;
 
         let resp = QueryUserByNameResponse {
-            user: Some(user.into()),
+            user: user.map(Into::into),
         };
 
         Ok(tonic::Response::new(resp))
@@ -59,12 +59,12 @@ impl QueryUsers for ServiceState {
             username,
             true
         )
-        .fetch_one(&self.database)
+        .fetch_optional(&self.database)
         .await
         .map_err(|e| tonic::Status::unavailable(e.to_string()))?;
 
         let resp = QueryUserByNameResponse {
-            user: Some(user.into()),
+            user: user.map(Into::into),
         };
 
         Ok(tonic::Response::new(resp))
@@ -79,12 +79,12 @@ impl QueryUsers for ServiceState {
         let id = request.into_inner().id;
 
         let user = sqlx::query_as!(entity::User, "select * from \"user\" where id = $1", id)
-            .fetch_one(&self.database)
+            .fetch_optional(&self.database)
             .await
             .map_err(|e| tonic::Status::unavailable(e.to_string()))?;
 
         let resp = QueryUserByIdResponse {
-            user: Some(user.into()),
+            user: user.map(Into::into),
         };
 
         Ok(tonic::Response::new(resp))

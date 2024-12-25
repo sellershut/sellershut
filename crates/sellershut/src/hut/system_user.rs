@@ -6,10 +6,11 @@ use activitypub_federation::{
     traits::{ActivityHandler, Actor, Object},
 };
 use chrono::{DateTime, Utc};
-use sellershut_core::users::{QueryUserByIdRequest, User};
+use sellershut_core::users::{QueryUserByIdRequest, UpsertUserRequest, User};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use tonic::{IntoRequest, async_trait};
+use tracing::{Instrument, info_span};
 use url::Url;
 
 use crate::server::error::AppError;
@@ -162,7 +163,28 @@ impl Object for HutUser {
     #[doc = " create and update, so an `upsert` operation should be used."]
     #[must_use]
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
-        todo!()
+        let request = UpsertUserRequest {
+            user: User {
+                username: json.preferred_username,
+                id: json.id.into_inner().to_string(),
+                public_key: json.public_key.public_key_pem,
+                private_key: None,
+                inbox: json.inbox.to_string(),
+                last_refreshed_at: OffsetDateTime::now_utc().into(),
+                ..Default::default()
+            },
+        }
+        .into_request();
+
+        let mut client = data.mutate_users_client.clone();
+        let resp = client
+            .upsert_user(request)
+            .instrument(info_span!("grpc.user.upsert"))
+            .await?
+            .into_inner()
+            .user;
+
+        HutUser::try_from(resp)
     }
 }
 

@@ -21,15 +21,18 @@ message User {
 }
 
 message CreateUserRequest {
-  required string hostname = 1;
-  required string username = 2;
-  required string email = 3;
-  optional string avatar_url = 4;
-  repeated string followers = 5;
-  required bool local = 6;
+  required User user = 1;
 }
 
 message CreateUserResponse {
+  required User user = 1;
+}
+
+message UpsertUserRequest {
+  required User user = 1;
+}
+
+message UpsertUserResponse {
   required User user = 1;
 }
 
@@ -68,6 +71,7 @@ message QueryUserByIdResponse {
 service MutateUsers {
   rpc CreateUser (CreateUserRequest) returns (CreateUserResponse) {}
   rpc UpdateUser (UpdateUserRequest) returns (UpdateUserResponse) {}
+  rpc UpsertUser (UpsertUserRequest) returns (UpsertUserResponse) {}
   rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse) {}
 }
 
