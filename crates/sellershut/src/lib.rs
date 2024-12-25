@@ -14,6 +14,8 @@ pub struct HutConfig {
     pub hostname: String,
     #[serde(rename = "otel-endpoint")]
     pub otel_endpoint: String,
+    #[serde(rename = "users-endpoint")]
+    pub users_endpoint: String,
 }
 
 pub async fn run(hut_config: &HutConfig, config: Configuration) -> Result<(), AppError> {

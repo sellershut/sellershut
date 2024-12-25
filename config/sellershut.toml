@@ -5,5 +5,6 @@ port = 2210
 [misc]
 hostname = "localhost:2210"
 otel-endpoint = "http://localhost:4317"
+users-endpoint = "http://localhost:1304"
 
 # vim:ft=toml

@@ -8,6 +8,7 @@ license.workspace = true
 activitypub_federation = { workspace = true, features = ["axum"] }
 anyhow.workspace = true
 axum = { workspace = true, features = ["macros", "http2"] }
+chrono.workspace = true
 clap = { workspace = true, features = ["derive"] }
 config = { workspace = true, features = ["toml"] }
 enum_delegate = "0.2.0"

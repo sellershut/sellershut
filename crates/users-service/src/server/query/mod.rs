@@ -38,7 +38,9 @@ impl QueryUsers for ServiceState {
         .await
         .map_err(|e| tonic::Status::unavailable(e.to_string()))?;
 
-        let resp = QueryUserByNameResponse { user: user.into() };
+        let resp = QueryUserByNameResponse {
+            user: Some(user.into()),
+        };
 
         Ok(tonic::Response::new(resp))
     }
@@ -61,7 +63,9 @@ impl QueryUsers for ServiceState {
         .await
         .map_err(|e| tonic::Status::unavailable(e.to_string()))?;
 
-        let resp = QueryUserByNameResponse { user: user.into() };
+        let resp = QueryUserByNameResponse {
+            user: Some(user.into()),
+        };
 
         Ok(tonic::Response::new(resp))
     }
@@ -79,7 +83,9 @@ impl QueryUsers for ServiceState {
             .await
             .map_err(|e| tonic::Status::unavailable(e.to_string()))?;
 
-        let resp = QueryUserByIdResponse { user: user.into() };
+        let resp = QueryUserByIdResponse {
+            user: Some(user.into()),
+        };
 
         Ok(tonic::Response::new(resp))
     }

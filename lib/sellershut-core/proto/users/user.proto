@@ -54,7 +54,7 @@ message QueryUserByNameRequest {
 }
 
 message QueryUserByNameResponse {
- required User user = 1;
+ optional User user = 1;
 }
 
 message QueryUserByIdRequest {
@@ -62,7 +62,7 @@ message QueryUserByIdRequest {
 }
 
 message QueryUserByIdResponse {
- required User user = 1;
+ optional User user = 1;
 }
 
 service MutateUsers {

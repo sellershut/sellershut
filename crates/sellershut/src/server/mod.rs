@@ -4,7 +4,7 @@ use anyhow::Result;
 use axum::{
     debug_handler,
     extract::MatchedPath,
-    http::{HeaderName, Request},
+    http::{HeaderMap, HeaderName, Request},
 };
 use error::AppError;
 use serde::Deserialize;
@@ -15,6 +15,7 @@ use tower_http::{
 };
 
 use activitypub_federation::{
+    FEDERATION_CONTENT_TYPE,
     axum::{
         inbox::{ActivityData, receive_activity},
         json::FederationJson,
@@ -88,12 +89,24 @@ pub async fn serve(config: &FederationConfig<Hut>) -> Result<()> {
 
 #[debug_handler]
 async fn http_get_user(
+    header_map: HeaderMap,
     Path(name): Path<String>,
     data: Data<Hut>,
 ) -> Result<FederationJson<WithContext<Person>>, AppError> {
-    let db_user = data.read_user(&name).await?;
-    let json_user = db_user.into_json(&data).await?;
-    Ok(FederationJson(WithContext::new_default(json_user)))
+    let accept = header_map.get("accept").map(|v| v.to_str());
+    if let Some(accept) = accept {
+        let accept = accept?;
+        if Some(accept) == Some(FEDERATION_CONTENT_TYPE) {
+            let db_user = data.read_user(&name).await?;
+            let json_user = db_user.into_json(&data).await?;
+            Ok(FederationJson(WithContext::new_default(json_user)))
+        } else {
+            // TODO: generate_user_html
+            todo!()
+        }
+    } else {
+        todo!()
+    }
 }
 
 #[debug_handler]

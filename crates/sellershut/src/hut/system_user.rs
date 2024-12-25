@@ -2,13 +2,14 @@ use activitypub_federation::{
     config::Data,
     fetch::object_id::ObjectId,
     kinds::actor::PersonType,
-    protocol::public_key::PublicKey,
+    protocol::{public_key::PublicKey, verification::verify_domains_match},
     traits::{ActivityHandler, Actor, Object},
 };
-use sellershut_core::users::User;
+use chrono::{DateTime, Utc};
+use sellershut_core::users::{QueryUserByIdRequest, User};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
-use tonic::async_trait;
+use tonic::{IntoRequest, async_trait};
 use url::Url;
 
 use crate::server::error::AppError;
@@ -89,7 +90,12 @@ impl Object for HutUser {
     type Kind = Person;
 
     #[doc = " Error type returned by handler methods"]
-    type Error = anyhow::Error;
+    type Error = AppError;
+
+    fn last_refreshed_at(&self) -> Option<DateTime<Utc>> {
+        let dt = self.last_refreshed_at.unix_timestamp();
+        DateTime::from_timestamp_millis(dt)
+    }
 
     #[doc = " Try to read the object with given `id` from local database."]
     #[doc = ""]
@@ -99,7 +105,22 @@ impl Object for HutUser {
         object_id: Url,
         data: &Data<Self::DataType>,
     ) -> Result<Option<Self>, Self::Error> {
-        todo!()
+        let mut client = data.query_users_client.clone();
+        let query_by_id = QueryUserByIdRequest {
+            id: object_id.to_string(),
+        };
+        let resp = client
+            .query_user_by_id(query_by_id.into_request())
+            .await?
+            .into_inner()
+            .user;
+
+        if let Some(resp) = resp {
+            let user = Self::try_from(resp)?;
+            Ok(Some(user))
+        } else {
+            Ok(None)
+        }
     }
 
     #[doc = " Convert database type to Activitypub type."]
@@ -107,13 +128,14 @@ impl Object for HutUser {
     #[doc = " Called when a local object gets fetched by another instance over HTTP, or when an object"]
     #[doc = " gets sent in an activity."]
     #[must_use]
-    #[allow(
-        elided_named_lifetimes,
-        clippy::type_complexity,
-        clippy::type_repetition_in_bounds
-    )]
-    async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
-        todo!()
+    async fn into_json(self, _data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
+        Ok(Self::Kind {
+            id: self.id.clone(),
+            inbox: self.inbox.clone(),
+            kind: Default::default(),
+            preferred_username: self.username.clone(),
+            public_key: self.public_key(),
+        })
     }
 
     #[doc = " Verifies that the received object is valid."]
@@ -127,9 +149,10 @@ impl Object for HutUser {
     async fn verify(
         json: &Self::Kind,
         expected_domain: &Url,
-        data: &Data<Self::DataType>,
+        _data: &Data<Self::DataType>,
     ) -> Result<(), Self::Error> {
-        todo!()
+        verify_domains_match(json.id.inner(), expected_domain)?;
+        Ok(())
     }
 
     #[doc = " Convert object from ActivityPub type to database type."]

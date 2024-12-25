@@ -16,7 +16,7 @@ use tonic::{
     service::{Interceptor, interceptor::InterceptedService},
     transport::{Channel, Endpoint},
 };
-use tracing::{debug, trace};
+use tracing::debug;
 
 use crate::{HutConfig, server::error::AppError};
 
@@ -31,7 +31,9 @@ pub struct Hut {
 
 impl Hut {
     pub async fn new(hut_config: &HutConfig) -> Result<Self, AppError> {
-        let channel = Endpoint::from_static("http://[::1]:1304").connect().await?;
+        let channel = Endpoint::new(hut_config.users_endpoint.to_string())?
+            .connect()
+            .await?;
 
         let hostname = hut_config.hostname.as_str();
         let username = "system".to_string();
@@ -48,10 +50,13 @@ impl Hut {
         let user = query_users_client
             .query_user_by_id(user)
             .instrument(info_span!("grpc.get.user"))
-            .await;
+            .await?
+            .into_inner();
 
-        let user = if let Err(status) = user {
-            trace!("{status:?}");
+        let user = if let Some(user) = user.user {
+            debug!("query ok: {user:?}");
+            user
+        } else {
             debug!("system user does not exist, creating...");
             let request = CreateUserRequest {
                 hostname: hostname.to_string(),
@@ -66,9 +71,6 @@ impl Hut {
                 .await?
                 .into_inner()
                 .user
-        } else {
-            debug!("query ok: {user:?}");
-            user?.into_inner().user
         };
 
         Ok(Self {
@@ -90,7 +92,8 @@ impl Hut {
             .instrument(info_span!("grpc.get.user"))
             .await?
             .into_inner()
-            .user;
+            .user
+            .ok_or_else(|| anyhow::anyhow!("user does not exist"))?;
 
         HutUser::try_from(resp)
     }
