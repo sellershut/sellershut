@@ -4,7 +4,7 @@ use serde::Deserialize;
 use server::error::AppError;
 use svc_infra::Configuration;
 use tonic::async_trait;
-use url::Url;
+use url::{ParseError, Url};
 
 pub mod hut;
 pub mod server;
@@ -12,6 +12,8 @@ pub mod server;
 #[derive(Deserialize)]
 pub struct HutConfig {
     pub hostname: String,
+    #[serde(rename = "instance-name")]
+    pub instance_name: String,
     #[serde(rename = "otel-endpoint")]
     pub otel_endpoint: String,
     #[serde(rename = "users-endpoint")]
@@ -50,4 +52,9 @@ impl UrlVerifier for MyUrlVerifier {
             Ok(())
         }
     }
+}
+
+pub fn generate_object_id(domain: &str) -> Result<Url, ParseError> {
+    let id = sellershut_utils::id::generate_id();
+    Url::parse(&format!("http://{domain}/objects/{}", id))
 }

@@ -14,6 +14,7 @@ use super::state::ServiceState;
 #[tonic::async_trait]
 impl QueryUsers for ServiceState {
     #[must_use]
+    #[instrument(skip(self), err(Debug))]
     async fn query_users(
         &self,
         _request: tonic::Request<Empty>,
@@ -22,7 +23,7 @@ impl QueryUsers for ServiceState {
     }
 
     #[must_use]
-    #[instrument(skip(self))]
+    #[instrument(skip(self), err(Debug))]
     async fn query_user_by_name(
         &self,
         request: tonic::Request<QueryUserByNameRequest>,
@@ -46,7 +47,7 @@ impl QueryUsers for ServiceState {
     }
 
     #[must_use]
-    #[instrument(skip(self))]
+    #[instrument(skip(self), err(Debug))]
     async fn query_local_user_by_name(
         &self,
         request: tonic::Request<QueryUserByNameRequest>,
@@ -71,7 +72,7 @@ impl QueryUsers for ServiceState {
     }
 
     #[must_use]
-    #[instrument(skip(self))]
+    #[instrument(skip(self), err(Debug))]
     async fn query_user_by_id(
         &self,
         request: tonic::Request<QueryUserByIdRequest>,

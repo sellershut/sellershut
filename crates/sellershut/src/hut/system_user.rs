@@ -21,7 +21,6 @@ use super::{Hut, activities::follow::Follow};
 pub struct HutUser {
     pub id: ObjectId<HutUser>,
     pub username: String,
-    pub email: String,
     pub avatar_url: Option<Url>,
     pub followers: Vec<Url>,
     pub created_at: OffsetDateTime,
@@ -56,7 +55,6 @@ impl TryFrom<User> for HutUser {
             private_key: value.private_key,
             public_key: value.public_key,
             followers,
-            email: value.email,
             inbox: Url::parse(&value.inbox)?,
         })
     }

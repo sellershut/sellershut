@@ -38,7 +38,7 @@ impl Hut {
             .await?;
 
         let hostname = hut_config.hostname.as_str();
-        let username = "system".to_string();
+        let username = hut_config.instance_name.as_str();
 
         let id = format!("http://{hostname}/{username}");
         let user = QueryUserByIdRequest { id: id.clone() }.into_request();
@@ -65,7 +65,7 @@ impl Hut {
                     id,
                     inbox: Url::parse(&format!("http://{}/{}/inbox", hostname, &username))?
                         .to_string(),
-                    username,
+                    username: username.to_string(),
                     public_key: keypair.public_key,
                     private_key: Some(keypair.private_key),
                     last_refreshed_at: OffsetDateTime::now_utc().into(),

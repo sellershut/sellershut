@@ -7,7 +7,6 @@ use time::OffsetDateTime;
 pub struct User {
     pub id: String,
     pub username: String,
-    pub email: String,
     pub avatar_url: Option<String>,
     pub followers: Followers,
     pub created_at: OffsetDateTime,
@@ -37,7 +36,6 @@ impl From<User> for sellershut_core::users::User {
         Self {
             created_at: value.created_at.into(),
             updated_at: value.updated_at.into(),
-            email: value.email,
             followers: value.followers.col.into_iter().collect::<Vec<_>>(),
             id: value.id,
             avatar_url: value.avatar_url,
@@ -61,7 +59,6 @@ impl TryFrom<sellershut_core::users::User> for User {
             id: value.id,
             username: value.username,
             avatar_url: value.avatar_url,
-            email: value.email,
             followers: Followers {
                 col: value.followers.into_iter().collect::<HashSet<_>>(),
             },

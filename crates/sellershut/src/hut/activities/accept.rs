@@ -1,5 +1,5 @@
 use activitypub_federation::{
-    config::Data, fetch::object_id::ObjectId, kinds::activity::FollowType, traits::ActivityHandler,
+    config::Data, fetch::object_id::ObjectId, kinds::activity::AcceptType, traits::ActivityHandler,
 };
 use axum::async_trait;
 use serde::{Deserialize, Serialize};
@@ -10,19 +10,21 @@ use crate::{
     server::error::AppError,
 };
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
+use super::follow::Follow;
+
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct Follow {
-    pub(crate) actor: ObjectId<HutUser>,
-    pub(crate) object: ObjectId<HutUser>,
+pub struct Accept {
+    actor: ObjectId<HutUser>,
+    object: Follow,
     #[serde(rename = "type")]
-    kind: FollowType,
+    kind: AcceptType,
     id: Url,
 }
 
-impl Follow {
-    pub fn new(actor: ObjectId<HutUser>, object: ObjectId<HutUser>, id: Url) -> Follow {
-        Follow {
+impl Accept {
+    pub fn new(actor: ObjectId<HutUser>, object: Follow, id: Url) -> Accept {
+        Accept {
             actor,
             object,
             kind: Default::default(),
@@ -32,7 +34,7 @@ impl Follow {
 }
 
 #[async_trait]
-impl ActivityHandler for Follow {
+impl ActivityHandler for Accept {
     type DataType = Hut;
     type Error = AppError;
 
@@ -48,8 +50,7 @@ impl ActivityHandler for Follow {
         Ok(())
     }
 
-    async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
-        // add to followers
-        todo!()
+    async fn receive(self, _data: &Data<Self::DataType>) -> Result<(), Self::Error> {
+        Ok(())
     }
 }
