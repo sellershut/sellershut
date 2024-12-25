@@ -1,0 +1,9 @@
+[application]
+env = "development"
+port = 2210
+
+[misc]
+hostname = "localhost:2210"
+otel-endpoint = "http://localhost:4317"
+
+# vim:ft=toml

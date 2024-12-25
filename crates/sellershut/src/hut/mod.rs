@@ -18,7 +18,7 @@ use tonic::{
 };
 use tracing::{debug, trace};
 
-use crate::server::error::AppError;
+use crate::{HutConfig, server::error::AppError};
 
 /// Instance
 #[derive(Clone)]
@@ -30,10 +30,10 @@ pub struct Hut {
 }
 
 impl Hut {
-    pub async fn new() -> Result<Self, AppError> {
+    pub async fn new(hut_config: &HutConfig) -> Result<Self, AppError> {
         let channel = Endpoint::from_static("http://[::1]:1304").connect().await?;
 
-        let hostname = "localhost:2210";
+        let hostname = hut_config.hostname.as_str();
         let username = "system".to_string();
 
         let user = QueryUserByIdRequest {

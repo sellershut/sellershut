@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::Parser;
 use svc_infra::{Configuration, Services, tracing::TracingBuilder};
+use users_service::AppConfig;
 
 /// users-service
 #[derive(Parser, Debug)]
@@ -31,6 +32,7 @@ async fn main() -> Result<()> {
         .build()?;
 
     let config = config.try_deserialize::<Configuration>()?;
+    let app_config: AppConfig = serde_json::from_value(config.misc.clone())?;
 
     let name = env!("CARGO_PKG_NAME");
     let version = env!("CARGO_PKG_VERSION");
@@ -39,8 +41,8 @@ async fn main() -> Result<()> {
         .try_with_opentelemetry(
             name,
             version,
-            &svc_infra::Environment::Development,
-            "http://localhost:4317",
+            &config.application.env,
+            &app_config.otel_endpoint,
         )?
         .build();
 

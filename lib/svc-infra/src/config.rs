@@ -18,6 +18,8 @@ pub struct Configuration {
     pub application: AppMetadata,
     #[cfg(feature = "postgres")]
     pub database: crate::postgres::PostgresConfig,
+    #[serde(default)]
+    pub misc: serde_json::Value,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]

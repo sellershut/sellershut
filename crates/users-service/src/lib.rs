@@ -7,11 +7,18 @@ use sellershut_core::users::{
     mutate_users_server::MutateUsersServer, query_users_server::QueryUsersServer,
 };
 use sellershut_utils::grpc::MetadataMap;
+use serde::Deserialize;
 use server::state::ServiceState;
 use svc_infra::{Configuration, Services};
 use tonic::{Request, Status, transport::Server};
 use tracing::{Span, info, trace};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
+
+#[derive(Deserialize)]
+pub struct AppConfig {
+    #[serde(rename = "otel-endpoint")]
+    pub otel_endpoint: String,
+}
 
 pub async fn run(services: Services, configuration: Configuration) -> Result<()> {
     sqlx::migrate!("./migrations")

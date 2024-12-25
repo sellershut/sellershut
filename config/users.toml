@@ -2,6 +2,9 @@
 env = "development"
 port = 1304
 
+[misc]
+otel-endpoint = "http://localhost:4317"
+
 [database]
 pool_size = 100
 port = 5432
