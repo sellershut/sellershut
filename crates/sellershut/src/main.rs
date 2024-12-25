@@ -28,7 +28,7 @@ async fn main() -> Result<()> {
         .expect("config file path is not valid");
 
     let config = config::Config::builder()
-        .add_source(config::File::new(&_config_path, config::FileFormat::Toml))
+        .add_source(config::File::new(_config_path, config::FileFormat::Toml))
         .build()?;
 
     let config = config.try_deserialize::<Configuration>()?;

@@ -32,17 +32,17 @@ impl PostgresConfig {
 
     // Getter for name
     pub fn name(&self) -> &str {
-        &self.name.as_ref()
+        self.name.as_ref()
     }
 
     // Getter for host
     pub fn host(&self) -> &str {
-        &self.host.as_ref()
+        self.host.as_ref()
     }
 
     // Getter for username
     pub fn username(&self) -> &str {
-        &self.user.as_ref()
+        self.user.as_ref()
     }
 
     // Getter for password (you may want to return a reference or handle it differently)
@@ -77,7 +77,7 @@ impl<S: State> ServicesBuilder<S> {
             // If you're deploying your application with multiple replicas, then the total
             // across all replicas should not exceed the Postgres connection limit.
             .max_connections(config.pool_size)
-            .connect(&config.connection_string()?.to_string())
+            .connect(config.connection_string()?.as_ref())
             .await?;
         Ok(self.pg_internal(pg))
     }
