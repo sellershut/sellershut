@@ -5,4 +5,28 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+anyhow.workspace = true
+clap = { workspace = true, features = ["derive"] }
+config = { workspace = true, features = ["toml"] }
+opentelemetry.workspace = true
+prost.workspace = true
+secrecy = { workspace = true, features = ["serde"] }
 sellershut-core = { workspace = true, features = ["rpc-server-categories","serde", "time"] }
+sellershut-utils.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+sqlx = { workspace = true, features = [
+    "macros",
+    "migrate",
+    "postgres",
+    "runtime-tokio",
+    "time",
+    "tls-rustls",
+] }
+svc-infra = { workspace = true, features = ["api", "postgres", "opentelemetry"] }
+time = { workspace = true, features = ["serde"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tonic.workspace = true
+tracing.workspace = true
+tracing-opentelemetry.workspace = true
+url = { workspace = true, features = ["serde"] }

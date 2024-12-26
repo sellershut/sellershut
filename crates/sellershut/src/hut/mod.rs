@@ -1,3 +1,4 @@
+use entities::HutUser;
 use opentelemetry::global;
 use sellershut_utils::grpc::MetadataMap;
 use std::sync::Arc;
@@ -6,13 +7,12 @@ use tracing::{Instrument, Span, info_span};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 use url::Url;
 pub mod activities;
-pub mod system_user;
+pub mod entities;
 
 use sellershut_core::users::{
     CreateUserRequest, QueryUserByIdRequest, QueryUserByNameRequest, User,
     mutate_users_client::MutateUsersClient, query_users_client::QueryUsersClient,
 };
-use system_user::HutUser;
 use tonic::{
     IntoRequest, Status,
     service::{Interceptor, interceptor::InterceptedService},

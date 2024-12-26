@@ -1,9 +1,13 @@
+mod activities;
+pub use activities::*;
+
+use crate::Hut;
 use activitypub_federation::{
     config::Data,
     fetch::object_id::ObjectId,
     kinds::actor::PersonType,
     protocol::{public_key::PublicKey, verification::verify_domains_match},
-    traits::{ActivityHandler, Actor, Object},
+    traits::{Actor, Object},
 };
 use chrono::{DateTime, Utc};
 use sellershut_core::users::{QueryUserByIdRequest, UpsertUserRequest, User};
@@ -15,12 +19,11 @@ use url::Url;
 
 use crate::server::error::AppError;
 
-use super::{Hut, activities::follow::Follow};
-
 #[derive(Debug, Clone)]
 pub struct HutUser {
     pub id: ObjectId<HutUser>,
     pub username: String,
+    pub display_name: Option<String>,
     pub avatar_url: Option<Url>,
     pub email: Option<String>,
     pub followers: Vec<Url>,
@@ -55,6 +58,7 @@ impl TryFrom<User> for HutUser {
             local: value.local,
             private_key: value.private_key,
             public_key: value.public_key,
+            display_name: value.display_name,
             email: value.email,
             followers,
             inbox: Url::parse(&value.inbox)?,
@@ -68,17 +72,10 @@ pub struct Person {
     #[serde(rename = "type")]
     kind: PersonType,
     preferred_username: String,
+    name: Option<String>,
     id: ObjectId<HutUser>,
     inbox: Url,
     public_key: PublicKey,
-}
-
-/// List of all activities which this actor can receive.
-#[derive(Deserialize, Serialize, Debug)]
-#[serde(untagged)]
-#[enum_delegate::implement(ActivityHandler)]
-pub enum PersonAcceptedActivities {
-    Follow(Follow),
 }
 
 #[async_trait]
@@ -133,6 +130,7 @@ impl Object for HutUser {
         Ok(Self::Kind {
             id: self.id.clone(),
             inbox: self.inbox.clone(),
+            name: self.display_name.clone(),
             kind: Default::default(),
             preferred_username: self.username.clone(),
             public_key: self.public_key(),

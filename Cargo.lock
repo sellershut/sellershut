@@ -388,7 +388,24 @@ checksum = "325918d6fe32f23b19878fe4b34794ae41fc19ddbe53b10571a4874d44ffd39b"
 name = "categories-service"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "clap",
+ "config",
+ "opentelemetry",
+ "prost",
+ "secrecy",
  "sellershut-core",
+ "sellershut-utils",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "svc-infra",
+ "time",
+ "tokio",
+ "tonic",
+ "tracing",
+ "tracing-opentelemetry",
+ "url",
 ]
 
 [[package]]
@@ -3362,7 +3379,6 @@ dependencies = [
 name = "users-service"
 version = "0.1.0"
 dependencies = [
- "activitypub_federation",
  "anyhow",
  "clap",
  "config",

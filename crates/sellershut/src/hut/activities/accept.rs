@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{
-    hut::{Hut, system_user::HutUser},
+    hut::{Hut, entities::HutUser},
     server::error::AppError,
 };
 

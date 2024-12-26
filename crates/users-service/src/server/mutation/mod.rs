@@ -22,8 +22,8 @@ impl MutateUsers for ServiceState {
 
         let user = sqlx::query_as!(
             entity::User,
-            "insert into \"user\" (id, username, followers, avatar_url, inbox, public_key, private_key, local, email)
-                values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning *",
+            "insert into \"user\" (id, username, followers, avatar_url, inbox, public_key, private_key, local, email, display_name)
+                values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning *",
             &data.id,
             &data.username,
             &data.followers,
@@ -32,7 +32,8 @@ impl MutateUsers for ServiceState {
             &data.public_key,
             data.private_key.as_deref(),
             &data.local,
-            data.email
+            data.email,
+            data.display_name,
         )
         .fetch_one(&self.database)
         .instrument(debug_span!("pg.insert"))
@@ -56,8 +57,8 @@ impl MutateUsers for ServiceState {
 
         let user = sqlx::query_as!(
             entity::User,
-            "insert into \"user\" (id, username, followers, avatar_url, inbox, public_key, private_key, local, email)
-                values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            "insert into \"user\" (id, username, followers, avatar_url, inbox, public_key, private_key, local, email, display_name)
+                values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                 on conflict (id)
                 do update 
                 set username = excluded.username,
@@ -77,6 +78,7 @@ impl MutateUsers for ServiceState {
             data.private_key.as_deref(),
             &data.local,
             data.email,
+            data.display_name
         )
         .fetch_one(&self.database)
         .instrument(debug_span!("pg.upsert"))

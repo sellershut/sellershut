@@ -8,6 +8,7 @@ pub struct User {
     pub id: String,
     pub username: String,
     pub avatar_url: Option<String>,
+    pub display_name: Option<String>,
     pub email: Option<String>,
     pub followers: Followers,
     pub created_at: OffsetDateTime,
@@ -40,6 +41,7 @@ impl From<User> for sellershut_core::users::User {
             followers: value.followers.col.into_iter().collect::<Vec<_>>(),
             id: value.id,
             avatar_url: value.avatar_url,
+            display_name: value.display_name,
             email: value.email,
             username: value.username,
             last_refreshed_at: value.last_refreshed_at.into(),
@@ -62,6 +64,7 @@ impl TryFrom<sellershut_core::users::User> for User {
             username: value.username,
             avatar_url: value.avatar_url,
             email: value.email,
+            display_name: value.display_name,
             followers: Followers {
                 col: value.followers.into_iter().collect::<HashSet<_>>(),
             },

@@ -15,7 +15,7 @@ use url::Url;
 
 use crate::{
     generate_object_id,
-    hut::{Hut, activities::accept::Accept, system_user::HutUser},
+    hut::{activities::accept::Accept, entities::HutUser, Hut},
     server::error::AppError,
 };
 
