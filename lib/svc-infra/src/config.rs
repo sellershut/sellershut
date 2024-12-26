@@ -14,9 +14,8 @@ pub struct AppConfig {
     #[serde(default)]
     #[serde(rename = "log-level")]
     #[cfg(feature = "tracing")]
-    pub log_level: Option<Arc<str>>
+    pub log_level: Option<Arc<str>>,
 }
-
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Configuration {

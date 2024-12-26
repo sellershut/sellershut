@@ -15,7 +15,11 @@ enum_delegate = "0.2.0"
 opentelemetry.workspace = true
 prost.workspace = true
 secrecy.workspace = true
-sellershut-core = { workspace = true, features = ["rpc-client-users", "time"] }
+sellershut-core = { workspace = true, features = [
+    "rpc-client-categories",
+    "rpc-client-users",
+    "time",
+] }
 sellershut-utils.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true

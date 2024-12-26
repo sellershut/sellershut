@@ -2,13 +2,16 @@ pub mod server;
 
 use anyhow::Result;
 use opentelemetry::global;
-use sellershut_core::categories::{mutate_categories_server::MutateCategoriesServer, query_categories_server::QueryCategoriesServer};
+use sellershut_core::categories::{
+    mutate_categories_server::MutateCategoriesServer,
+    query_categories_server::QueryCategoriesServer,
+};
 use sellershut_utils::grpc::MetadataMap;
 use serde::Deserialize;
 use server::state::ServiceState;
 use svc_infra::{Configuration, Services};
-use tonic::{transport::Server, Request, Status};
-use tracing::{info, trace, Span};
+use tonic::{Request, Status, transport::Server};
+use tracing::{Span, info, trace};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 #[derive(Deserialize)]
@@ -53,4 +56,3 @@ fn intercept(mut req: Request<()>) -> Result<Request<()>, Status> {
 
     Ok(req)
 }
-

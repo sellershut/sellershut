@@ -36,7 +36,7 @@ impl QueryCategories for ServiceState {
     #[instrument(skip(self), err(Debug))]
     async fn sub_categories(
         &self,
-       _request: tonic::Request<GetSubCategoriesRequest>,
+        _request: tonic::Request<GetSubCategoriesRequest>,
     ) -> Result<tonic::Response<Connection>, tonic::Status> {
         todo!()
     }

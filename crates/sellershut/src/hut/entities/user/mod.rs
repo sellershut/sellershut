@@ -39,7 +39,7 @@ pub struct HutUser {
 impl TryFrom<User> for HutUser {
     type Error = AppError;
     fn try_from(value: User) -> Result<Self, Self::Error> {
-        let id = Url::parse(&value.id)?;
+        let id = Url::parse(&value.ap_id)?;
         let avatar_url = if let Some(ref url) = value.avatar_url {
             Some(Url::parse(url)?)
         } else {

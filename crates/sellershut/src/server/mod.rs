@@ -33,7 +33,10 @@ use axum::{
 };
 use tracing::{Span, info, info_span};
 
-use crate::hut::{entities::{HutUser, Person, PersonAcceptedActivities}, Hut};
+use crate::hut::{
+    Hut,
+    entities::{HutUser, Person, PersonAcceptedActivities},
+};
 
 pub async fn serve(config: &FederationConfig<Hut>) -> Result<()> {
     let hostname = config.domain();

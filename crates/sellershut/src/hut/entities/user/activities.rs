@@ -1,7 +1,7 @@
+use activitypub_federation::config::Data;
 use activitypub_federation::traits::ActivityHandler;
 use serde::{Deserialize, Serialize};
 use url::Url;
-use activitypub_federation::config::Data;
 
 use crate::hut::activities::follow::Follow;
 

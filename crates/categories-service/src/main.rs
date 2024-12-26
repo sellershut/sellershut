@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
+use categories_service::AppConfig;
 use clap::Parser;
 use svc_infra::{Configuration, Services, tracing::TracingBuilder};
-use categories_service::AppConfig;
 
 /// categories-service
 #[derive(Parser, Debug)]
