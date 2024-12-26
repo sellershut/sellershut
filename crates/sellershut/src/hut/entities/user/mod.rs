@@ -14,7 +14,7 @@ use sellershut_core::users::{QueryUserByIdRequest, UpsertUserRequest, User};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use tonic::{IntoRequest, async_trait};
-use tracing::{Instrument, info_span};
+use tracing::{Instrument, debug, info_span};
 use url::Url;
 
 use crate::server::error::AppError;
@@ -26,7 +26,7 @@ pub struct HutUser {
     pub display_name: Option<String>,
     pub avatar_url: Option<Url>,
     pub email: Option<String>,
-    pub followers: Vec<Url>,
+    pub followers: Vec<ObjectId<HutUser>>,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
     pub last_refreshed_at: OffsetDateTime,
@@ -45,7 +45,11 @@ impl TryFrom<User> for HutUser {
         } else {
             None
         };
-        let followers: Result<Vec<_>, _> = value.followers.iter().map(|f| Url::parse(f)).collect();
+        let followers: Result<Vec<_>, _> = value
+            .followers
+            .iter()
+            .map(|f| Url::parse(f).map(Into::into))
+            .collect();
         let followers = followers?;
 
         Ok(Self {
@@ -107,16 +111,21 @@ impl Object for HutUser {
         let query_by_id = QueryUserByIdRequest {
             id: object_id.to_string(),
         };
+        debug!(id = ?object_id, "getting user");
+
         let resp = client
             .query_user_by_id(query_by_id.into_request())
+            .instrument(info_span!("grpc.user.get"))
             .await?
             .into_inner()
             .user;
 
         if let Some(resp) = resp {
+            debug!("user found {resp:?}");
             let user = Self::try_from(resp)?;
             Ok(Some(user))
         } else {
+            debug!("user not found");
             Ok(None)
         }
     }
@@ -161,10 +170,13 @@ impl Object for HutUser {
     #[doc = " create and update, so an `upsert` operation should be used."]
     #[must_use]
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
+        let id = json.id;
+        debug!(id = ?id, "upserting user");
+
         let request = UpsertUserRequest {
             user: User {
                 username: json.preferred_username,
-                id: json.id.into_inner().to_string(),
+                ap_id: id.clone().into_inner().to_string(),
                 public_key: json.public_key.public_key_pem,
                 private_key: None,
                 inbox: json.inbox.to_string(),
@@ -181,6 +193,7 @@ impl Object for HutUser {
             .await?
             .into_inner()
             .user;
+        debug!(id = ?id, "user upserted");
 
         HutUser::try_from(resp)
     }

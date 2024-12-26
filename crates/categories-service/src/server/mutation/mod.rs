@@ -21,6 +21,16 @@ impl MutateCategories for ServiceState {
         todo!()
     }
 
+    #[doc = " Upsert a category"]
+    #[must_use]
+    #[instrument(skip(self), err(Debug))]
+    async fn upsert(
+        &self,
+        _request: tonic::Request<UpsertCategoryRequest>,
+    ) -> Result<tonic::Response<Category>, tonic::Status> {
+        todo!()
+    }
+
     #[doc = " Update a category"]
     #[must_use]
     #[instrument(skip(self), err(Debug))]

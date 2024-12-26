@@ -3,7 +3,7 @@ create table category (
     id varchar(21) primary key,
     ap_id varchar unique not null,
     name varchar not null,
-    sub_categories varchar[] not null, -- array of ids
+    sub_categories jsonb[] not null, -- array of ids
     image_url varchar, -- optional image url
     local boolean not null,
     parent_id varchar references category(ap_id) on delete cascade, -- foreign key to self

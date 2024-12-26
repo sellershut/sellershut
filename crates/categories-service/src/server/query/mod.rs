@@ -1,6 +1,7 @@
 use sellershut_core::{
     categories::{
-        Category, Connection, GetCategoryRequest, GetSubCategoriesRequest,
+        Connection, GetAllSubCategoriesRequest, GetAllSubCategoriesResponse,
+        GetCategoryByIdResponse, GetCategoryRequest, GetSubCategoriesRequest,
         query_categories_server::QueryCategories,
     },
     common::pagination::Cursor,
@@ -27,7 +28,7 @@ impl QueryCategories for ServiceState {
     async fn category_by_id(
         &self,
         _request: tonic::Request<GetCategoryRequest>,
-    ) -> Result<tonic::Response<Category>, tonic::Status> {
+    ) -> Result<tonic::Response<GetCategoryByIdResponse>, tonic::Status> {
         todo!()
     }
 
@@ -38,6 +39,16 @@ impl QueryCategories for ServiceState {
         &self,
         _request: tonic::Request<GetSubCategoriesRequest>,
     ) -> Result<tonic::Response<Connection>, tonic::Status> {
+        todo!()
+    }
+
+    #[doc = " get subcategories"]
+    #[must_use]
+    #[instrument(skip(self), err(Debug))]
+    async fn all_sub_categories(
+        &self,
+        _request: tonic::Request<GetAllSubCategoriesRequest>,
+    ) -> Result<tonic::Response<GetAllSubCategoriesResponse>, tonic::Status> {
         todo!()
     }
 }

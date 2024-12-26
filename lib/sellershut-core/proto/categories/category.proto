@@ -10,7 +10,7 @@ import "proto/common/pagination.proto";
 message Category {
   string id = 1; // A unique identifier, it should be an 21 character ID
   string name = 2; // Human readable name
-  repeated string sub_categories = 3; // A list of sub categories of this current category
+  repeated Category sub_categories = 3; // A list of sub categories of this current category
   optional string image_url = 4; // An optional image denoting this category
   optional string parent_id = 5; // The direct parent of this category (if applicable)
   google.protobuf.Timestamp created_at = 6; // Timestamp indicating when this category was created
@@ -62,14 +62,32 @@ message CacheCategoriesConnectionRequest {
   common.pagination.Cursor pagination = 2; // Pagination Properties
 }
 
+// Get category response
+message GetCategoryByIdResponse {
+    // Category
+    optional Category category = 1;
+}
+
+// Get all subcategories request
+message GetAllSubCategoriesRequest {
+    optional string id = 1;
+}
+
+// Get all subcategories response
+message GetAllSubCategoriesResponse {
+    repeated Category categories = 1;
+}
+
 // The Category Query service
 service QueryCategories {
   // gets all categories
   rpc Categories (common.pagination.Cursor) returns (Connection) {}
   // get category by id
-  rpc CategoryById (GetCategoryRequest) returns (Category) {}
+  rpc CategoryById (GetCategoryRequest) returns (GetCategoryByIdResponse) {}
   // get subcategories
   rpc SubCategories (GetSubCategoriesRequest) returns (Connection) {}
+  // get all subcategories
+  rpc AllSubCategories (GetAllSubCategoriesRequest) returns (GetAllSubCategoriesResponse) {}
 }
 
 // Category Mutation Service
@@ -78,6 +96,8 @@ service MutateCategories {
   rpc Create (UpsertCategoryRequest) returns (Category) {}
   // Update a category
   rpc Update (UpsertCategoryRequest) returns (Category) {}
+  // Update a category
+  rpc Upsert (UpsertCategoryRequest) returns (Category) {}
   // Delete a category
   rpc Delete (DeleteCategoryRequest) returns (google.protobuf.Empty) {}
 }
