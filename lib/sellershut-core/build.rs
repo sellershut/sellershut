@@ -1,6 +1,7 @@
 enum Entity {
     User,
     Category,
+    Listing,
 }
 
 impl Entity {
@@ -8,6 +9,7 @@ impl Entity {
         match self {
             Entity::User => "users",
             Entity::Category => "categories",
+            Entity::Listing => "listings",
         }
         .into()
     }
@@ -15,6 +17,7 @@ impl Entity {
         match self {
             Entity::User => "proto/users/user.proto",
             Entity::Category => "proto/categories/category.proto",
+            Entity::Listing => "proto/listings/listing.proto",
         }
         .into()
     }
@@ -24,6 +27,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("cargo:rerun-if-changed=proto");
 
     let mut protos = vec![];
+
+    if cfg!(feature = "listings") {
+        protos.push(Entity::Listing);
+    }
 
     if cfg!(feature = "users") {
         protos.push(Entity::User);

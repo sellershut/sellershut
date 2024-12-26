@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package listings;
+
+import "google/protobuf/timestamp.proto";
+import "proto/google/type/money.proto";
+
+enum Status {
+  ACTIVE = 0;
+  SOLD = 1;
+  INACTIVE = 2;
+}
+
+message Listing {
+  string id = 1;
+  string user_id = 2;
+  bool local = 3;
+  string title = 4;
+  string description = 5;
+  optional google.protobuf.Timestamp expires_at = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+  string ap_id = 9;
+  bool active = 10;
+  int32 quantity = 11;
+  Status status = 12;
+  google.type.Money price = 13;
+}
+
+message CreateListingRequest {
+  Listing listing = 1;
+}
+
+message CreateListingResponse {
+  Listing listing = 1;
+}
+
+message QueryListingByIdRequest {
+  string id = 1;
+}
+
+message QueryListingByIdResponse {
+  Listing listing = 1;
+}
+
+service MutateListings {
+  rpc CreateUser (CreateListingRequest) returns (CreateListingResponse) {}
+}
+
+service QueryListings {
+  rpc QueryListingsById (QueryListingByIdRequest) returns (QueryListingByIdResponse) {}
+}

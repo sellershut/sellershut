@@ -1,3 +1,8 @@
+#[cfg(feature = "listings")]
+pub mod r#type {
+    include!(concat!(env!("OUT_DIR"), "/google.r#type.rs"));
+}
+
 pub mod protobuf {
     include!(concat!(env!("OUT_DIR"), "/google.protobuf.rs"));
 
