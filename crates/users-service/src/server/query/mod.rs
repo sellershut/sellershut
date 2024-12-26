@@ -79,7 +79,7 @@ impl QueryUsers for ServiceState {
     ) -> Result<tonic::Response<QueryUserByIdResponse>, tonic::Status> {
         let id = request.into_inner().id;
 
-        let user = sqlx::query_as!(entity::User, "select * from \"user\" where id = $1", id)
+        let user = sqlx::query_as!(entity::User, "select * from \"user\" where ap_id = $1", id)
             .fetch_optional(&self.database)
             .await
             .map_err(|e| tonic::Status::unavailable(e.to_string()))?;

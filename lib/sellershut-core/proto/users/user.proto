@@ -19,6 +19,7 @@ message User {
   required bool local = 11;
   required google.protobuf.Timestamp last_refreshed_at = 12;
   optional string display_name = 13;
+  required string ap_id = 14;
 }
 
 message CreateUserRequest {

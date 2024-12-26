@@ -19,12 +19,13 @@ impl MutateUsers for ServiceState {
         request: tonic::Request<CreateUserRequest>,
     ) -> Result<tonic::Response<CreateUserResponse>, tonic::Status> {
         let data = request.into_inner().user;
+        let id = sellershut_utils::id::generate_id();
 
         let user = sqlx::query_as!(
             entity::User,
-            "insert into \"user\" (id, username, followers, avatar_url, inbox, public_key, private_key, local, email, display_name)
-                values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning *",
-            &data.id,
+            "insert into \"user\" (id, username, followers, avatar_url, inbox, public_key, private_key, local, email, display_name, ap_id)
+                values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning *",
+                id,
             &data.username,
             &data.followers,
             data.avatar_url,
@@ -34,6 +35,7 @@ impl MutateUsers for ServiceState {
             &data.local,
             data.email,
             data.display_name,
+            &data.ap_id,
         )
         .fetch_one(&self.database)
         .instrument(debug_span!("pg.insert"))
@@ -54,12 +56,13 @@ impl MutateUsers for ServiceState {
         request: tonic::Request<UpsertUserRequest>,
     ) -> Result<tonic::Response<UpsertUserResponse>, tonic::Status> {
         let data = request.into_inner().user;
+        let id = sellershut_utils::id::generate_id();
 
         let user = sqlx::query_as!(
             entity::User,
-            "insert into \"user\" (id, username, followers, avatar_url, inbox, public_key, private_key, local, email, display_name)
-                values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-                on conflict (id)
+            "insert into \"user\" (id, username, followers, avatar_url, inbox, public_key, private_key, local, email, display_name, ap_id)
+                values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                on conflict (ap_id)
                 do update 
                 set username = excluded.username,
                     followers = excluded.followers,
@@ -67,9 +70,10 @@ impl MutateUsers for ServiceState {
                     inbox = excluded.inbox,
                     public_key = excluded.public_key,
                     private_key = excluded.private_key,
+                    id = excluded.id,
                     local = excluded.local
                 returning *",
-            &data.id,
+            id,
             &data.username,
             &data.followers,
             data.avatar_url,
@@ -78,7 +82,8 @@ impl MutateUsers for ServiceState {
             data.private_key.as_deref(),
             &data.local,
             data.email,
-            data.display_name
+            data.display_name,
+            &data.ap_id,
         )
         .fetch_one(&self.database)
         .instrument(debug_span!("pg.upsert"))

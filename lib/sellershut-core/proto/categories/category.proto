@@ -16,6 +16,7 @@ message Category {
   google.protobuf.Timestamp created_at = 6; // Timestamp indicating when this category was created
   google.protobuf.Timestamp updated_at = 7; // Timestamp indicating when this category was last updated
   bool local = 8; // Is this a local item
+  string ap_id = 9; // Federated id
 }
 
 // A response node

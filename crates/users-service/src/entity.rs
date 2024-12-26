@@ -6,6 +6,7 @@ use time::OffsetDateTime;
 #[derive(Debug, Deserialize, Clone)]
 pub struct User {
     pub id: String,
+    pub ap_id: String,
     pub username: String,
     pub avatar_url: Option<String>,
     pub display_name: Option<String>,
@@ -40,6 +41,7 @@ impl From<User> for sellershut_core::users::User {
             updated_at: value.updated_at.into(),
             followers: value.followers.col.into_iter().collect::<Vec<_>>(),
             id: value.id,
+            ap_id: value.ap_id,
             avatar_url: value.avatar_url,
             display_name: value.display_name,
             email: value.email,
@@ -61,6 +63,7 @@ impl TryFrom<sellershut_core::users::User> for User {
         let updated = value.updated_at;
         Ok(Self {
             id: value.id,
+            ap_id: value.ap_id,
             username: value.username,
             avatar_url: value.avatar_url,
             email: value.email,
