@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package common.pagination;
+
+// Cursor Pagination
+message Cursor {
+    // Cursor value
+    message CursorValue {
+        // After or Before
+        oneof cursor_type {
+            // Cursor indicating the position after which results should be fetched.
+            string after = 1;
+
+            // Cursor indicating the position before which results should be fetched.
+            string before = 2;
+        }
+    }
+    // Cursor value
+    optional CursorValue cursor_value = 1;
+    
+    // Result count
+    oneof index {
+        // Maximum number of results to fetch starting after the "after" cursor.
+        int32 first = 3;
+
+        // Maximum number of results to fetch ending before the "before" cursor.
+        int32 last = 4;
+    }
+}
+
+// Offset pagination
+message Offset {
+    // The offset of the first item returned in the results
+    int32 offset = 1;
+    // The maximum number of entries to return
+    int32 limit = 2;
+}
+
+// PageInfo represents information about the pagination state.
+message PageInfo {
+  // Whether there is a next page available.
+  bool hasNextPage = 1;
+  // Whether there is a previous page available.
+  bool hasPreviousPage = 2;
+  // The cursor marking the start of the current page.
+  optional string startCursor = 3;
+  // The cursor marking the end of the current page.
+  optional string endCursor = 4;
+}

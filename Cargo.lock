@@ -385,6 +385,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "325918d6fe32f23b19878fe4b34794ae41fc19ddbe53b10571a4874d44ffd39b"
 
 [[package]]
+name = "categories-service"
+version = "0.1.0"
+dependencies = [
+ "sellershut-core",
+]
+
+[[package]]
 name = "cc"
 version = "1.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2370,6 +2377,7 @@ dependencies = [
 name = "sellershut-core"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "prost",
  "serde",
  "time",

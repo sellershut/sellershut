@@ -10,6 +10,7 @@ license = "AGPL-3.0-only"
 anyhow = "1.0.95"
 activitypub_federation = { version = "0.6.1", default-features = false }
 axum = "0.7.9"
+base64 = "0.22.1"
 chrono = "0.4.39"
 clap = "4.5.23"
 config = { version = "0.15.4", default-features = false }

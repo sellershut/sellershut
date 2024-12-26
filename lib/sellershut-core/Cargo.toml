@@ -6,6 +6,7 @@ license.workspace = true
 
 [dependencies]
 prost.workspace = true
+base64 = { optional = true, workspace = true }
 serde = { optional = true, workspace = true }
 time = { optional = true, workspace = true }
 tonic.workspace = true
@@ -13,9 +14,12 @@ tonic-types = { optional = true, version = "0.12.2" }
 
 [features]
 default = []
+categories = []
 users = []
 rpc-server-users = ["users", "dep:tonic-types"]
 rpc-client-users = ["users", "dep:tonic-types"]
+rpc-server-categories = ["categories", "dep:base64", "dep:tonic-types"]
+rpc-client-categories = ["categories", "dep:tonic-types"]
 serde = ["serde/derive"]
 time = ["dep:time"]
 

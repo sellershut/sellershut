@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package categories;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "proto/common/pagination.proto";
+
+// A category
+message Category {
+  string id = 1; // A unique identifier, it should be an 21 character ID
+  string name = 2; // Human readable name
+  repeated string sub_categories = 3; // A list of sub categories of this current category
+  optional string image_url = 4; // An optional image denoting this category
+  optional string parent_id = 5; // The direct parent of this category (if applicable)
+  google.protobuf.Timestamp created_at = 6; // Timestamp indicating when this category was created
+  google.protobuf.Timestamp updated_at = 7; // Timestamp indicating when this category was last updated
+  bool local = 8; // Is this a local item
+}
+
+// A response node
+message Node {
+  // A category
+  Category node = 1;
+  // Pagination cursor
+  string cursor = 2;
+}
+
+// Connection contains a list of Node objects and the pagination information.
+message Connection {
+  // The list of nodes in the current page.
+  repeated Node edges = 1;
+  // Information about the pagination state.
+  common.pagination.PageInfo pageInfo = 2;
+}
+
+// Delete a category
+message DeleteCategoryRequest {
+  string id = 1; // The ID of the category to delete
+}
+
+// Update a category
+message UpsertCategoryRequest {
+  Category category = 1; // Payload
+}
+
+// Get a category
+message GetCategoryRequest {
+  string id = 1; // The ID of the category to retrieve
+}
+
+// Get sub categories
+message GetSubCategoriesRequest {
+  optional string id = 1; // The optional ID of the category to retrieve. Skip to return top-level categories
+  common.pagination.Cursor pagination = 2; // Pagination Properties
+}
+
+// Cache categories
+message CacheCategoriesConnectionRequest {
+  Connection connection = 1; // Connection details
+  common.pagination.Cursor pagination = 2; // Pagination Properties
+}
+
+// The Category Query service
+service QueryCategories {
+  // gets all categories
+  rpc Categories (common.pagination.Cursor) returns (Connection) {}
+  // get category by id
+  rpc CategoryById (GetCategoryRequest) returns (Category) {}
+  // get subcategories
+  rpc SubCategories (GetSubCategoriesRequest) returns (Connection) {}
+}
+
+// Category Mutation Service
+service MutateCategories {
+  // Create a category
+  rpc Create (UpsertCategoryRequest) returns (Category) {}
+  // Update a category
+  rpc Update (UpsertCategoryRequest) returns (Category) {}
+  // Delete a category
+  rpc Delete (DeleteCategoryRequest) returns (google.protobuf.Empty) {}
+}
