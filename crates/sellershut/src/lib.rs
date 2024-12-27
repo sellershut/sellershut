@@ -18,6 +18,10 @@ pub struct HutConfig {
     pub otel_endpoint: String,
     #[serde(rename = "users-endpoint")]
     pub users_endpoint: String,
+    #[serde(rename = "categories-endpoint")]
+    pub categories_endpoint: String,
+    #[serde(rename = "listings-endpoint")]
+    pub listings_endpoint: String,
 }
 
 pub async fn run(hut_config: &HutConfig, config: Configuration) -> Result<(), AppError> {

@@ -17,6 +17,7 @@ prost.workspace = true
 secrecy.workspace = true
 sellershut-core = { workspace = true, features = [
     "rpc-client-categories",
+    "rpc-client-listings",
     "rpc-client-users",
     "time",
 ] }

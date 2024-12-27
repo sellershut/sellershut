@@ -14,6 +14,9 @@ use sellershut_core::{
         mutate_categories_client::MutateCategoriesClient,
         query_categories_client::QueryCategoriesClient,
     },
+    listings::{
+        mutate_listings_client::MutateListingsClient, query_listings_client::QueryListingsClient,
+    },
     users::{
         CreateUserRequest, QueryUserByIdRequest, QueryUserByNameRequest, User,
         mutate_users_client::MutateUsersClient, query_users_client::QueryUsersClient,
@@ -36,6 +39,8 @@ pub struct Hut {
     pub query_categories_client: QueryCategoriesClient<InterceptedService<Channel, MyInterceptor>>,
     pub mutate_categories_client:
         MutateCategoriesClient<InterceptedService<Channel, MyInterceptor>>,
+    pub query_listings_client: QueryListingsClient<InterceptedService<Channel, MyInterceptor>>,
+    pub mutate_listings_client: MutateListingsClient<InterceptedService<Channel, MyInterceptor>>,
     pub system_user: HutUser,
     pub domain: Arc<str>,
 }
@@ -46,7 +51,11 @@ impl Hut {
             .connect()
             .await?;
 
-        let categories_channel = Endpoint::new(hut_config.users_endpoint.to_string())?
+        let categories_channel = Endpoint::new(hut_config.categories_endpoint.to_string())?
+            .connect()
+            .await?;
+
+        let listings_channel = Endpoint::new(hut_config.listings_endpoint.to_string())?
             .connect()
             .await?;
 
@@ -60,6 +69,11 @@ impl Hut {
             QueryUsersClient::with_interceptor(users_channel.clone(), MyInterceptor);
         let mut mutate_users_client =
             MutateUsersClient::with_interceptor(users_channel, MyInterceptor);
+
+        let query_listings_client =
+            QueryListingsClient::with_interceptor(listings_channel.clone(), MyInterceptor);
+        let mutate_listings_client =
+            MutateListingsClient::with_interceptor(listings_channel, MyInterceptor);
 
         let query_categories_client =
             QueryCategoriesClient::with_interceptor(categories_channel.clone(), MyInterceptor);
@@ -109,6 +123,8 @@ impl Hut {
             query_users_client,
             query_categories_client,
             mutate_categories_client,
+            query_listings_client,
+            mutate_listings_client,
             system_user: HutUser::try_from(user).expect("err"),
             domain: hostname.into(),
         })

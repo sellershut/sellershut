@@ -9,5 +9,6 @@ instance-name = "alpha"
 otel-endpoint = "http://localhost:4317"
 users-endpoint = "http://localhost:1304"
 categories-endpoint = "http://localhost:1610"
+listings-endpoint = "http://localhost:1810"
 
 # vim:ft=toml

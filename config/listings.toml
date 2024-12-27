@@ -1,0 +1,17 @@
+[application]
+env = "development"
+port = 1810
+log-level = "debug"
+
+[misc]
+otel-endpoint = "http://localhost:4317"
+
+[database]
+pool_size = 100
+port = 5432
+name = "listings"
+host = "localhost"
+user = "postgres"
+password = "password"
+
+# vim:ft=toml
