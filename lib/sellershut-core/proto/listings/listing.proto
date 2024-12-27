@@ -4,6 +4,7 @@ package listings;
 
 import "google/protobuf/timestamp.proto";
 import "proto/google/type/money.proto";
+import "proto/google/type/latlng.proto";
 
 enum Status {
   ACTIVE = 0;
@@ -25,6 +26,7 @@ message Listing {
   Status status = 11;
   google.type.Money price = 12;
   repeated string attachments = 13; // image urls
+  google.type.LatLng location = 14;
 }
 
 message CreateListingRequest {
