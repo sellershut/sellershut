@@ -20,53 +20,12 @@ use url::Url;
 use crate::server::error::AppError;
 
 #[derive(Debug, Clone)]
-pub struct HutUser {
-    pub id: ObjectId<HutUser>,
-    pub username: String,
-    pub display_name: Option<String>,
-    pub avatar_url: Option<Url>,
-    pub email: Option<String>,
-    pub followers: Vec<ObjectId<HutUser>>,
-    pub created_at: OffsetDateTime,
-    pub updated_at: OffsetDateTime,
-    pub last_refreshed_at: OffsetDateTime,
-    pub inbox: Url,
-    pub public_key: String,
-    pub private_key: Option<String>,
-    pub local: bool,
-}
+pub struct HutUser(pub sellershut_core::users::User);
 
-impl TryFrom<User> for HutUser {
-    type Error = AppError;
-    fn try_from(value: User) -> Result<Self, Self::Error> {
-        let id = Url::parse(&value.ap_id)?;
-        let avatar_url = if let Some(ref url) = value.avatar_url {
-            Some(Url::parse(url)?)
-        } else {
-            None
-        };
-        let followers: Result<Vec<_>, _> = value
-            .followers
-            .iter()
-            .map(|f| Url::parse(f).map(Into::into))
-            .collect();
-        let followers = followers?;
-
-        Ok(Self {
-            id: id.into(),
-            avatar_url,
-            created_at: value.created_at.try_into()?,
-            last_refreshed_at: value.last_refreshed_at.try_into()?,
-            updated_at: value.updated_at.try_into()?,
-            username: value.username,
-            local: value.local,
-            private_key: value.private_key,
-            public_key: value.public_key,
-            display_name: value.display_name,
-            email: value.email,
-            followers,
-            inbox: Url::parse(&value.inbox)?,
-        })
+impl HutUser {
+    pub fn id(&self) -> Result<ObjectId<HutUser>, AppError> {
+        let id = Url::parse(&self.0.ap_id)?;
+        Ok(id.into())
     }
 }
 
@@ -95,7 +54,13 @@ impl Object for HutUser {
     type Error = AppError;
 
     fn last_refreshed_at(&self) -> Option<DateTime<Utc>> {
-        let dt = self.last_refreshed_at.unix_timestamp();
+        let dt: OffsetDateTime = self
+            .0
+            .last_refreshed_at
+            .try_into()
+            .expect("could not convert date time");
+
+        let dt = dt.unix_timestamp();
         DateTime::from_timestamp_millis(dt)
     }
 
@@ -122,7 +87,7 @@ impl Object for HutUser {
 
         if let Some(resp) = resp {
             debug!("user found {resp:?}");
-            let user = Self::try_from(resp)?;
+            let user = HutUser(resp);
             Ok(Some(user))
         } else {
             debug!("user not found");
@@ -136,12 +101,14 @@ impl Object for HutUser {
     #[doc = " gets sent in an activity."]
     #[must_use]
     async fn into_json(self, _data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
+        let id = Url::parse(&self.0.ap_id)?;
+        let inbox = Url::parse(&self.0.inbox)?;
         Ok(Self::Kind {
-            id: self.id.clone(),
-            inbox: self.inbox.clone(),
-            name: self.display_name.clone(),
+            id: id.into(),
+            inbox,
+            name: self.0.display_name.clone(),
             kind: Default::default(),
-            preferred_username: self.username.clone(),
+            preferred_username: self.0.username.clone(),
             public_key: self.public_key(),
         })
     }
@@ -195,24 +162,24 @@ impl Object for HutUser {
             .user;
         debug!(id = ?id, "user upserted");
 
-        HutUser::try_from(resp)
+        Ok(HutUser(resp))
     }
 }
 
 impl Actor for HutUser {
     fn id(&self) -> Url {
-        self.id.inner().clone()
+        Url::parse(&self.0.ap_id).expect("ap id to be url")
     }
 
     fn public_key_pem(&self) -> &str {
-        &self.public_key
+        &self.0.public_key
     }
 
     fn private_key_pem(&self) -> Option<String> {
-        self.private_key.clone()
+        self.0.private_key.clone()
     }
 
     fn inbox(&self) -> Url {
-        self.inbox.clone()
+        Url::parse(&self.0.inbox).expect("inbox to be url")
     }
 }

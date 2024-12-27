@@ -129,6 +129,6 @@ async fn webfinger(
     let db_user = data.read_user(name).await?;
     Ok(Json(build_webfinger_response(
         query.resource,
-        db_user.id.into_inner(),
+        db_user.id()?.into_inner(),
     )))
 }

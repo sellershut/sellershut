@@ -23,7 +23,7 @@ impl HutUser {
         let other: HutUser = webfinger_resolve_actor(other, data).await.unwrap();
 
         let id = generate_object_id(data.domain())?;
-        let follow = Follow::new(self.id.clone(), other.id.clone(), id.clone());
+        let follow = Follow::new(self.id()?, other.id()?, id.clone());
 
         self.send(follow, vec![other.shared_inbox_or_inbox()], true, data)
             .await?;

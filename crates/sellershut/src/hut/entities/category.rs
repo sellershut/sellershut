@@ -19,12 +19,7 @@ use url::Url;
 use crate::{hut::Hut, server::error::AppError};
 
 #[derive(Debug, Clone)]
-pub struct HutCategory {
-    pub id: ObjectId<HutCategory>,
-    pub name: String,
-    pub sub_categories: Vec<HutCategory>,
-    pub image: Option<Url>,
-}
+pub struct HutCategory(pub sellershut_core::categories::Category);
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -58,42 +53,39 @@ impl From<Category> for sellershut_core::categories::Category {
     }
 }
 
-impl From<HutCategory> for Category {
-    fn from(value: HutCategory) -> Self {
-        Self {
-            kind: Default::default(),
-            name: value.name.clone(),
-            id: value.id.into_inner().into(),
-            total_items: value.sub_categories.len(),
-            items: value.sub_categories.into_iter().map(From::from).collect(),
-            image: value.image.map(|category| CategoryImage {
-                kind: Default::default(),
-                name: format!("{} image", value.name),
-                url: category,
-            }),
-        }
-    }
-}
-
-impl TryFrom<sellershut_core::categories::Category> for HutCategory {
+impl TryFrom<HutCategory> for Category {
     type Error = AppError;
 
-    fn try_from(value: sellershut_core::categories::Category) -> Result<Self, Self::Error> {
+    fn try_from(value: HutCategory) -> Result<Self, Self::Error> {
+        let value = value.0;
         let id = Url::parse(&value.ap_id)?;
-        let sub_categories: Result<Vec<HutCategory>, _> = value
+        let image = value.image_url.map(|category| {
+            Url::parse(&category).map(|url| CategoryImage {
+                kind: Default::default(),
+                name: format!("{} image", value.name),
+                url,
+            })
+        });
+
+        let sub_categories: Result<Vec<_>, _> = value
             .sub_categories
             .into_iter()
-            .map(|sub_category| HutCategory::try_from(sub_category))
+            .map(|category| {
+                let category = HutCategory(category);
+                Category::try_from(category)
+            })
             .collect();
 
-        let image_url = value.image_url.map(|value| Url::parse(&value));
+        let sub_categories = sub_categories?;
 
         Ok(Self {
+            kind: Default::default(),
+            name: value.name.clone(),
             id: id.into(),
-            name: value.name,
-            sub_categories: sub_categories?,
-            image: match image_url {
-                Some(value) => Some(value?),
+            total_items: sub_categories.len(),
+            items: sub_categories,
+            image: match image {
+                Some(result) => Some(result?),
                 None => None,
             },
         })
@@ -140,8 +132,7 @@ impl Object for HutCategory {
 
         if let Some(resp) = resp {
             debug!("category found {resp:?}");
-            let category = Self::try_from(resp)?;
-            Ok(Some(category))
+            Ok(Some(HutCategory(resp)))
         } else {
             debug!("category not found");
             Ok(None)
@@ -154,6 +145,7 @@ impl Object for HutCategory {
     #[doc = " gets sent in an activity."]
     #[must_use]
     async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
+        let id = Url::parse(&self.0.ap_id)?;
         let mut client = data.query_categories_client.clone();
         let sub_categories = GetAllSubCategoriesRequest::default();
         let sub_categories: Result<Vec<_>, _> = client
@@ -168,22 +160,32 @@ impl Object for HutCategory {
             .into_inner()
             .categories
             .into_iter()
-            .map(HutCategory::try_from)
+            .map(|category| {
+                let category = HutCategory(category);
+                Category::try_from(category)
+            })
             .collect();
 
-        let sub_categories = sub_categories?.into_iter().map(Category::from).collect();
+        let sub_categories = sub_categories?;
+
+        let image = self.0.image_url.map(|category| {
+            Url::parse(&category).map(|url| CategoryImage {
+                kind: Default::default(),
+                name: format!("{} image", self.0.name),
+                url,
+            })
+        });
 
         Ok(Self::Kind {
-            id: self.id.clone(),
+            id: id.into(),
             kind: Default::default(),
-            name: self.name.clone(),
-            total_items: self.sub_categories.len(),
+            name: self.0.name.clone(),
+            total_items: sub_categories.len(),
             items: sub_categories,
-            image: self.image.map(|category| CategoryImage {
-                kind: Default::default(),
-                name: format!("{} image", self.name),
-                url: category,
-            }),
+            image: match image {
+                Some(res) => Some(res?),
+                None => None,
+            },
         })
     }
 
@@ -231,6 +233,6 @@ impl Object for HutCategory {
             .await?
             .into_inner();
 
-        HutCategory::try_from(resp)
+        Ok(HutCategory(resp))
     }
 }

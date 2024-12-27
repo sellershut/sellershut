@@ -137,7 +137,7 @@ impl Hut {
             mutate_categories_client,
             query_listings_client,
             mutate_listings_client,
-            system_user: HutUser::try_from(user).expect("err"),
+            system_user: HutUser(user),
             domain: hostname.into(),
         })
     }
@@ -161,7 +161,7 @@ impl Hut {
             .user
             .ok_or_else(|| anyhow::anyhow!("user does not exist"))?;
 
-        HutUser::try_from(resp)
+        Ok(HutUser(resp))
     }
 }
 
