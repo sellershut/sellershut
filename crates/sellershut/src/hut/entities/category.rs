@@ -6,12 +6,14 @@ use activitypub_federation::{
     traits::Object,
 };
 use axum::async_trait;
+use opentelemetry_semantic_conventions::trace;
 use sellershut_core::categories::{
     GetAllSubCategoriesRequest, GetCategoryRequest, UpsertCategoryRequest,
 };
 use serde::{Deserialize, Serialize};
 use tonic::IntoRequest;
-use tracing::{Instrument, debug, info_span};
+use tracing::{Instrument, debug};
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 use url::Url;
 
 use crate::{hut::Hut, server::error::AppError};
@@ -126,7 +128,12 @@ impl Object for HutCategory {
 
         let resp = client
             .category_by_id(req)
-            .instrument(info_span!("grpc.category.id"))
+            .instrument({
+                let span = tracing::info_span!("grpc.call");
+                span.set_attribute(trace::RPC_SERVICE, "QueryCategoriesClient");
+                span.set_attribute(trace::RPC_METHOD, "CategoryById");
+                span
+            })
             .await?
             .into_inner()
             .category;
@@ -151,6 +158,12 @@ impl Object for HutCategory {
         let sub_categories = GetAllSubCategoriesRequest::default();
         let sub_categories: Result<Vec<_>, _> = client
             .all_sub_categories(sub_categories.into_request())
+            .instrument({
+                let span = tracing::info_span!("grpc.call");
+                span.set_attribute(trace::RPC_SERVICE, "QueryCategoriesClient");
+                span.set_attribute(trace::RPC_METHOD, "AllSubCategories");
+                span
+            })
             .await?
             .into_inner()
             .categories
@@ -207,7 +220,16 @@ impl Object for HutCategory {
         }
         .into_request();
 
-        let resp = client.upsert(upsert_req).await?.into_inner();
+        let resp = client
+            .upsert(upsert_req)
+            .instrument({
+                let span = tracing::info_span!("grpc.call");
+                span.set_attribute(trace::RPC_SERVICE, "MutateCategoriesClient");
+                span.set_attribute(trace::RPC_METHOD, "Upsert");
+                span
+            })
+            .await?
+            .into_inner();
 
         HutCategory::try_from(resp)
     }

@@ -9,6 +9,7 @@ anyhow.workspace = true
 clap = { workspace = true, features = ["derive"] }
 config = { workspace = true, features = ["toml"] }
 opentelemetry.workspace = true
+opentelemetry-semantic-conventions.workspace = true
 prost.workspace = true
 secrecy = { workspace = true, features = ["serde"] }
 sellershut-core = { workspace = true, features = [

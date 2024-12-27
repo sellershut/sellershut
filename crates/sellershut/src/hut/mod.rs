@@ -1,9 +1,10 @@
 use entities::HutUser;
 use opentelemetry::global;
+use opentelemetry_semantic_conventions::trace;
 use sellershut_utils::grpc::MetadataMap;
 use std::sync::Arc;
 use time::OffsetDateTime;
-use tracing::{Instrument, Span, info, info_span};
+use tracing::{Instrument, Span, info};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 use url::Url;
 pub mod activities;
@@ -81,9 +82,15 @@ impl Hut {
             MutateCategoriesClient::with_interceptor(categories_channel, MyInterceptor);
 
         debug!(id = id, "getting user by id");
+
         let user = query_users_client
             .query_user_by_id(user)
-            .instrument(info_span!("grpc.get.user"))
+            .instrument({
+                let span = tracing::info_span!("grpc.call");
+                span.set_attribute(trace::RPC_SERVICE, "QueryUsersClient");
+                span.set_attribute(trace::RPC_METHOD, "QueryUserById");
+                span
+            })
             .await?
             .into_inner();
 
@@ -112,7 +119,12 @@ impl Hut {
 
             mutate_users_client
                 .create_user(request)
-                .instrument(info_span!("grpc.create.user"))
+                .instrument({
+                    let span = tracing::info_span!("grpc.call");
+                    span.set_attribute(trace::RPC_SERVICE, "MutateUsersClient");
+                    span.set_attribute(trace::RPC_METHOD, "CreateUser");
+                    span
+                })
                 .await?
                 .into_inner()
                 .user
@@ -138,7 +150,12 @@ impl Hut {
         let mut client = self.query_users_client.clone();
         let resp = client
             .query_local_user_by_name(user_by_name)
-            .instrument(info_span!("grpc.get.user"))
+            .instrument({
+                let span = tracing::info_span!("grpc.call");
+                span.set_attribute(trace::RPC_SERVICE, "QueryUsersClient");
+                span.set_attribute(trace::RPC_METHOD, "QueryLocalUserByName");
+                span
+            })
             .await?
             .into_inner()
             .user

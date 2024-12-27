@@ -1,10 +1,12 @@
+use opentelemetry_semantic_conventions::trace;
 use sellershut_core::users::{
     CreateUserRequest, CreateUserResponse, DeleteUserRequest, DeleteUserResponse,
     FollowUserRequest, FollowUserResponse, UpdateUserRequest, UpdateUserResponse,
     UpsertUserRequest, UpsertUserResponse, User, mutate_users_server::MutateUsers,
 };
 use tonic::async_trait;
-use tracing::{Instrument, debug_span, instrument};
+use tracing::{Instrument, instrument};
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use crate::entity;
 
@@ -38,7 +40,13 @@ impl MutateUsers for ServiceState {
             &data.ap_id,
         )
         .fetch_one(&self.database)
-        .instrument(debug_span!("pg.insert"))
+        .instrument({
+            let span = tracing::info_span!("db.query");
+            span.set_attribute(trace::DB_OPERATION_NAME, "insert");
+            span.set_attribute(trace::DB_QUERY_PARAMETER, "user");
+            span.set_attribute(trace::DB_SYSTEM, "postgres");
+            span
+        })
         .await
         .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
@@ -86,7 +94,13 @@ impl MutateUsers for ServiceState {
             &data.ap_id,
         )
         .fetch_one(&self.database)
-        .instrument(debug_span!("pg.upsert"))
+        .instrument({
+            let span = tracing::info_span!("db.query");
+            span.set_attribute(trace::DB_OPERATION_NAME, "insert");
+            span.set_attribute(trace::DB_QUERY_PARAMETER, "user");
+            span.set_attribute(trace::DB_SYSTEM, "postgres");
+            span
+        })
         .await
         .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
@@ -114,7 +128,13 @@ impl MutateUsers for ServiceState {
             &data.url,
         )
         .fetch_one(&self.database)
-        .instrument(debug_span!("pg.upsert"))
+        .instrument({
+            let span = tracing::info_span!("db.query");
+            span.set_attribute(trace::DB_OPERATION_NAME, "update");
+            span.set_attribute(trace::DB_QUERY_PARAMETER, "user");
+            span.set_attribute(trace::DB_SYSTEM, "postgres");
+            span
+        })
         .await
         .map_err(|e| tonic::Status::internal(e.to_string()))?;
 

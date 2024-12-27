@@ -1,3 +1,4 @@
+use opentelemetry_semantic_conventions::trace;
 use sellershut_core::{
     google::protobuf::Empty,
     users::{
@@ -5,7 +6,8 @@ use sellershut_core::{
         QueryUserByNameResponse, query_users_server::QueryUsers,
     },
 };
-use tracing::instrument;
+use tracing::{Instrument, instrument};
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use crate::entity;
 
@@ -36,6 +38,13 @@ impl QueryUsers for ServiceState {
             username
         )
         .fetch_optional(&self.database)
+        .instrument({
+            let span = tracing::info_span!("db.query");
+            span.set_attribute(trace::DB_OPERATION_NAME, "select");
+            span.set_attribute(trace::DB_QUERY_PARAMETER, "username");
+            span.set_attribute(trace::DB_SYSTEM, "postgres");
+            span
+        })
         .await
         .map_err(|e| tonic::Status::unavailable(e.to_string()))?;
 
@@ -61,6 +70,13 @@ impl QueryUsers for ServiceState {
             true
         )
         .fetch_optional(&self.database)
+        .instrument({
+            let span = tracing::info_span!("db.query");
+            span.set_attribute(trace::DB_OPERATION_NAME, "select");
+            span.set_attribute(trace::DB_QUERY_PARAMETER, "username");
+            span.set_attribute(trace::DB_SYSTEM, "postgres");
+            span
+        })
         .await
         .map_err(|e| tonic::Status::unavailable(e.to_string()))?;
 
@@ -81,6 +97,13 @@ impl QueryUsers for ServiceState {
 
         let user = sqlx::query_as!(entity::User, "select * from \"user\" where ap_id = $1", id)
             .fetch_optional(&self.database)
+            .instrument({
+                let span = tracing::info_span!("db.query");
+                span.set_attribute(trace::DB_OPERATION_NAME, "select");
+                span.set_attribute(trace::DB_QUERY_PARAMETER, "ap_id");
+                span.set_attribute(trace::DB_SYSTEM, "postgres");
+                span
+            })
             .await
             .map_err(|e| tonic::Status::unavailable(e.to_string()))?;
 

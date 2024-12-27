@@ -13,6 +13,7 @@ clap = { workspace = true, features = ["derive"] }
 config = { workspace = true, features = ["toml"] }
 enum_delegate = "0.2.0"
 opentelemetry.workspace = true
+opentelemetry-semantic-conventions.workspace = true
 prost.workspace = true
 secrecy.workspace = true
 sellershut-core = { workspace = true, features = [

@@ -2,6 +2,7 @@ pub mod server;
 
 use anyhow::Result;
 use opentelemetry::global;
+use opentelemetry_semantic_conventions::trace;
 use sellershut_core::listings::{
     mutate_listings_server::MutateListingsServer, query_listings_server::QueryListingsServer,
 };
@@ -32,7 +33,11 @@ pub async fn run(services: Services, configuration: Configuration) -> Result<()>
     let query_service = QueryListingsServer::with_interceptor(app_state.clone(), intercept);
     let mutate_service = MutateListingsServer::with_interceptor(app_state, intercept);
     Server::builder()
-        .trace_fn(|_| tracing::info_span!("users/server"))
+        .trace_fn(|_| {
+            let span = tracing::info_span!("listings/server");
+            span.set_attribute(trace::RPC_SERVICE, env!("CARGO_PKG_NAME"));
+            span
+        })
         .add_service(query_service)
         .add_service(mutate_service)
         .serve(addr)
