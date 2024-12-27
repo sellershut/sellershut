@@ -1,5 +1,7 @@
 mod activities;
 pub use activities::*;
+use opentelemetry_semantic_conventions::trace;
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use crate::Hut;
 use activitypub_federation::{
@@ -26,6 +28,14 @@ impl HutUser {
     pub fn id(&self) -> Result<ObjectId<HutUser>, AppError> {
         let id = Url::parse(&self.0.ap_id)?;
         Ok(id.into())
+    }
+
+    pub fn followers_url(&self) -> Result<Url, AppError> {
+        let url = Url::parse(&self.0.ap_id).map(|mut url| {
+            url.set_path("followers");
+            url
+        });
+        Ok(url?)
     }
 }
 
@@ -156,7 +166,12 @@ impl Object for HutUser {
         let mut client = data.mutate_users_client.clone();
         let resp = client
             .upsert_user(request)
-            .instrument(info_span!("grpc.user.upsert"))
+            .instrument({
+                let span = tracing::info_span!("grpc.call");
+                span.set_attribute(trace::RPC_SERVICE, "MutateUsersClient");
+                span.set_attribute(trace::RPC_METHOD, "Upsert");
+                span
+            })
             .await?
             .into_inner()
             .user;

@@ -10,7 +10,7 @@ use super::state::ServiceState;
 impl QueryListings for ServiceState {
     #[must_use]
     #[instrument(skip(self), err(Debug))]
-    async fn query_listings_by_id(
+    async fn listings_by_id(
         &self,
         _request: tonic::Request<QueryListingByIdRequest>,
     ) -> Result<tonic::Response<QueryListingByIdResponse>, tonic::Status> {

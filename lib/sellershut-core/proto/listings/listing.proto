@@ -1,4 +1,4 @@
-syntax = "proto3";
+syntax = "proto2";
 
 package listings;
 
@@ -13,36 +13,36 @@ enum Status {
 }
 
 message Listing {
-  string id = 1;
-  string user_ap_id = 2;
-  bool local = 3;
-  string title = 4;
-  string description = 5;
+  required string id = 1;
+  required string user_ap_id = 2;
+  required bool local = 3;
+  required string title = 4;
+  required string description = 5;
   optional google.protobuf.Timestamp expires_at = 6;
-  google.protobuf.Timestamp created_at = 7;
-  google.protobuf.Timestamp updated_at = 8;
-  string ap_id = 9;
-  int32 quantity = 10;
-  Status status = 11;
-  google.type.Money price = 12;
+  required google.protobuf.Timestamp created_at = 7;
+  required google.protobuf.Timestamp updated_at = 8;
+  required string ap_id = 9;
+  required int32 quantity = 10;
+  required Status status = 11;
+  required google.type.Money price = 12;
   repeated string attachments = 13; // image urls
-  google.type.LatLng location = 14;
+  required google.type.LatLng location = 14;
 }
 
 message CreateListingRequest {
-  Listing listing = 1;
+  required Listing listing = 1;
 }
 
 message CreateListingResponse {
-  Listing listing = 1;
+  required Listing listing = 1;
 }
 
 message QueryListingByIdRequest {
-  string id = 1;
+  required string ap_id = 1;
 }
 
 message QueryListingByIdResponse {
-  Listing listing = 1;
+  optional Listing listing = 1;
 }
 
 service MutateListings {
@@ -50,5 +50,5 @@ service MutateListings {
 }
 
 service QueryListings {
-  rpc QueryListingsById (QueryListingByIdRequest) returns (QueryListingByIdResponse) {}
+  rpc ListingsById (QueryListingByIdRequest) returns (QueryListingByIdResponse) {}
 }
