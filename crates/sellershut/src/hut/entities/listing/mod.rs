@@ -34,6 +34,7 @@ pub struct Listing {
     location: Location,
     published: OffsetDateTime,
     updated: OffsetDateTime,
+    pub(crate) to: Vec<Url>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
