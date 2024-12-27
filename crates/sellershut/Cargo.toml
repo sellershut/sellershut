@@ -26,7 +26,7 @@ sellershut-utils.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 svc-infra = { workspace = true, features = ["opentelemetry"] }
-time.workspace = true
+time = { workspace = true, features = ["serde"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tonic.workspace = true
 tower-http = { version = "0.6.2", features = ["request-id", "trace"] }
