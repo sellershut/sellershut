@@ -12,6 +12,16 @@ enum Status {
   INACTIVE = 2;
 }
 
+enum Condition {
+  CONDITION_UNSPECIFIED = 0;  // Default value, unspecified condition.
+  NEW = 1;                   // Item is brand new.
+  USED = 2;                  // Item has been used but is still in good condition.
+  REFURBISHED = 3;           // Item has been repaired and restored to working order.
+  LIKE_NEW = 4;              // Item shows very minimal signs of use.
+  FOR_PARTS = 5;             // Item is not functional and is sold for parts.
+  DAMAGED = 6;               // Item is damaged and may not work properly.
+}
+
 message Listing {
   required string id = 1;
   required string user_ap_id = 2;
@@ -27,6 +37,10 @@ message Listing {
   required google.type.Money price = 12;
   repeated string attachments = 13; // image urls
   required google.type.LatLng location = 14;
+  required Condition condition = 15;
+  optional string condition_details = 16;
+  required string category_ap_id = 17;
+  required bool negotiable = 18;
 }
 
 message CreateListingRequest {

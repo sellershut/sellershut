@@ -12,7 +12,11 @@ opentelemetry.workspace = true
 opentelemetry-semantic-conventions.workspace = true
 prost.workspace = true
 secrecy = { workspace = true, features = ["serde"] }
-sellershut-core = { workspace = true, features = ["rpc-server-users","serde", "time"] }
+sellershut-core = { workspace = true, features = [
+    "rpc-server-users",
+    "serde",
+    "time",
+] }
 sellershut-utils.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
@@ -24,7 +28,11 @@ sqlx = { workspace = true, features = [
     "time",
     "tls-rustls",
 ] }
-svc-infra = { workspace = true, features = ["api", "postgres", "opentelemetry"] }
+svc-infra = { workspace = true, features = [
+    "api",
+    "postgres",
+    "opentelemetry",
+] }
 time = { workspace = true, features = ["serde"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tonic.workspace = true

@@ -122,7 +122,7 @@ impl MutateUsers for ServiceState {
         let user = sqlx::query_as!(
             entity::User,
             "update \"user\" set followers = array_append(followers, $1)
-            where id = $2 and not $1 = any(followers)
+            where ap_id = $2 and not $1 = any(followers)
             returning *",
             &data.follow_url,
             &data.url,

@@ -63,8 +63,10 @@ impl Hut {
         let hostname = hut_config.hostname.as_str();
         let username = hut_config.instance_name.as_str();
 
-        let id = format!("{hostname}/{username}");
-        let user = QueryUserByIdRequest { id: id.clone() }.into_request();
+        let mut id = Url::parse(hostname)?;
+        id.set_path(&format!("users/{username}"));
+
+        let user = QueryUserByIdRequest { id: id.to_string() }.into_request();
 
         let mut query_users_client =
             QueryUsersClient::with_interceptor(users_channel.clone(), MyInterceptor);
@@ -81,7 +83,7 @@ impl Hut {
         let mutate_categories_client =
             MutateCategoriesClient::with_interceptor(categories_channel, MyInterceptor);
 
-        debug!(id = id, "getting user by id");
+        debug!(id = ?id, "getting user by id");
 
         let user = query_users_client
             .query_user_by_id(user)
@@ -95,7 +97,7 @@ impl Hut {
             .into_inner();
 
         let user = if let Some(user) = user.user {
-            info!(id = id, "system user exists");
+            info!(id = ?id, "system user exists");
             user
         } else {
             debug!("system user does not exist, creating...");
@@ -104,8 +106,12 @@ impl Hut {
             let request = CreateUserRequest {
                 user: User {
                     id: sellershut_utils::id::generate_id(),
-                    ap_id: id,
-                    inbox: Url::parse(&format!("{}/{}/inbox", hostname, &username))?.to_string(),
+                    ap_id: id.to_string(),
+                    inbox: {
+                        let mut url = id.clone();
+                        url.set_path(&format!("users/{username}/inbox"));
+                        url.to_string()
+                    },
                     username: username.to_string(),
                     public_key: keypair.public_key,
                     private_key: Some(keypair.private_key),

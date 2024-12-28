@@ -8,7 +8,6 @@ use axum::{
 };
 use error::AppError;
 use serde::Deserialize;
-use std::net::ToSocketAddrs;
 use tower_http::{
     request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer},
     trace::TraceLayer,
@@ -47,8 +46,8 @@ pub async fn serve(config: &FederationConfig<Hut>) -> Result<()> {
     let x_request_id = HeaderName::from_static("x-request-id");
 
     let app = Router::new()
-        .route("/:user/inbox", post(http_post_user_inbox))
-        .route("/:user", get(http_get_user))
+        .route("/users/:user/inbox", post(http_post_user_inbox))
+        .route("/users/:user", get(http_get_user))
         .route("/.well-known/webfinger", get(webfinger))
         .layer(FederationMiddleware::new(config))
         .layer(
@@ -75,10 +74,8 @@ pub async fn serve(config: &FederationConfig<Hut>) -> Result<()> {
             MakeRequestUuid,
         ));
 
-    let addr = hostname
-        .to_socket_addrs()?
-        .next()
-        .expect("Failed to lookup domain name");
+    let addr = url::Url::parse(hostname)?.socket_addrs(|| None)?;
+    let addr = addr.iter().next().expect("Failed to lookup domain name");
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
 

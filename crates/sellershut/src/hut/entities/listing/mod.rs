@@ -20,7 +20,7 @@ use url::Url;
 
 use crate::{hut::Hut, server::error::AppError};
 
-use super::HutUser;
+use super::{HutCategory, HutUser};
 
 #[derive(Debug, Clone)]
 pub struct HutListing(pub sellershut_core::listings::Listing);
@@ -39,6 +39,7 @@ pub struct Listing {
     location: Location,
     published: OffsetDateTime,
     updated: OffsetDateTime,
+    target: ObjectId<HutCategory>,
     // TODO: quantity
     pub(crate) to: Vec<Url>,
 }
@@ -120,6 +121,7 @@ impl Object for HutListing {
     async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
         let id = Url::parse(&self.0.ap_id)?;
         let attributed_to = Url::parse(&self.0.user_ap_id)?;
+        let target = Url::parse(&self.0.category_ap_id)?;
 
         let attributed_to: ObjectId<HutUser> = attributed_to.into();
 
@@ -141,6 +143,7 @@ impl Object for HutListing {
                 longitude: self.0.location.longitude,
                 name: Default::default(),
             },
+            target: target.into(),
             updated: self.0.updated_at.try_into()?,
             published: self.0.created_at.try_into()?,
             attachment: self
@@ -177,6 +180,7 @@ impl Object for HutListing {
         _data: &Data<Self::DataType>,
     ) -> Result<(), Self::Error> {
         verify_domains_match(json.id.inner(), expected_domain)?;
+        // TODO: check if category id is ok
         Ok(())
     }
 
