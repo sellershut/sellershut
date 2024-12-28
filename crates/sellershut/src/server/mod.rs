@@ -1,5 +1,7 @@
 pub mod error;
 
+use std::net::ToSocketAddrs;
+
 use anyhow::Result;
 use axum::{
     debug_handler,
@@ -74,8 +76,10 @@ pub async fn serve(config: &FederationConfig<Hut>) -> Result<()> {
             MakeRequestUuid,
         ));
 
-    let addr = url::Url::parse(hostname)?.socket_addrs(|| None)?;
-    let addr = addr.iter().next().expect("Failed to lookup domain name");
+    let addr = hostname
+        .to_socket_addrs()?
+        .next()
+        .expect("Failed to lookup domain name");
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
 

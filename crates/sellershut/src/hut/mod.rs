@@ -30,7 +30,7 @@ use tonic::{
 };
 use tracing::debug;
 
-use crate::{HutConfig, server::error::AppError};
+use crate::{HutConfig, get_domain_with_port, server::error::AppError};
 
 /// Instance
 #[derive(Clone)]
@@ -136,6 +136,8 @@ impl Hut {
                 .user
         };
 
+        let domain = get_domain_with_port(&hostname)?;
+
         Ok(Self {
             mutate_users_client,
             query_users_client,
@@ -144,7 +146,7 @@ impl Hut {
             query_listings_client,
             mutate_listings_client,
             system_user: HutUser(user),
-            domain: hostname.into(),
+            domain: domain.as_str().into(),
         })
     }
 
