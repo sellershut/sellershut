@@ -10,7 +10,7 @@ import "proto/common/pagination.proto";
 message Category {
   string id = 1; // A unique identifier, it should be an 21 character ID
   string name = 2; // Human readable name
-  repeated Category sub_categories = 3; // A list of sub categories of this current category
+  repeated string sub_categories = 3; // A list of sub categories of this current category
   optional string image_url = 4; // An optional image denoting this category
   optional string parent_id = 5; // The direct parent of this category (if applicable)
   google.protobuf.Timestamp created_at = 6; // Timestamp indicating when this category was created
