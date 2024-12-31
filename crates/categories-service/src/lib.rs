@@ -1,3 +1,4 @@
+pub mod entity;
 pub mod server;
 
 use anyhow::Result;

@@ -1,7 +1,7 @@
 use activitypub_federation::{
     config::Data,
     fetch::object_id::ObjectId,
-    kinds::{collection::CollectionType, object::ImageType},
+    kinds::{collection::CollectionPageType, object::ImageType},
     protocol::verification::verify_domains_match,
     traits::Object,
 };
@@ -25,12 +25,15 @@ pub struct HutCategory(pub sellershut_core::categories::Category);
 #[serde(rename_all = "camelCase")]
 pub struct Category {
     #[serde(rename = "type")]
-    kind: CollectionType,
+    kind: CollectionPageType,
     name: String,
     id: ObjectId<HutCategory>,
     total_items: usize,
+    part_of: Option<ObjectId<HutCategory>>,
     items: Vec<Category>,
     image: Option<CategoryImage>,
+    next: Option<ObjectId<HutCategory>>,
+    prev: Option<ObjectId<HutCategory>>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -48,6 +51,7 @@ impl From<Category> for sellershut_core::categories::Category {
             ap_id: value.id.into_inner().to_string(),
             sub_categories: value.items.into_iter().map(From::from).collect(),
             image_url: value.image.map(|value| value.url.to_string()),
+            parent_id: value.part_of.map(|value| value.into_inner().to_string()),
             ..Default::default()
         }
     }
@@ -78,12 +82,21 @@ impl TryFrom<HutCategory> for Category {
 
         let sub_categories = sub_categories?;
 
+        let parent_id = value.parent_id.map(|value| Url::parse(&value));
+
         Ok(Self {
             kind: Default::default(),
             name: value.name.clone(),
             id: id.into(),
             total_items: sub_categories.len(),
             items: sub_categories,
+            part_of: match parent_id {
+                Some(id) => {
+                    let id = id?.into();
+                    Some(id)
+                }
+                None => None,
+            },
             image: match image {
                 Some(result) => Some(result?),
                 None => None,
@@ -175,6 +188,7 @@ impl Object for HutCategory {
                 url,
             })
         });
+        let parent_id = self.0.parent_id.map(|value| Url::parse(&value));
 
         Ok(Self::Kind {
             id: id.into(),
@@ -184,6 +198,13 @@ impl Object for HutCategory {
             items: sub_categories,
             image: match image {
                 Some(res) => Some(res?),
+                None => None,
+            },
+            part_of: match parent_id {
+                Some(id) => {
+                    let id = id?.into();
+                    Some(id)
+                }
                 None => None,
             },
         })
