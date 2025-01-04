@@ -12,6 +12,4 @@ pub struct Category {
     pub parent_id: Option<String>, // Optional parent_id, could be NULL
     pub subcategory_createds: Option<Vec<OffsetDateTime>>,
     pub subcategory_updateds: Option<Vec<OffsetDateTime>>,
-
 }
-

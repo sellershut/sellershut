@@ -7,9 +7,7 @@ use activitypub_federation::{
 };
 use axum::async_trait;
 use opentelemetry_semantic_conventions::trace;
-use sellershut_core::categories::{
-    GetAllSubCategoriesRequest, GetCategoryRequest, UpsertCategoryRequest,
-};
+use sellershut_core::categories::{GetCategoryRequest, UpsertCategoryRequest};
 use serde::{Deserialize, Serialize};
 use tonic::IntoRequest;
 use tracing::{Instrument, debug};
@@ -45,63 +43,16 @@ pub struct CategoryImage {
 }
 
 impl From<Category> for sellershut_core::categories::Category {
-    fn from(value: Category) -> Self {
-        Self {
-            name: value.name,
-            ap_id: value.id.into_inner().to_string(),
-            sub_categories: value.items.into_iter().map(From::from).collect(),
-            image_url: value.image.map(|value| value.url.to_string()),
-            parent_id: value.part_of.map(|value| value.into_inner().to_string()),
-            ..Default::default()
-        }
+    fn from(_value: Category) -> Self {
+        todo!()
     }
 }
 
 impl TryFrom<HutCategory> for Category {
     type Error = AppError;
 
-    fn try_from(value: HutCategory) -> Result<Self, Self::Error> {
-        let value = value.0;
-        let id = Url::parse(&value.ap_id)?;
-        let image = value.image_url.map(|category| {
-            Url::parse(&category).map(|url| CategoryImage {
-                kind: Default::default(),
-                name: format!("{} image", value.name),
-                url,
-            })
-        });
-
-        let sub_categories: Result<Vec<_>, _> = value
-            .sub_categories
-            .into_iter()
-            .map(|category| {
-                let category = HutCategory(category);
-                Category::try_from(category)
-            })
-            .collect();
-
-        let sub_categories = sub_categories?;
-
-        let parent_id = value.parent_id.map(|value| Url::parse(&value));
-
-        Ok(Self {
-            kind: Default::default(),
-            name: value.name.clone(),
-            id: id.into(),
-            total_items: sub_categories.len(),
-            items: sub_categories,
-            part_of: match parent_id {
-                Some(id) => {
-                    let id = id?.into();
-                    Some(id)
-                }
-                None => None,
-            },
-            image: match image {
-                Some(result) => Some(result?),
-                None => None,
-            },
-        })
+    fn try_from(_value: HutCategory) -> Result<Self, Self::Error> {
+        todo!()
     }
 }
 
@@ -158,56 +109,7 @@ impl Object for HutCategory {
     #[doc = " gets sent in an activity."]
     #[must_use]
     async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
-        let id = Url::parse(&self.0.ap_id)?;
-        let mut client = data.query_categories_client.clone();
-        let sub_categories = GetAllSubCategoriesRequest::default();
-        let sub_categories: Result<Vec<_>, _> = client
-            .all_sub_categories(sub_categories.into_request())
-            .instrument({
-                let span = tracing::info_span!("grpc.call");
-                span.set_attribute(trace::RPC_SERVICE, "QueryCategoriesClient");
-                span.set_attribute(trace::RPC_METHOD, "AllSubCategories");
-                span
-            })
-            .await?
-            .into_inner()
-            .categories
-            .into_iter()
-            .map(|category| {
-                let category = HutCategory(category);
-                Category::try_from(category)
-            })
-            .collect();
-
-        let sub_categories = sub_categories?;
-
-        let image = self.0.image_url.map(|category| {
-            Url::parse(&category).map(|url| CategoryImage {
-                kind: Default::default(),
-                name: format!("{} image", self.0.name),
-                url,
-            })
-        });
-        let parent_id = self.0.parent_id.map(|value| Url::parse(&value));
-
-        Ok(Self::Kind {
-            id: id.into(),
-            kind: Default::default(),
-            name: self.0.name.clone(),
-            total_items: sub_categories.len(),
-            items: sub_categories,
-            image: match image {
-                Some(res) => Some(res?),
-                None => None,
-            },
-            part_of: match parent_id {
-                Some(id) => {
-                    let id = id?.into();
-                    Some(id)
-                }
-                None => None,
-            },
-        })
+        todo!()
     }
 
     #[doc = " Verifies that the received object is valid."]
