@@ -20,8 +20,8 @@ jobs:
     name: ubuntu / stable / check
     steps:
       - uses: actions/checkout@v4
-      - name: install stable
-        uses: dtolnay/rust-toolchain@stable
+      - name: install nightly
+        uses: dtolnay/rust-toolchain@nightly
       - name: install protoc
         uses: arduino/setup-protoc@v3
         with:
