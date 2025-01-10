@@ -1,0 +1,39 @@
+on:
+  push:
+    branches: [master]
+  pull_request:
+name: rust
+
+# cancel on going checks when new code is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_TERM_COLOR: always
+  DATABASE_URL: postgres://postgres:password@localhost
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    name: ubuntu / stable / check
+    steps:
+      - uses: actions/checkout@v4
+      - name: install stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: install protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: cargo generate-lockfile
+        if: hashFiles('Cargo.lock') == ''
+        run: cargo generate-lockfile
+      - name: install sqlx
+        run: cargo install sqlx-cli --no-default-features --features native-tls,postgres
+      - name: start stack
+        run: cargo xtask docker-up
+      - name: run migrations
+        run: cargo xtask migrate
+      - name: cargo check
+        run: cargo check
