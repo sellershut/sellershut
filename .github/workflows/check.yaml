@@ -31,9 +31,11 @@ jobs:
         run: cargo generate-lockfile
       - name: install sqlx
         run: cargo install sqlx-cli --no-default-features --features native-tls,postgres
+      - name: remove docker volumes
+        run: docker compose -f contrib/compose.yaml down -v
       - name: start stack
         run: cargo xtask docker-up
       - name: run migrations
-        run: cargo xtask migrate
+        run: cargo xtask migrate $DATABASE_URL
       - name: cargo check
         run: cargo check
