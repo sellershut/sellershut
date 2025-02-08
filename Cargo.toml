@@ -5,9 +5,12 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.95"
+axum = { version = "0.8.1", features = ["macros", "http2"] }
+serde = { version = "1.0.217", features = ["derive"] }
 tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread", "signal"] }
+tower-http = { version = "0.6.2", features = ["request-id", "timeout", "trace"] }
 tracing = "0.1.41"
 
 [dependencies.sellershut-services]
 git = "https://github.com/sellershut/services-lib"
-features = ["postgres", "tracing"]
+features = ["api", "tracing"]

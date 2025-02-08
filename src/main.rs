@@ -1,11 +1,13 @@
 use anyhow::Result;
+use sellershut::state::AppState;
 use sellershut_services::tracing::TracingBuilder;
-use tracing::info;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let _tracing = TracingBuilder::new().build(None);
-    info!("Hello, world!");
 
-    Ok(())
+    let (tx, _rx) = tokio::sync::oneshot::channel();
+    let state = AppState::new(1610).await?;
+
+    sellershut::run(state, tx).await
 }
