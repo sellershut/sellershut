@@ -3,7 +3,7 @@ pub mod routes;
 
 use std::time::Duration;
 
-use axum::{Router, routing::get};
+use axum::{routing::get, Router};
 use tokio::signal;
 use tower_http::{timeout::TimeoutLayer, trace::TraceLayer};
 use tracing::info;
