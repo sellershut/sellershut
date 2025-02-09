@@ -2,6 +2,7 @@ use crate::helpers::TestApp;
 use tokio::sync::oneshot;
 
 #[tokio::test]
+#[cfg(target_family = "unix")]
 async fn check_health_endpoint() -> anyhow::Result<()> {
     let (tx, rx) = oneshot::channel();
     let _app = TestApp::new(tx).await;
