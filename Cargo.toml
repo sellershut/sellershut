@@ -5,20 +5,29 @@ edition = "2021"
 license = "AGPL-3.0-only"
 
 [dependencies]
+activitypub_federation = { version = "0.6.2", features = [
+    "axum",
+], default-features = false }
 anyhow = "1.0.95"
 axum = { version = "0.8.1", features = ["macros", "http2"] }
+clap = { version = "4.5.29", features = ["derive"] }
+config = { version = "0.15.8", features = ["toml"] }
 serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.138"
+time = "0.3.37"
 tokio = { version = "1.43.0", features = [
     "macros",
     "rt-multi-thread",
     "signal",
 ] }
+tonic = "0.12.3"
 tower-http = { version = "0.6.2", features = [
     "request-id",
     "timeout",
     "trace",
 ] }
 tracing = "0.1.41"
+url = "2.5.4"
 
 [dependencies.sellershut-services]
 git = "https://github.com/sellershut/services-lib"

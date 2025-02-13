@@ -1,5 +1,5 @@
-use sellershut::state::AppState;
-use sellershut_services::tracing::TracingBuilder;
+use sellershut::{state::AppState, HutConfig};
+use sellershut_services::{tracing::TracingBuilder, Configuration};
 
 use std::sync::Once;
 
@@ -18,7 +18,17 @@ impl TestApp {
             TracingBuilder::new().build(Some("warn".into()));
         });
 
-        let state = AppState::new(0).await.unwrap();
+        let config_path = "sellershut.toml";
+
+        let config = config::Config::builder()
+            .add_source(config::File::new(config_path, config::FileFormat::Toml))
+            .build()
+            .unwrap();
+
+        let config = config.try_deserialize::<Configuration>().unwrap();
+        let hut_config: HutConfig = serde_json::from_value(config.misc.clone()).unwrap();
+
+        let state = AppState::new(0, hut_config).await.unwrap();
 
         tokio::spawn(sellershut::run(state.clone(), tx));
 
