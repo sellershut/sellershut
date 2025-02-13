@@ -15,6 +15,8 @@ pub async fn serve(state: AppState, tx: tokio::sync::oneshot::Sender<u16>) -> an
     // Create a regular axum app.
     let app = Router::new()
         .route("/health", get(routes::health_check))
+        .route("/.well-known/webfinger", get(routes::web_finger))
+        .route("/users/{user}", get(routes::users::http_get_user))
         .layer((
             TraceLayer::new_for_http(),
             // Graceful shutdown will wait for outstanding requests to complete. Add a timeout so
