@@ -12,7 +12,10 @@ use tonic::IntoRequest;
 use tracing::{debug, info_span, instrument, Instrument};
 use url::Url;
 
-use crate::{server::error::{ApiResult, AppError}, state::AppState};
+use crate::{
+    server::error::{ApiResult, AppError},
+    state::AppState,
+};
 
 #[derive(Debug, Clone)]
 pub struct HutUser(pub sellershut_core::users::User);

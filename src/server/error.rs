@@ -14,6 +14,7 @@ pub type ApiResult<T> = Result<T, AppError>;
 // Tell axum how to convert `AppError` into a response.
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
+        tracing::trace!("request error: {}", self.0);
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             format!("Something went wrong: {}", self.0),

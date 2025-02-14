@@ -39,5 +39,5 @@ async fn main() -> Result<()> {
     let (tx, _rx) = tokio::sync::oneshot::channel();
     let state = AppState::new(config.application.port, hut_config).await?;
 
-    sellershut::run(state, tx).await
+    sellershut::run(state, tx, config).await
 }

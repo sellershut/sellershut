@@ -18,6 +18,8 @@ use crate::{
     utils, HutConfig,
 };
 
+pub type AppHandle = Arc<AppState>;
+
 #[derive(Clone)]
 pub struct AppState {
     pub addr: SocketAddr,

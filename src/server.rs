@@ -2,21 +2,27 @@ pub mod error;
 pub mod grpc;
 pub mod routes;
 
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
+use activitypub_federation::config::{FederationConfig, FederationMiddleware};
 use axum::{routing::get, Router};
 use tokio::signal;
 use tower_http::{timeout::TimeoutLayer, trace::TraceLayer};
 use tracing::info;
 
-use crate::state::AppState;
+use crate::state::AppHandle;
 
-pub async fn serve(state: AppState, tx: tokio::sync::oneshot::Sender<u16>) -> anyhow::Result<()> {
+pub async fn serve(
+    tx: tokio::sync::oneshot::Sender<u16>,
+    data: FederationConfig<AppHandle>,
+) -> anyhow::Result<()> {
+    let addr = data.addr.clone();
     // Create a regular axum app.
     let app = Router::new()
         .route("/health", get(routes::health_check))
         .route("/.well-known/webfinger", get(routes::web_finger))
         .route("/users/{user}", get(routes::users::http_get_user))
+        .layer(FederationMiddleware::new(data))
         .layer((
             TraceLayer::new_for_http(),
             // Graceful shutdown will wait for outstanding requests to complete. Add a timeout so
@@ -26,7 +32,7 @@ pub async fn serve(state: AppState, tx: tokio::sync::oneshot::Sender<u16>) -> an
 
     // Create a `TcpListener` using tokio.
 
-    let listener = tokio::net::TcpListener::bind(state.addr).await?;
+    let listener = tokio::net::TcpListener::bind(addr).await?;
 
     let socket_addr = listener
         .local_addr()
