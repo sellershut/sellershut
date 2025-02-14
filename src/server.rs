@@ -21,7 +21,8 @@ pub async fn serve(
     let app = Router::new()
         .route("/health", get(routes::health_check))
         .route("/.well-known/webfinger", get(routes::web_finger))
-        .route("/users/{user}", get(routes::users::http_get_user))
+        //.route("/users/{user}", get(routes::users::http_get_user)) -- AXUM 0.8
+        .route("/users/:name", get(routes::users::http_get_user))
         .layer(FederationMiddleware::new(data))
         .layer((
             TraceLayer::new_for_http(),

@@ -23,7 +23,7 @@ pub async fn web_finger(
     data: Data<AppHandle>,
 ) -> Result<Json<Webfinger>, AppError> {
     let name = extract_webfinger_name(&params.resource, &data)?;
-    let db_user = get_user_by_name(name, data)
+    let db_user = get_user_by_name(name, &data)
         .await?
         .context("no such user exists")?;
 

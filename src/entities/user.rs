@@ -14,7 +14,7 @@ use url::Url;
 
 use crate::{
     server::error::{ApiResult, AppError},
-    state::AppState,
+    state::{AppHandle, AppState},
 };
 
 #[derive(Debug, Clone)]
@@ -51,7 +51,7 @@ pub struct Person {
 impl Object for HutUser {
     #[doc = " App data type passed to handlers. Must be identical to"]
     #[doc = " [crate::config::FederationConfigBuilder::app_data] type."]
-    type DataType = AppState;
+    type DataType = AppHandle;
 
     #[doc = " The type of protocol struct which gets sent over network to federate this database struct."]
     type Kind = Person;

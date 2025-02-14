@@ -30,7 +30,7 @@ pub mod interceptor {
 
 pub async fn get_user_by_name(
     query: impl AsRef<str>,
-    data: Data<AppHandle>,
+    data: &Data<AppHandle>,
 ) -> Result<Option<HutUser>, AppError> {
     let mut client = data.app_data().query_users_client.clone();
     let user = QueryUserByNameRequest {
