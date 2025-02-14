@@ -9,6 +9,8 @@ use axum::{
 #[derive(Debug)]
 pub struct AppError(anyhow::Error);
 
+pub type ApiResult<T> = Result<T, AppError>;
+
 // Tell axum how to convert `AppError` into a response.
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
