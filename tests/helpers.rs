@@ -30,7 +30,7 @@ impl TestApp {
 
         let state = AppState::new(0, hut_config).await.unwrap();
 
-        tokio::spawn(sellershut::run(state.clone(), tx));
+        tokio::spawn(sellershut::run(state.clone(), tx, config));
 
         Self { state }
     }
