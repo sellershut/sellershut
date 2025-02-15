@@ -1,11 +1,13 @@
 use activitypub_federation::{
     config::Data,
     fetch::object_id::ObjectId,
-    kinds::actor::PersonType,
+    kinds::{actor::PersonType, collection::CollectionType},
     protocol::{public_key::PublicKey, verification::verify_domains_match},
     traits::{Actor, Object},
 };
-use sellershut_core::users::{QueryUserByIdRequest, UpsertUserRequest, User};
+use sellershut_core::users::{
+    QueryUserByIdRequest, QueryUsersFollowingRequest, UpsertUserRequest, User,
+};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use tonic::IntoRequest;
@@ -14,7 +16,7 @@ use url::Url;
 
 use crate::{
     server::error::{ApiResult, AppError},
-    state::{AppHandle, AppState},
+    state::AppHandle,
 };
 
 #[derive(Debug, Clone)]
@@ -41,10 +43,27 @@ pub struct Person {
     #[serde(rename = "type")]
     kind: PersonType,
     preferred_username: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
     id: ObjectId<HutUser>,
     inbox: Url,
+    outbox: Url,
     public_key: PublicKey,
+    following: Follow,
+    followers: Follow,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    icon: Option<Url>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    summary: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Follow {
+    #[serde(rename = "type")]
+    kind: CollectionType,
+    total_items: usize,
+    items: Vec<Person>,
 }
 
 #[tonic::async_trait]
@@ -99,13 +118,77 @@ impl Object for HutUser {
     async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
         let id = Url::parse(&self.0.ap_id)?;
         let inbox = Url::parse(&self.0.inbox)?;
+        let outbox = Url::parse(&self.0.outbox)?;
+
+        let followers = async || -> Result<Vec<Person>, Self::Error> {
+            let mut query = data.query_users_client.clone();
+            let followers = query
+                .query_user_followers(
+                    QueryUsersFollowingRequest {
+                        id: self.0.ap_id.to_string(),
+                    }
+                    .into_request(),
+                )
+                .await?
+                .into_inner()
+                .users
+                .into_iter()
+                .map(|value| {
+                    let hut_user = HutUser(value);
+                    hut_user.into_json(data)
+                });
+
+            let followers = futures_util::future::try_join_all(followers).await?;
+            Ok(followers)
+        };
+
+        let following = async || -> Result<Vec<Person>, Self::Error> {
+            let mut query = data.query_users_client.clone();
+            let following = query
+                .query_user_following(
+                    QueryUsersFollowingRequest {
+                        id: self.0.ap_id.to_string(),
+                    }
+                    .into_request(),
+                )
+                .await?
+                .into_inner()
+                .users
+                .into_iter()
+                .map(|value| {
+                    let hut_user = HutUser(value);
+                    hut_user.into_json(data)
+                });
+
+            let following = futures_util::future::try_join_all(following).await?;
+            Ok(following)
+        };
+        let (followers, following) =
+            futures_util::future::try_join(followers(), following()).await?;
+
         Ok(Self::Kind {
             id: id.into(),
             inbox,
+            outbox,
             name: self.0.display_name.clone(),
             kind: Default::default(),
             preferred_username: self.0.username.clone(),
             public_key: self.public_key(),
+            icon: match self.0.avatar_url {
+                Some(ref value) => Some(Url::parse(value)?),
+                None => None,
+            },
+            summary: self.0.summary,
+            followers: Follow {
+                kind: CollectionType::Collection,
+                total_items: followers.len(),
+                items: followers,
+            },
+            following: Follow {
+                kind: CollectionType::Collection,
+                total_items: following.len(),
+                items: following,
+            },
         })
     }
 
@@ -143,7 +226,16 @@ impl Object for HutUser {
                 public_key: json.public_key.public_key_pem,
                 private_key: None,
                 inbox: json.inbox.to_string(),
+                outbox: json.outbox.to_string(),
                 last_refreshed_at: OffsetDateTime::now_utc().into(),
+                avatar_url: json.icon.map(Into::into),
+                summary: json.summary,
+                followers: json
+                    .followers
+                    .items
+                    .into_iter()
+                    .map(|value| value.id.to_string())
+                    .collect(),
                 ..Default::default()
             },
         }

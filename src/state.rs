@@ -92,14 +92,24 @@ impl AppState {
             debug!("system user does not exist, creating...");
             let keypair = activitypub_federation::http_signatures::generate_actor_keypair()?;
 
+            let gen_url = |inbox: bool| {
+                let mut url = id.clone();
+                url.set_path(&format!(
+                    "users/{username}/{}box",
+                    match inbox {
+                        true => "in",
+                        false => "out",
+                    }
+                ));
+                url.to_string()
+            };
+
             let request = CreateUserRequest {
                 user: User {
                     ap_id: id.to_string(),
-                    inbox: {
-                        let mut url = id.clone();
-                        url.set_path(&format!("users/{username}/inbox"));
-                        url.to_string()
-                    },
+                    inbox: gen_url(true),
+                    outbox: gen_url(false),
+                    summary: Some("I'm the captain now".into()),
                     username: username.to_string(),
                     public_key: keypair.public_key,
                     private_key: Some(keypair.private_key),
