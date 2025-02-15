@@ -3,7 +3,7 @@ use activitypub_federation::{
     fetch::webfinger::{build_webfinger_response, extract_webfinger_name, Webfinger},
 };
 use anyhow::Context;
-use axum::{debug_handler, extract::Query, response::IntoResponse, Json};
+use axum::{debug_handler, extract::Query, Json};
 use serde::Deserialize;
 use url::Url;
 

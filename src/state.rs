@@ -38,10 +38,7 @@ impl AppState {
         let users_channel = Endpoint::new(hut_config.users_service.to_string())?
             .connect()
             .await
-            .map_err(|e| {
-                error!("could not connect to users service");
-                e
-            })?;
+            .inspect_err(|e| error!("could not connect to users service: {e}"))?;
 
         let mut query_users_client =
             QueryUsersClient::with_interceptor(users_channel.clone(), MyInterceptor);

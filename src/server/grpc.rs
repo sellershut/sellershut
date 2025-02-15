@@ -40,6 +40,6 @@ pub async fn get_user_by_name(
     .into_request();
 
     let user = client.query_user_by_name(user).await?.into_inner();
-    let resp = user.user.map(|val| HutUser(val));
+    let resp = user.user.map(HutUser);
     Ok(resp)
 }

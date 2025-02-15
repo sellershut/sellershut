@@ -8,7 +8,7 @@ use activitypub_federation::{
 use sellershut_core::users::{
     QueryUserByIdRequest, QueryUsersFollowingRequest, UpsertUserRequest, User,
 };
-use serde::{de::value, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use tonic::IntoRequest;
 use tracing::{debug, info_span, instrument, Instrument};

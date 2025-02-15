@@ -6,7 +6,6 @@ use anyhow::Context;
 use axum::{extract::Path, http::HeaderMap, response::IntoResponse};
 
 use crate::{
-    entities::user::HutUser,
     server::{error::AppError, grpc::get_user_by_name},
     state::AppHandle,
 };
@@ -16,7 +15,6 @@ pub async fn http_get_user(
     Path(name): Path<String>,
     data: Data<AppHandle>,
 ) -> Result<impl IntoResponse, AppError> {
-    tracing::info!("getting user");
     let accept = header_map.get("accept").map(|v| v.to_str().unwrap());
     if accept == Some(FEDERATION_CONTENT_TYPE) {
         let user = get_user_by_name(name, &data)

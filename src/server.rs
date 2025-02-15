@@ -2,7 +2,7 @@ pub mod error;
 pub mod grpc;
 pub mod routes;
 
-use std::{sync::Arc, time::Duration};
+use std::time::Duration;
 
 use activitypub_federation::config::{FederationConfig, FederationMiddleware};
 use axum::{routing::get, Router};
@@ -16,7 +16,7 @@ pub async fn serve(
     tx: tokio::sync::oneshot::Sender<u16>,
     data: FederationConfig<AppHandle>,
 ) -> anyhow::Result<()> {
-    let addr = data.addr.clone();
+    let addr = data.addr;
     // Create a regular axum app.
     let app = Router::new()
         .route("/health", get(routes::health_check))
