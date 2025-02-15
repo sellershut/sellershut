@@ -16,7 +16,7 @@ jobs:
       postgres:
         image: postgres
         env:
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: password
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -44,7 +44,6 @@ jobs:
       - name: run stack
         run: |
           sh ./.github/workflows/stackup.sh
-          docker run --network=host -it -v users.toml:/users.toml ghcr.io/sellershut/users-service:master ./users-service --config-file "users.toml"
       - name: install protoc
         uses: arduino/setup-protoc@v3
         with:
@@ -85,7 +84,7 @@ jobs:
       postgres:
         image: postgres
         env:
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: password
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -112,7 +111,6 @@ jobs:
       - name: run stack
         run: |
           sh ./.github/workflows/stackup.sh
-          docker run --network=host -it -v users.toml:/users.toml ghcr.io/sellershut/users-service:master ./users-service --config-file "users.toml"
       - name: install protoc
         uses: arduino/setup-protoc@v3
         with:
