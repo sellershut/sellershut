@@ -2340,7 +2340,7 @@ dependencies = [
 [[package]]
 name = "sellershut-core"
 version = "0.1.0"
-source = "git+https://github.com/sellershut/sellershut-core#dcf4522f5d88b28ba40bd71f159024a128add264"
+source = "git+https://github.com/sellershut/sellershut-core#788cfda3c36e78b5afe1cd8c4eec4d36ddef92fe"
 dependencies = [
  "prost",
  "serde",

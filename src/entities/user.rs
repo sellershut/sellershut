@@ -1,14 +1,14 @@
 use activitypub_federation::{
     config::Data,
     fetch::object_id::ObjectId,
-    kinds::{actor::PersonType, collection::CollectionType},
+    kinds::{actor::PersonType, collection::CollectionType, link::LinkType},
     protocol::{public_key::PublicKey, verification::verify_domains_match},
     traits::{Actor, Object},
 };
 use sellershut_core::users::{
     QueryUserByIdRequest, QueryUsersFollowingRequest, UpsertUserRequest, User,
 };
-use serde::{Deserialize, Serialize};
+use serde::{de::value, Deserialize, Serialize};
 use time::OffsetDateTime;
 use tonic::IntoRequest;
 use tracing::{debug, info_span, instrument, Instrument};
@@ -63,7 +63,24 @@ pub struct Follow {
     #[serde(rename = "type")]
     kind: CollectionType,
     total_items: usize,
-    items: Vec<Person>,
+    items: Vec<Follower>,
+}
+
+impl From<Url> for Follower {
+    fn from(value: Url) -> Self {
+        Self {
+            kind: LinkType::Link,
+            href: value,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Follower {
+    #[serde(rename = "type")]
+    kind: LinkType,
+    href: Url,
 }
 
 #[tonic::async_trait]
@@ -120,51 +137,35 @@ impl Object for HutUser {
         let inbox = Url::parse(&self.0.inbox)?;
         let outbox = Url::parse(&self.0.outbox)?;
 
-        let followers = async || -> Result<Vec<Person>, Self::Error> {
-            let mut query = data.query_users_client.clone();
-            let followers = query
-                .query_user_followers(
-                    QueryUsersFollowingRequest {
-                        id: self.0.ap_id.to_string(),
-                    }
-                    .into_request(),
-                )
-                .await?
-                .into_inner()
-                .users
-                .into_iter()
-                .map(|value| {
-                    let hut_user = HutUser(value);
-                    hut_user.into_json(data)
-                });
+        let followers: Result<Vec<_>, _> = self
+            .0
+            .followers
+            .iter()
+            .map(|v| {
+                let url = Url::parse(v);
+                url.map(Follower::from)
+            })
+            .collect();
 
-            let followers = futures_util::future::try_join_all(followers).await?;
-            Ok(followers)
-        };
+        let followers = followers?;
 
-        let following = async || -> Result<Vec<Person>, Self::Error> {
-            let mut query = data.query_users_client.clone();
-            let following = query
-                .query_user_following(
-                    QueryUsersFollowingRequest {
-                        id: self.0.ap_id.to_string(),
-                    }
-                    .into_request(),
-                )
-                .await?
-                .into_inner()
-                .users
-                .into_iter()
-                .map(|value| {
-                    let hut_user = HutUser(value);
-                    hut_user.into_json(data)
-                });
+        let mut query = data.query_users_client.clone();
+        let following = query
+            .query_user_following(
+                QueryUsersFollowingRequest {
+                    id: self.0.ap_id.to_string(),
+                }
+                .into_request(),
+            )
+            .await?;
+        let following: Result<Vec<_>, _> = following
+            .into_inner()
+            .users
+            .iter()
+            .map(|value| Url::parse(value).map(Follower::from))
+            .collect();
 
-            let following = futures_util::future::try_join_all(following).await?;
-            Ok(following)
-        };
-        let (followers, following) =
-            futures_util::future::try_join(followers(), following()).await?;
+        let following = following?;
 
         Ok(Self::Kind {
             id: id.into(),
@@ -234,7 +235,7 @@ impl Object for HutUser {
                     .followers
                     .items
                     .into_iter()
-                    .map(|value| value.id.to_string())
+                    .map(|value| value.href.to_string())
                     .collect(),
                 ..Default::default()
             },
