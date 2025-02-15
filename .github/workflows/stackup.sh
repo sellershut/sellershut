@@ -13,6 +13,4 @@ port = 5432
 name = "users"
 host = "localhost"
 user = "postgres"
-password = "password"
-
-# vim:ft=toml' > users.toml
+password = "password"' > users.toml

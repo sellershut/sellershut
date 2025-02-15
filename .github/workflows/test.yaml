@@ -44,7 +44,7 @@ jobs:
       - name: run stack
         run: |
           sh ./.github/workflows/stackup.sh
-          docker run --network=host -d -it -v users.toml:/users.toml ghcr.io/sellershut/users-service:master ./users-service --config-file "users.toml"
+          docker run --network=host -it -v users.toml:/users.toml ghcr.io/sellershut/users-service:master ./users-service --config-file "users.toml"
       - name: install protoc
         uses: arduino/setup-protoc@v3
         with:
@@ -112,7 +112,7 @@ jobs:
       - name: run stack
         run: |
           sh ./.github/workflows/stackup.sh
-          docker run --network=host -d -it -v users.toml:/users.toml ghcr.io/sellershut/users-service:master ./users-service --config-file "users.toml"
+          docker run --network=host -it -v users.toml:/users.toml ghcr.io/sellershut/users-service:master ./users-service --config-file "users.toml"
       - name: install protoc
         uses: arduino/setup-protoc@v3
         with:
