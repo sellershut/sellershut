@@ -7,6 +7,7 @@ log-level = "h2=info,trace"
 instance-name = "alpha"
 hostname = "http://localhost:2210"
 users-service = "http://localhost:1304"
+categories-service = "http://localhost:1610"
 
 # vim:ft=toml
 

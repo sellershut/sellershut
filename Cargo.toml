@@ -36,7 +36,7 @@ features = ["api", "tracing"]
 
 [dependencies.sellershut-core]
 git = "https://github.com/sellershut/sellershut-core"
-features = ["rpc-client-users", "serde", "time"]
+features = ["rpc-client-categories", "rpc-client-users", "serde", "time"]
 
 [dev-dependencies]
 fake = "3.2.0"

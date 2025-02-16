@@ -17,6 +17,8 @@ pub struct HutConfig {
     pub hostname: String,
     #[serde(rename = "users-service")]
     pub users_service: String,
+    #[serde(rename = "categories-service")]
+    pub categories_service: String,
     #[serde(rename = "instance-name")]
     pub instance_name: String,
 }

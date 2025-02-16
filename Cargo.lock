@@ -2340,8 +2340,9 @@ dependencies = [
 [[package]]
 name = "sellershut-core"
 version = "0.1.0"
-source = "git+https://github.com/sellershut/sellershut-core#788cfda3c36e78b5afe1cd8c4eec4d36ddef92fe"
+source = "git+https://github.com/sellershut/sellershut-core#cb7d55b6f852fc037794fdb16926d6ffdd5a6463"
 dependencies = [
+ "base64 0.22.1",
  "prost",
  "serde",
  "time",

@@ -4,9 +4,15 @@ use std::{
 };
 
 use anyhow::Result;
-use sellershut_core::users::{
-    mutate_users_client::MutateUsersClient, query_users_client::QueryUsersClient,
-    CreateUserRequest, QueryUserByIdRequest, User,
+use sellershut_core::{
+    categories::{
+        mutate_categories_client::MutateCategoriesClient,
+        query_categories_client::QueryCategoriesClient,
+    },
+    users::{
+        mutate_users_client::MutateUsersClient, query_users_client::QueryUsersClient,
+        CreateUserRequest, QueryUserByIdRequest, User,
+    },
 };
 use tonic::{transport::Endpoint, IntoRequest};
 use tracing::{debug, error, info};
@@ -25,6 +31,8 @@ pub struct AppState {
     pub addr: SocketAddr,
     pub query_users_client: QueryUsersClient<Intercepted>,
     pub mutate_users_client: MutateUsersClient<Intercepted>,
+    pub query_categories_client: QueryCategoriesClient<Intercepted>,
+    pub mutate_categories_client: MutateCategoriesClient<Intercepted>,
     pub system_user: HutUser,
     pub domain: Arc<str>,
 }
@@ -40,11 +48,22 @@ impl AppState {
             .await
             .inspect_err(|e| error!("could not connect to users service: {e}"))?;
 
+        let categories_channel = Endpoint::new(hut_config.categories_service.to_string())?
+            .connect()
+            .await
+            .inspect_err(|e| error!("could not connect to users service: {e}"))?;
+
         let mut query_users_client =
             QueryUsersClient::with_interceptor(users_channel.clone(), MyInterceptor);
         let mut mutate_users_client =
             MutateUsersClient::with_interceptor(users_channel, MyInterceptor);
         info!(host = %hut_config.users_service, "connected to users service");
+
+        let query_categories_client =
+            QueryCategoriesClient::with_interceptor(categories_channel.clone(), MyInterceptor);
+        let mutate_categories_client =
+            MutateCategoriesClient::with_interceptor(categories_channel, MyInterceptor);
+        info!(host = %hut_config.categories_service, "connected to categories service");
 
         let (system_user, domain) = Self::check_user(
             hut_config,
@@ -59,6 +78,8 @@ impl AppState {
             mutate_users_client,
             system_user,
             domain: domain.as_str().into(),
+            query_categories_client,
+            mutate_categories_client,
         })
     }
 
