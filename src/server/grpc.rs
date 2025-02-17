@@ -1,8 +1,11 @@
-use activitypub_federation::config::Data;
-use sellershut_core::users::QueryUserByNameRequest;
+use activitypub_federation::{config::Data, kinds::collection::CollectionType};
+use sellershut_core::users::{QueryUserByNameRequest, QueryUsersFollowingRequest};
 use tonic::IntoRequest;
 
-use crate::{entities::user::HutUser, state::AppHandle};
+use crate::{
+    entities::user::{Follow, HutUser},
+    state::AppHandle,
+};
 
 use super::error::AppError;
 
@@ -42,4 +45,19 @@ pub async fn get_user_by_name(
     let user = client.query_user_by_name(user).await?.into_inner();
     let resp = user.user.map(HutUser);
     Ok(resp)
+}
+
+pub async fn get_user_following(
+    query: impl AsRef<str>,
+    data: &Data<AppHandle>,
+) -> Result<Follow, AppError> {
+    let mut client = data.app_data().query_users_client.clone();
+    let user = QueryUsersFollowingRequest {
+        id: query.as_ref().to_string(),
+    }
+    .into_request();
+
+    let followers = client.query_user_following(user).await?.into_inner().users;
+
+    Follow::try_from(followers)
 }

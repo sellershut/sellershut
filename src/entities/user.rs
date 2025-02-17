@@ -50,8 +50,8 @@ pub struct Person {
     inbox: Url,
     outbox: Url,
     public_key: PublicKey,
-    following: Follow,
-    followers: Follow,
+    following: Url,
+    followers: Url,
     #[serde(skip_serializing_if = "Option::is_none")]
     icon: Option<Url>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -62,9 +62,27 @@ pub struct Person {
 #[serde(rename_all = "camelCase")]
 pub struct Follow {
     #[serde(rename = "type")]
-    kind: CollectionType,
-    total_items: usize,
-    items: Vec<Follower>,
+    pub kind: CollectionType,
+    pub total_items: usize,
+    pub items: Vec<Follower>,
+}
+
+impl TryFrom<Vec<String>> for Follow {
+    type Error = AppError;
+
+    fn try_from(value: Vec<String>) -> Result<Self, Self::Error> {
+        Ok(Self {
+            kind: CollectionType::Collection,
+            total_items: value.len(),
+            items: {
+                let items: Result<Vec<_>, _> = value
+                    .iter()
+                    .map(|v| Url::parse(v).map(Follower::from))
+                    .collect();
+                items?
+            },
+        })
+    }
 }
 
 impl From<Url> for Follower {
@@ -80,8 +98,8 @@ impl From<Url> for Follower {
 #[serde(rename_all = "camelCase")]
 pub struct Follower {
     #[serde(rename = "type")]
-    kind: LinkType,
-    href: Url,
+    pub kind: LinkType,
+    pub href: Url,
 }
 
 #[tonic::async_trait]
@@ -132,41 +150,14 @@ impl Object for HutUser {
     #[doc = ""]
     #[doc = " Called when a local object gets fetched by another instance over HTTP, or when an object"]
     #[doc = " gets sent in an activity."]
-    #[instrument(skip(data), err(Debug))]
-    async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
+    #[instrument(skip(_data), err(Debug))]
+    async fn into_json(self, _data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
         let id = Url::parse(&self.0.ap_id)?;
         let inbox = Url::parse(&self.0.inbox)?;
         let outbox = Url::parse(&self.0.outbox)?;
 
-        let followers: Result<Vec<_>, _> = self
-            .0
-            .followers
-            .iter()
-            .map(|v| {
-                let url = Url::parse(v);
-                url.map(Follower::from)
-            })
-            .collect();
-
-        let followers = followers?;
-
-        let mut query = data.query_users_client.clone();
-        let following = query
-            .query_user_following(
-                QueryUsersFollowingRequest {
-                    id: self.0.ap_id.to_string(),
-                }
-                .into_request(),
-            )
-            .await?;
-        let following: Result<Vec<_>, _> = following
-            .into_inner()
-            .users
-            .iter()
-            .map(|value| Url::parse(value).map(Follower::from))
-            .collect();
-
-        let following = following?;
+        let following = Url::parse(&format!("{}/following", self.0.ap_id))?;
+        let followers = Url::parse(&format!("{}/followers", self.0.ap_id))?;
 
         Ok(Self::Kind {
             id: id.into(),
@@ -181,16 +172,8 @@ impl Object for HutUser {
                 None => None,
             },
             summary: self.0.summary,
-            followers: Follow {
-                kind: CollectionType::Collection,
-                total_items: followers.len(),
-                items: followers,
-            },
-            following: Follow {
-                kind: CollectionType::Collection,
-                total_items: following.len(),
-                items: following,
-            },
+            followers,
+            following,
         })
     }
 
@@ -232,12 +215,6 @@ impl Object for HutUser {
                 last_refreshed_at: Some(OffsetDateTime::now_utc().into()),
                 avatar_url: json.icon.map(Into::into),
                 summary: json.summary,
-                followers: json
-                    .followers
-                    .items
-                    .into_iter()
-                    .map(|value| value.href.to_string())
-                    .collect(),
                 ..Default::default()
             }),
         }

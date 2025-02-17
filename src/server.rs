@@ -23,6 +23,14 @@ pub async fn serve(
         .route("/.well-known/webfinger", get(routes::web_finger))
         //.route("/users/{user}", get(routes::users::http_get_user)) -- AXUM 0.8
         .route("/users/:name", get(routes::users::http_get_user))
+        .route(
+            "/users/:name/following",
+            get(routes::users::http_get_user_following),
+        )
+        .route(
+            "/users/:name/followers",
+            get(routes::users::http_get_user_followers),
+        )
         .layer(FederationMiddleware::new(data))
         .layer((
             TraceLayer::new_for_http(),
