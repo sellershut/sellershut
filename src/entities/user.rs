@@ -5,6 +5,7 @@ use activitypub_federation::{
     protocol::{public_key::PublicKey, verification::verify_domains_match},
     traits::{Actor, Object},
 };
+use anyhow::anyhow;
 use sellershut_core::users::{
     QueryUserByIdRequest, QueryUsersFollowingRequest, UpsertUserRequest, User,
 };
@@ -221,14 +222,14 @@ impl Object for HutUser {
         debug!(id = ?id, "upserting user");
 
         let request = UpsertUserRequest {
-            user: User {
+            user: Some(User {
                 username: json.preferred_username,
                 ap_id: id.clone().into_inner().to_string(),
                 public_key: json.public_key.public_key_pem,
                 private_key: None,
                 inbox: json.inbox.to_string(),
                 outbox: json.outbox.to_string(),
-                last_refreshed_at: OffsetDateTime::now_utc().into(),
+                last_refreshed_at: Some(OffsetDateTime::now_utc().into()),
                 avatar_url: json.icon.map(Into::into),
                 summary: json.summary,
                 followers: json
@@ -238,12 +239,17 @@ impl Object for HutUser {
                     .map(|value| value.href.to_string())
                     .collect(),
                 ..Default::default()
-            },
+            }),
         }
         .into_request();
 
         let mut client = data.mutate_users_client.clone();
-        let resp = client.upsert_user(request).await?.into_inner().user;
+        let resp = client
+            .upsert_user(request)
+            .await?
+            .into_inner()
+            .user
+            .ok_or_else(|| anyhow!("user not returned from upsert"))?;
         debug!(id = ?id, "user upserted");
 
         Ok(HutUser(resp))

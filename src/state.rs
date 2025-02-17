@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use sellershut_core::{
     categories::{
         mutate_categories_client::MutateCategoriesClient,
@@ -51,7 +51,7 @@ impl AppState {
         let categories_channel = Endpoint::new(hut_config.categories_service.to_string())?
             .connect()
             .await
-            .inspect_err(|e| error!("could not connect to users service: {e}"))?;
+            .inspect_err(|e| error!("could not connect to categories service: {e}"))?;
 
         let mut query_users_client =
             QueryUsersClient::with_interceptor(users_channel.clone(), MyInterceptor);
@@ -123,7 +123,7 @@ impl AppState {
             };
 
             let request = CreateUserRequest {
-                user: User {
+                user: Some(User {
                     ap_id: id.to_string(),
                     inbox: gen_url(true),
                     outbox: gen_url(false),
@@ -133,15 +133,17 @@ impl AppState {
                     private_key: Some(keypair.private_key),
                     local: true,
                     ..Default::default()
-                },
+                }),
             }
             .into_request();
 
-            mutate_users_client
+            let user = mutate_users_client
                 .create_user(request)
                 .await?
                 .into_inner()
-                .user
+                .user;
+
+            user.ok_or_else(|| anyhow!("no user was returned from create"))?
         };
 
         let domain = utils::get_domain_with_port(&hostname)?;
