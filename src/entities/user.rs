@@ -30,9 +30,13 @@ pub struct HutUser(pub sellershut_core::users::User);
 pub struct GraphQLCategoryType {
     #[graphql(skip_input)]
     pub id: String,
+    #[graphql(skip_input)]
+    pub ap_id: String,
     pub name: String,
     #[graphql(default)]
     pub sub_categories: Vec<String>,
+    #[graphql(skip)]
+    pub local: bool,
     pub image_url: Option<String>,
     pub parent_id: Option<String>,
     #[graphql(default_with = "default_time()")]
@@ -47,7 +51,9 @@ impl TryFrom<sellershut_core::categories::Category> for GraphQLCategoryType {
     fn try_from(value: sellershut_core::categories::Category) -> ApiResult<Self> {
         Ok(Self {
             id: value.id,
+            ap_id: value.ap_id,
             name: value.name,
+            local: value.local,
             sub_categories: value.sub_categories,
             image_url: value.image_url,
             parent_id: value.parent_id,
@@ -60,6 +66,22 @@ impl TryFrom<sellershut_core::categories::Category> for GraphQLCategoryType {
                 .ok_or_else(|| anyhow::anyhow!("missing updated_at"))?
                 .try_into()?,
         })
+    }
+}
+
+impl From<GraphQLCategoryType> for sellershut_core::categories::Category {
+    fn from(value: GraphQLCategoryType) -> Self {
+        Self {
+            id: value.id,
+            name: value.name,
+            sub_categories: value.sub_categories,
+            image_url: value.image_url,
+            parent_id: value.parent_id,
+            created_at: Some(value.created_at.into()),
+            updated_at: Some(value.updated_at.into()),
+            ap_id: value.ap_id,
+            local: value.local,
+        }
     }
 }
 

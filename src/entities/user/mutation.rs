@@ -5,7 +5,7 @@ pub struct UserGraphqlMutation;
 
 #[Object]
 impl UserGraphqlMutation {
-    async fn create(&self, ctx: &Context<'_>) -> String {
+    async fn create_user(&self, _ctx: &Context<'_>) -> String {
         String::default()
     }
 }

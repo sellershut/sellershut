@@ -5,7 +5,7 @@ pub struct UserGraphqlQuery;
 
 #[Object]
 impl UserGraphqlQuery {
-    async fn users(&self, ctx: &Context<'_>) -> String {
+    async fn users(&self, _ctx: &Context<'_>) -> String {
         String::default()
     }
 }
