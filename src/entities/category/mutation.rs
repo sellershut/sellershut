@@ -6,7 +6,7 @@ use sellershut_core::categories::{
 use tonic::IntoRequest;
 use tracing::instrument;
 
-use crate::{entities::user::GraphQLCategoryType as Category, state::AppHandle};
+use crate::{entities::category::GraphQLCategoryType as Category, state::AppHandle};
 
 #[derive(Default, Debug)]
 pub struct CategoryGraphqlMutation;

@@ -1,15 +1,19 @@
 use activitypub_federation::config::FederationConfig;
-use async_graphql::connection::{Connection, Edge, EmptyFields};
-use async_graphql::Result;
-use async_graphql::{Context, Object};
-use sellershut_core::categories::{GetCategoryByIdRequest, GetSubCategoriesRequest};
-use sellershut_core::common::pagination::cursor::cursor_value::CursorType;
-use sellershut_core::common::pagination::cursor::{CursorValue, Index};
-use sellershut_core::common::pagination::Cursor;
+use async_graphql::{
+    connection::{Connection, Edge, EmptyFields},
+    Context, Object, Result,
+};
+use sellershut_core::{
+    categories::{GetCategoryByIdRequest, GetSubCategoriesRequest},
+    common::pagination::{
+        cursor::{cursor_value::CursorType, CursorValue, Index},
+        Cursor,
+    },
+};
 use tonic::IntoRequest;
 use tracing::{instrument, trace};
 
-use crate::entities::user::GraphQLCategoryType as Category;
+use crate::entities::category::GraphQLCategoryType as Category;
 use crate::state::AppHandle;
 
 #[derive(Default, Debug)]
