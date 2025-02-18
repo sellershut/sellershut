@@ -1,3 +1,6 @@
+pub mod mutation;
+pub mod query;
+
 use activitypub_federation::{
     config::Data,
     fetch::object_id::ObjectId,

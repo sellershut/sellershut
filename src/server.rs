@@ -1,4 +1,5 @@
 pub mod error;
+pub mod graphql;
 pub mod grpc;
 pub mod routes;
 
@@ -21,6 +22,7 @@ pub async fn serve(
     // Create a regular axum app.
     let app = Router::new().route("/health", get(routes::health_check));
 
+    let app = routes::graphql(app, data.clone());
     let app = categories::router(users::router(app))
         .layer(FederationMiddleware::new(data))
         .layer((

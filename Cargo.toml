@@ -9,6 +9,8 @@ activitypub_federation = { version = "0.6.2", features = [
     "axum",
 ], default-features = false }
 anyhow = "1.0.95"
+async-graphql = { version = "7.0.15", default-features = false, features = ["playground", "time"] }
+async-graphql-axum = "7.0.15"
 axum = { version = "0.7.5", features = ["macros", "http2"] }
 clap = { version = "4.5.29", features = ["derive"] }
 config = { version = "0.15.8", features = ["toml"] }
