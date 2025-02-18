@@ -34,7 +34,7 @@ async fn main() -> Result<()> {
     let config = config.try_deserialize::<Configuration>()?;
     let hut_config: HutConfig = serde_json::from_value(config.misc.clone())?;
 
-    let _tracing = TracingBuilder::new().build(None);
+    let _tracing = TracingBuilder::new().build(config.application.log_level.clone());
 
     let (tx, _rx) = tokio::sync::oneshot::channel();
     let state = AppState::new(config.application.port, hut_config).await?;

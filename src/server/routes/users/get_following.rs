@@ -21,6 +21,6 @@ pub async fn http_get_user_following(
 
             Ok(FederationJson(WithContext::new_default(following)).into_response())
         }
-        _ => todo!(),
+        _ => todo!("a"),
     }
 }

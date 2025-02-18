@@ -1,16 +1,31 @@
 use activitypub_federation::{
-    config::Data, fetch::object_id::ObjectId, kinds::{
+    config::Data,
+    fetch::object_id::ObjectId,
+    kinds::{
         collection::{CollectionPageType, CollectionType},
         link::LinkType,
-    }, traits::Object
+        object::ImageType,
+    },
+    protocol::verification::verify_domains_match,
+    traits::Object,
 };
+use anyhow::anyhow;
+use sellershut_core::categories::{GetCategoryRequest, SubCategory, UpsertCategoryRequest};
 use serde::{Deserialize, Serialize};
+use tonic::IntoRequest;
+use tracing::{debug, info_span, Instrument};
 use url::Url;
 
 use crate::{server::error::AppError, state::AppHandle};
 
 #[derive(Debug, Clone)]
-pub struct HutCategory(pub sellershut_core::categories::Category);
+pub struct HutCategory(CategoryType);
+
+#[derive(Debug, Clone)]
+pub enum CategoryType {
+    Simple(sellershut_core::categories::Category),
+    Detailed(sellershut_core::categories::CategoryDetailed),
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -18,6 +33,9 @@ pub struct Category {
     #[serde(rename = "type")]
     kind: CollectionType,
     id: ObjectId<HutCategory>,
+    name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    image: Option<CategoryImage>,
     total_items: usize,
     // subcategories
     first: CategoryPagination,
@@ -25,12 +43,19 @@ pub struct Category {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct CategoryImage {
+    #[serde(rename = "type")]
+    kind: ImageType,
+    name: String,
+    url: Url,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CategoryPagination {
     #[serde(rename = "type")]
     kind: CollectionPageType,
-    id: Url,
-    part_of: Url,
-    next: Url,
+    part_of: ObjectId<HutCategory>,
     items: Vec<CategoryItem>,
 }
 
@@ -39,7 +64,62 @@ pub struct CategoryPagination {
 pub struct CategoryItem {
     #[serde(rename = "type")]
     kind: LinkType,
+    name: String,
     href: Url,
+}
+
+impl TryFrom<SubCategory> for CategoryItem {
+    type Error = AppError;
+
+    fn try_from(value: SubCategory) -> Result<Self, Self::Error> {
+        Ok(Self {
+            kind: LinkType::Link,
+            name: value.name,
+            href: Url::parse(&value.ap_id)?,
+        })
+    }
+}
+
+impl TryFrom<HutCategory> for Category {
+    type Error = AppError;
+
+    fn try_from(value: HutCategory) -> Result<Self, Self::Error> {
+        if let CategoryType::Detailed(value) = value.0 {
+            let id: ObjectId<HutCategory> = Url::parse(&value.ap_id)?.into();
+
+            Ok(Self {
+                kind: CollectionType::Collection,
+                id: id.clone(),
+                name: value.name.clone(),
+                total_items: value.sub_categories.len(),
+                image: match value.image_url {
+                    Some(url) => {
+                        let url = Url::parse(&url)?;
+                        Some(CategoryImage {
+                            kind: ImageType::Image,
+                            name: value.name,
+                            url,
+                        })
+                    }
+                    None => None,
+                },
+                first: CategoryPagination {
+                    kind: CollectionPageType::CollectionPage,
+                    part_of: id,
+                    items: {
+                        let items: Result<Vec<_>, _> = value
+                            .sub_categories
+                            .into_iter()
+                            .map(TryFrom::try_from)
+                            .collect();
+                        items?
+                    },
+                },
+            })
+        } else {
+            todo!("this should be an error, can't call with this type of category")
+        }
+    }
 }
 
 #[tonic::async_trait]
@@ -62,7 +142,28 @@ impl Object for HutCategory {
         object_id: Url,
         data: &Data<Self::DataType>,
     ) -> Result<Option<Self>, Self::Error> {
-        todo!()
+        let mut client = data.query_categories_client.clone();
+        let query_by_id = GetCategoryRequest {
+            ap_id: object_id.to_string(),
+        };
+
+        debug!(id = ?object_id, "getting category");
+
+        let resp = client
+            .category_by_ap_id(query_by_id.into_request())
+            .instrument(info_span!("grpc.category.get"))
+            .await?
+            .into_inner()
+            .category;
+
+        if let Some(resp) = resp {
+            debug!("category found {resp:?}");
+            let category = HutCategory(CategoryType::Detailed(resp));
+            Ok(Some(category))
+        } else {
+            debug!("category not found");
+            Ok(None)
+        }
     }
 
     #[doc = " Convert database type to Activitypub type."]
@@ -70,8 +171,8 @@ impl Object for HutCategory {
     #[doc = " Called when a local object gets fetched by another instance over HTTP, or when an object"]
     #[doc = " gets sent in an activity."]
     #[must_use]
-    async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
-        todo!()
+    async fn into_json(self, _data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
+        Self::Kind::try_from(self)
     }
 
     #[doc = " Verifies that the received object is valid."]
@@ -85,9 +186,10 @@ impl Object for HutCategory {
     async fn verify(
         json: &Self::Kind,
         expected_domain: &Url,
-        data: &Data<Self::DataType>,
+        _data: &Data<Self::DataType>,
     ) -> Result<(), Self::Error> {
-        todo!()
+        verify_domains_match(json.id.inner(), expected_domain)?;
+        Ok(())
     }
 
     #[doc = " Convert object from ActivityPub type to database type."]
@@ -97,6 +199,35 @@ impl Object for HutCategory {
     #[doc = " create and update, so an `upsert` operation should be used."]
     #[must_use]
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
-        todo!()
+        let id = json.id;
+        debug!(id = ?id, "upserting category");
+
+        let request = UpsertCategoryRequest {
+            category: Some(sellershut_core::categories::Category {
+                name: json.name,
+                sub_categories: json
+                    .first
+                    .items
+                    .iter()
+                    .map(|v| v.href.to_string())
+                    .collect(),
+                image_url: json.image.map(|v| v.url.to_string()),
+                // TODO: wtf            parent_id: todo!(),
+                ap_id: id.clone().into_inner().to_string(),
+                ..Default::default()
+            }),
+        }
+        .into_request();
+
+        let mut client = data.mutate_categories_client.clone();
+        let resp = client
+            .upsert(request)
+            .await?
+            .into_inner()
+            .category
+            .ok_or_else(|| anyhow!("category not returned from upsert"))?;
+        debug!(id = ?id, "category upserted");
+
+        Ok(Self(CategoryType::Simple(resp)))
     }
 }

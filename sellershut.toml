@@ -1,7 +1,7 @@
 [application]
 env = "development"
 port = 2210
-log-level = "h2=info,trace"
+log-level = "h2=info,debug"
 
 [misc]
 instance-name = "alpha"

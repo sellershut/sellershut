@@ -6,9 +6,7 @@ use activitypub_federation::{
     traits::{Actor, Object},
 };
 use anyhow::anyhow;
-use sellershut_core::users::{
-    QueryUserByIdRequest, QueryUsersFollowingRequest, UpsertUserRequest, User,
-};
+use sellershut_core::users::{QueryUserByApIdRequest, UpsertUserRequest, User};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use tonic::IntoRequest;
@@ -35,6 +33,41 @@ impl HutUser {
             url
         });
         Ok(url?)
+    }
+
+    pub fn following_url(&self) -> ApiResult<Url> {
+        let url = Url::parse(&self.0.ap_id).map(|mut url| {
+            url.set_path("following");
+            url
+        });
+        Ok(url?)
+    }
+}
+
+impl TryFrom<HutUser> for Person {
+    type Error = AppError;
+
+    fn try_from(value: HutUser) -> Result<Self, Self::Error> {
+        let id = Url::parse(&value.0.ap_id)?;
+        let inbox = Url::parse(&value.0.inbox)?;
+        let outbox = Url::parse(&value.0.outbox)?;
+
+        Ok(Self {
+            id: id.into(),
+            inbox,
+            outbox,
+            name: value.0.display_name.clone(),
+            kind: Default::default(),
+            preferred_username: value.0.username.clone(),
+            public_key: value.public_key(),
+            icon: match value.0.avatar_url {
+                Some(ref value) => Some(Url::parse(value)?),
+                None => None,
+            },
+            followers: value.followers_url()?,
+            following: value.following_url()?,
+            summary: value.0.summary,
+        })
     }
 }
 
@@ -123,14 +156,14 @@ impl Object for HutUser {
         data: &Data<Self::DataType>,
     ) -> Result<Option<Self>, Self::Error> {
         let mut client = data.query_users_client.clone();
-        let query_by_id = QueryUserByIdRequest {
-            id: object_id.to_string(),
+        let query_by_id = QueryUserByApIdRequest {
+            ap_id: object_id.to_string(),
         };
 
         debug!(id = ?object_id, "getting user");
 
         let resp = client
-            .query_user_by_id(query_by_id.into_request())
+            .query_user_by_ap_id(query_by_id.into_request())
             .instrument(info_span!("grpc.user.get"))
             .await?
             .into_inner()
@@ -152,29 +185,7 @@ impl Object for HutUser {
     #[doc = " gets sent in an activity."]
     #[instrument(skip(_data), err(Debug))]
     async fn into_json(self, _data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
-        let id = Url::parse(&self.0.ap_id)?;
-        let inbox = Url::parse(&self.0.inbox)?;
-        let outbox = Url::parse(&self.0.outbox)?;
-
-        let following = Url::parse(&format!("{}/following", self.0.ap_id))?;
-        let followers = Url::parse(&format!("{}/followers", self.0.ap_id))?;
-
-        Ok(Self::Kind {
-            id: id.into(),
-            inbox,
-            outbox,
-            name: self.0.display_name.clone(),
-            kind: Default::default(),
-            preferred_username: self.0.username.clone(),
-            public_key: self.public_key(),
-            icon: match self.0.avatar_url {
-                Some(ref value) => Some(Url::parse(value)?),
-                None => None,
-            },
-            summary: self.0.summary,
-            followers,
-            following,
-        })
+        Self::Kind::try_from(self)
     }
 
     #[doc = " Verifies that the received object is valid."]

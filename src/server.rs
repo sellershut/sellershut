@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use activitypub_federation::config::{FederationConfig, FederationMiddleware};
 use axum::{routing::get, Router};
+use routes::{categories, users};
 use tokio::signal;
 use tower_http::{timeout::TimeoutLayer, trace::TraceLayer};
 use tracing::info;
@@ -18,19 +19,9 @@ pub async fn serve(
 ) -> anyhow::Result<()> {
     let addr = data.addr;
     // Create a regular axum app.
-    let app = Router::new()
-        .route("/health", get(routes::health_check))
-        .route("/.well-known/webfinger", get(routes::web_finger))
-        //.route("/users/{user}", get(routes::users::http_get_user)) -- AXUM 0.8
-        .route("/users/:name", get(routes::users::http_get_user))
-        .route(
-            "/users/:name/following",
-            get(routes::users::http_get_user_following),
-        )
-        .route(
-            "/users/:name/followers",
-            get(routes::users::http_get_user_followers),
-        )
+    let app = Router::new().route("/health", get(routes::health_check));
+
+    let app = categories::router(users::router(app))
         .layer(FederationMiddleware::new(data))
         .layer((
             TraceLayer::new_for_http(),

@@ -11,7 +11,7 @@ use sellershut_core::{
     },
     users::{
         mutate_users_client::MutateUsersClient, query_users_client::QueryUsersClient,
-        CreateUserRequest, QueryUserByIdRequest, User,
+        CreateUserRequest, QueryUserByApIdRequest, User,
     },
 };
 use tonic::{transport::Endpoint, IntoRequest};
@@ -21,7 +21,7 @@ use url::Url;
 use crate::{
     entities::user::HutUser,
     server::grpc::interceptor::{Intercepted, MyInterceptor},
-    utils, HutConfig,
+    HutConfig,
 };
 
 pub type AppHandle = Arc<AppState>;
@@ -96,10 +96,13 @@ impl AppState {
 
         debug!(id = ?id, "getting user by id");
 
-        let user = QueryUserByIdRequest { id: id.to_string() }.into_request();
+        let user = QueryUserByApIdRequest {
+            ap_id: id.to_string(),
+        }
+        .into_request();
 
         let user = query_users_client
-            .query_user_by_id(user)
+            .query_user_by_ap_id(user)
             .await?
             .into_inner();
 
@@ -146,8 +149,8 @@ impl AppState {
             user.ok_or_else(|| anyhow!("no user was returned from create"))?
         };
 
-        let domain = utils::get_domain_with_port(&hostname)?;
+        //   let domain = utils::get_domain_with_port(&hostname)?;
 
-        Ok((HutUser(user), domain))
+        Ok((HutUser(user), hostname.to_string()))
     }
 }

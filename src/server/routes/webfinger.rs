@@ -1,16 +1,15 @@
 use activitypub_federation::{
     config::Data,
-    fetch::webfinger::{build_webfinger_response, extract_webfinger_name, Webfinger},
+    fetch::{
+        object_id::ObjectId,
+        webfinger::{build_webfinger_response, extract_webfinger_name, Webfinger},
+    },
 };
-use anyhow::Context;
 use axum::{debug_handler, extract::Query, Json};
 use serde::Deserialize;
 use url::Url;
 
-use crate::{
-    server::{error::AppError, grpc::get_user_by_name},
-    state::AppHandle,
-};
+use crate::{entities::user::HutUser, server::error::AppError, state::AppHandle};
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct WebFingerParams {
@@ -23,9 +22,9 @@ pub async fn web_finger(
     data: Data<AppHandle>,
 ) -> Result<Json<Webfinger>, AppError> {
     let name = extract_webfinger_name(&params.resource, &data)?;
-    let db_user = get_user_by_name(name, &data)
-        .await?
-        .context("no such user exists")?;
+
+    let user_id = ObjectId::<HutUser>::parse(&format!("{}/users/{name}", data.domain()))?;
+    let db_user = user_id.dereference(&data).await?;
 
     let url = Url::parse(&db_user.0.ap_id)?;
 

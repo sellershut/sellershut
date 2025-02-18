@@ -4,21 +4,22 @@ use activitypub_federation::{
 };
 use axum::{extract::Path, http::HeaderMap, response::IntoResponse};
 
-use crate::{entities::user::HutUser, server::error::AppError, state::AppHandle};
+use crate::{entities::category::HutCategory, server::error::AppError, state::AppHandle};
 
-pub async fn http_get_user(
+pub async fn http_get_category(
     header_map: HeaderMap,
     Path(name): Path<String>,
     data: Data<AppHandle>,
 ) -> Result<impl IntoResponse, AppError> {
     let accept = header_map.get("accept").map(|v| v.to_str().unwrap());
     if accept == Some(FEDERATION_CONTENT_TYPE) {
-        let user_id = ObjectId::<HutUser>::parse(&format!("{}/users/{name}", data.domain()))?;
-        let user = user_id.dereference(&data).await?;
+        let category_id =
+            ObjectId::<HutCategory>::parse(&format!("{}/categories/{name}", data.domain()))?;
+        let category = category_id.dereference(&data).await?;
 
-        let json_user = user.into_json(&data).await?;
-        Ok(FederationJson(WithContext::new_default(json_user)).into_response())
+        let json_category = category.into_json(&data).await?;
+        Ok(FederationJson(WithContext::new_default(json_category)).into_response())
     } else {
-        todo!("b")
+        todo!("c")
     }
 }
