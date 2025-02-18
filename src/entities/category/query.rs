@@ -2,11 +2,12 @@ use activitypub_federation::config::FederationConfig;
 use async_graphql::connection::{Connection, Edge, EmptyFields};
 use async_graphql::Result;
 use async_graphql::{Context, Object};
+use sellershut_core::categories::{GetCategoryByIdRequest, GetSubCategoriesRequest};
 use sellershut_core::common::pagination::cursor::cursor_value::CursorType;
 use sellershut_core::common::pagination::cursor::{CursorValue, Index};
 use sellershut_core::common::pagination::Cursor;
 use tonic::IntoRequest;
-use tracing::trace;
+use tracing::{instrument, trace};
 
 use crate::entities::user::GraphQLCategoryType as Category;
 use crate::state::AppHandle;
@@ -16,6 +17,7 @@ pub struct CategoryGraphqlQuery;
 
 #[Object]
 impl CategoryGraphqlQuery {
+    #[instrument(skip(self, ctx), err(Debug))]
     async fn categories(
         &self,
         ctx: &Context<'_>,
@@ -54,6 +56,74 @@ impl CategoryGraphqlQuery {
         conn.edges = edges;
 
         Ok(conn)
+    }
+
+    #[instrument(skip(self, ctx), err(Debug))]
+    async fn sub_categories(
+        &self,
+        ctx: &Context<'_>,
+        parent_id: Option<String>,
+        #[graphql(validator(min_length = 1, max_length = 100))] after: Option<String>,
+        #[graphql(validator(min_length = 1, max_length = 100))] before: Option<String>,
+        #[graphql(validator(minimum = 1, maximum = 100))] first: Option<i32>,
+        #[graphql(validator(minimum = 1, maximum = 100))] last: Option<i32>,
+    ) -> Result<Connection<String, Category, EmptyFields, EmptyFields>> {
+        let pagination = Params::parse(after, before, first, last)?;
+
+        trace!("extracting state");
+        let service = ctx.data::<FederationConfig<AppHandle>>()?;
+
+        let mut client = service.query_categories_client.clone();
+
+        let req = GetSubCategoriesRequest {
+            id: parent_id,
+            pagination: Some(pagination),
+        };
+
+        let res = client
+            .sub_categories(req.into_request())
+            .await?
+            .into_inner();
+
+        let page_info = res.page_info.as_ref().expect("page_info to be defined");
+
+        let mut conn = Connection::new(page_info.has_previous_page, page_info.has_next_page);
+
+        let mut edges = Vec::with_capacity(res.edges.len());
+
+        for edge in res.edges.into_iter() {
+            let edge = Edge::new(
+                edge.cursor,
+                Category::try_from(edge.node.expect("category to be some"))?,
+            );
+            edges.push(edge);
+        }
+        conn.edges = edges;
+
+        Ok(conn)
+    }
+
+    #[instrument(skip(ctx), err(Debug))]
+    async fn category_by_id(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(validator(min_length = 21, max_length = 21))] id: String,
+    ) -> async_graphql::Result<Option<Category>> {
+        trace!("extracting state");
+        let service = ctx.data::<FederationConfig<AppHandle>>()?;
+        let request = GetCategoryByIdRequest { id };
+
+        let mut client = service.query_categories_client.clone();
+        let res = client
+            .category_by_id(request.into_request())
+            .await?
+            .into_inner()
+            .category;
+
+        Ok(match res {
+            Some(category) => Some(Category::try_from(category)?),
+            None => None,
+        })
     }
 }
 
