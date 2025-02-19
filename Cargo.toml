@@ -14,6 +14,7 @@ async-graphql-axum = "7.0.15"
 axum = { version = "0.7.5", features = ["macros", "http2"] }
 clap = { version = "4.5.29", features = ["derive"] }
 config = { version = "0.15.8", features = ["toml"] }
+enum_delegate = "0.2.0"
 futures-util = { version = "0.3.31", default-features = false }
 nanoid = "0.4.0"
 serde = { version = "1.0.217", features = ["derive"] }

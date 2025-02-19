@@ -19,12 +19,22 @@ use tracing::{debug, info_span, instrument, Instrument};
 use url::Url;
 
 use crate::{
+    activities::{accept::AcceptActivity, follow::FollowActivity},
     server::error::{ApiResult, AppError},
     state::AppHandle,
 };
 
 #[derive(Debug, Clone)]
 pub struct HutUser(pub sellershut_core::users::User);
+
+/// List of all activities which this actor can receive.
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(untagged)]
+#[enum_delegate::implement(ActivityHandler)]
+pub enum PersonAcceptedActivities {
+    Follow(FollowActivity),
+    Accept(AcceptActivity),
+}
 
 impl HutUser {
     pub fn id(&self) -> ApiResult<ObjectId<HutUser>> {

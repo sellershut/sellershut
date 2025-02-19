@@ -4,18 +4,19 @@ use activitypub_federation::{
     kinds::activity::FollowType,
     traits::{ActivityHandler, Actor},
 };
+use futures_util::TryFutureExt;
 use sellershut_core::users::FollowUserRequest;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{
-    activities::accept::Accept, entities::user::HutUser, server::error::AppError, state::AppHandle,
-    utils::generate_object_id,
+    activities::accept::AcceptActivity, entities::user::HutUser, server::error::AppError,
+    state::AppHandle, utils::generate_object_id,
 };
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct Follow {
+pub struct FollowActivity {
     pub(crate) actor: ObjectId<HutUser>,
     pub(crate) object: ObjectId<HutUser>,
     #[serde(rename = "type")]
@@ -23,9 +24,9 @@ pub struct Follow {
     id: Url,
 }
 
-impl Follow {
-    pub fn new(actor: ObjectId<HutUser>, object: ObjectId<HutUser>, id: Url) -> Follow {
-        Follow {
+impl FollowActivity {
+    pub fn new(actor: ObjectId<HutUser>, object: ObjectId<HutUser>, id: Url) -> FollowActivity {
+        FollowActivity {
             actor,
             object,
             kind: Default::default(),
@@ -35,7 +36,7 @@ impl Follow {
 }
 
 #[tonic::async_trait]
-impl ActivityHandler for Follow {
+impl ActivityHandler for FollowActivity {
     #[doc = " App data type passed to handlers. Must be identical to"]
     #[doc = " [crate::config::FederationConfigBuilder::app_data] type."]
     type DataType = AppHandle;
@@ -71,26 +72,31 @@ impl ActivityHandler for Follow {
         let id = self.object.inner().to_string();
 
         let mut client = data.mutate_users_client.clone();
-        let r = client
-            .follow_user(FollowUserRequest {
-                ap_id: id,
-                follow_url: self.actor.inner().to_string(),
-            })
-            .await?
+
+        let (local_user, follower) = tokio::try_join!(
+            {
+                client
+                    .follow_user(FollowUserRequest {
+                        ap_id: id,
+                        follow_url: self.actor.inner().to_string(),
+                    })
+                    .map_err(|e| e.into())
+            },
+            { self.actor.dereference(data) }
+        )?;
+
+        let local_user = local_user
             .into_inner()
             .user
             .ok_or_else(|| anyhow::anyhow!("no user found in database"))?;
+        let local_user = HutUser(local_user);
 
-        let local_user = HutUser(r);
-
-        let follower = self.actor.dereference(data).await?;
         let id = generate_object_id(data.domain(), 21)?;
 
-        let follower_inbox = follower.shared_inbox_or_inbox();
-        let accept = Accept::new(local_user.id()?, self, id.clone());
+        let accept = AcceptActivity::new(local_user.id()?, self, id.clone());
 
         local_user
-            .send(accept, vec![follower_inbox], false, data)
+            .send(accept, vec![follower.shared_inbox_or_inbox()], false, data)
             .await?;
 
         Ok(())

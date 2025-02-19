@@ -2538,6 +2538,7 @@ dependencies = [
  "axum 0.7.9",
  "clap",
  "config",
+ "enum_delegate",
  "fake",
  "futures-util",
  "nanoid",

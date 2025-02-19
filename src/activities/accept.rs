@@ -6,21 +6,21 @@ use url::Url;
 
 use crate::{entities::user::HutUser, server::error::AppError, state::AppHandle};
 
-use super::follow::Follow;
+use super::follow::FollowActivity;
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct Accept {
+pub struct AcceptActivity {
     actor: ObjectId<HutUser>,
-    object: Follow,
+    object: FollowActivity,
     #[serde(rename = "type")]
     kind: AcceptType,
     id: Url,
 }
 
-impl Accept {
-    pub fn new(actor: ObjectId<HutUser>, object: Follow, id: Url) -> Accept {
-        Accept {
+impl AcceptActivity {
+    pub fn new(actor: ObjectId<HutUser>, object: FollowActivity, id: Url) -> AcceptActivity {
+        AcceptActivity {
             actor,
             object,
             kind: Default::default(),
@@ -30,7 +30,7 @@ impl Accept {
 }
 
 #[tonic::async_trait]
-impl ActivityHandler for Accept {
+impl ActivityHandler for AcceptActivity {
     #[doc = " App data type passed to handlers. Must be identical to"]
     #[doc = " [crate::config::FederationConfigBuilder::app_data] type."]
     type DataType = AppHandle;
