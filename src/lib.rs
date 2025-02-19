@@ -1,7 +1,8 @@
+pub mod activities;
 pub mod entities;
 pub mod server;
 pub mod state;
-// pub mod utils;
+pub mod utils;
 
 use std::sync::Arc;
 

@@ -2,11 +2,13 @@ pub mod mutation;
 pub mod query;
 
 use activitypub_federation::{
+    activity_queue::queue_activity,
+    activity_sending::SendActivityTask,
     config::Data,
     fetch::object_id::ObjectId,
     kinds::{actor::PersonType, collection::CollectionType, link::LinkType},
-    protocol::{public_key::PublicKey, verification::verify_domains_match},
-    traits::{Actor, Object},
+    protocol::{context::WithContext, public_key::PublicKey, verification::verify_domains_match},
+    traits::{ActivityHandler, Actor, Object},
 };
 use anyhow::anyhow;
 use sellershut_core::users::{QueryUserByApIdRequest, UpsertUserRequest, User};
@@ -44,6 +46,30 @@ impl HutUser {
             url
         });
         Ok(url?)
+    }
+
+    pub(crate) async fn send<Activity>(
+        &self,
+        activity: Activity,
+        recipients: Vec<Url>,
+        use_queue: bool,
+        data: &Data<AppHandle>,
+    ) -> ApiResult<()>
+    where
+        Activity: ActivityHandler + Serialize + std::fmt::Debug + Send + Sync,
+        <Activity as ActivityHandler>::Error: From<anyhow::Error> + From<serde_json::Error>,
+    {
+        let activity = WithContext::new_default(activity);
+        // Send through queue in some cases and bypass it in others to test both code paths
+        if use_queue {
+            queue_activity(&activity, self, recipients, data).await?;
+        } else {
+            let sends = SendActivityTask::prepare(&activity, self, recipients, data).await?;
+            for send in sends {
+                send.sign_and_send(data).await?;
+            }
+        }
+        Ok(())
     }
 }
 
