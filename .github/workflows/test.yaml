@@ -18,7 +18,7 @@ jobs:
       postgres:
         image: postgres
         env:
-          POSTGRES_PASSWORD: $PGPASSWORD
+          POSTGRES_PASSWORD: ${{ env.PGPASSWORD }}
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -47,6 +47,8 @@ jobs:
         run: |
           psql -h localhost -U postgres -c "CREATE DATABASE users;"
           psql -h localhost -U postgres -c "CREATE DATABASE categories;"
+        env:
+          PGPASSWORD: ${{ env.PGPASSWORD }}
       - name: run stack
         run: |
           sh ./.github/workflows/stackup.sh
@@ -90,7 +92,7 @@ jobs:
       postgres:
         image: postgres
         env:
-          POSTGRES_PASSWORD: $PGPASSWORD
+          POSTGRES_PASSWORD: ${{ env.PGPASSWORD }}
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -112,6 +114,8 @@ jobs:
         run: |
           psql -h localhost -U postgres -c "CREATE DATABASE users;"
           psql -h localhost -U postgres -c "CREATE DATABASE categories;"
+        env:
+          PGPASSWORD: ${{ env.PGPASSWORD }}
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
