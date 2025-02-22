@@ -4,6 +4,8 @@ on:
   push:
     branches: [master]
   pull_request:
+env:
+  PGPASSWORD: password
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -11,13 +13,12 @@ name: test
 jobs:
   required:
     runs-on: ubuntu-latest
-    container: debian:stable-slim
     name: ubuntu / ${{ matrix.toolchain }}
     services:
       postgres:
         image: postgres
         env:
-          POSTGRES_PASSWORD: password
+          POSTGRES_PASSWORD: $PGPASSWORD
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -42,11 +43,10 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
-      - run: |
-          apt-get update
-          apt-get install --yes --no-install-recommends postgresql-client
-      - run: |
-          psql -h postgres -U postgres -c 'CREATE DATABASE users; CREATE DATABASE categories;'
+      - name: Create databases
+        run: |
+          psql -h localhost -U postgres -c "CREATE DATABASE users;"
+          psql -h localhost -U postgres -c "CREATE DATABASE categories;"
       - name: run stack
         run: |
           sh ./.github/workflows/stackup.sh
@@ -86,12 +86,11 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     name: ubuntu / stable / coverage
-    container: debian:stable-slim
     services:
       postgres:
         image: postgres
         env:
-          POSTGRES_PASSWORD: password
+          POSTGRES_PASSWORD: $PGPASSWORD
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -109,17 +108,16 @@ jobs:
           components: llvm-tools-preview
       - name: cargo install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
+      - name: create databases
+        run: |
+          psql -h localhost -U postgres -c "CREATE DATABASE users;"
+          psql -h localhost -U postgres -c "CREATE DATABASE categories;"
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
-      - run: |
-          apt-get update
-          apt-get install --yes --no-install-recommends postgresql-client
-      - run: |
-          psql -h postgres -U postgres -c 'CREATE DATABASE users; CREATE DATABASE categories;'
       - name: run stack
         run: |
           sh ./.github/workflows/stackup.sh
