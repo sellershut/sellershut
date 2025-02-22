@@ -42,7 +42,7 @@ async fn variable_query_params() -> Result<()> {
 async fn webfinger_ok() -> Result<()> {
     let (tx, rx) = oneshot::channel();
     let app = TestApp::new(tx).await;
-    let f = format!("acct:{}@localhost:8080", app.instance_name);
+    let f = format!("acct:{}@http://localhost:8080", app.instance_name);
     let query = [("resource", f.as_str())];
 
     let port = rx.await.unwrap();
@@ -56,6 +56,7 @@ async fn webfinger_ok() -> Result<()> {
         .send()
         .await
         .expect("Failed to execute request.");
+    dbg!(&response);
 
     let actual_result = response.status().is_success();
 

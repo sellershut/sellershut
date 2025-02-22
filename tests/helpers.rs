@@ -1,7 +1,4 @@
-use fake::{
-    faker::internet::en::{IPv4, Username},
-    Fake, Faker,
-};
+use fake::{faker::internet::en::Username, Fake};
 use sellershut::{state::AppState, HutConfig};
 use sellershut_services::{tracing::TracingBuilder, Configuration};
 
