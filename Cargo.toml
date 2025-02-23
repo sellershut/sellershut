@@ -9,7 +9,10 @@ activitypub_federation = { version = "0.6.2", features = [
     "axum",
 ], default-features = false }
 anyhow = "1.0.95"
-async-graphql = { version = "7.0.15", default-features = false, features = ["playground", "time"] }
+async-graphql = { version = "7.0.15", default-features = false, features = [
+    "playground",
+    "time",
+] }
 async-graphql-axum = "7.0.15"
 axum = { version = "0.7.5", features = ["macros", "http2"] }
 clap = { version = "4.5.29", features = ["derive"] }
@@ -36,11 +39,18 @@ url = "2.5.4"
 
 [dependencies.sellershut-services]
 git = "https://github.com/sellershut/services-lib"
-features = ["api", "tracing"]
+features = ["api", "id-gen", "tracing"]
 
 [dependencies.sellershut-core]
 git = "https://github.com/sellershut/sellershut-core"
-features = ["rpc-client-categories", "rpc-client-users", "serde", "time"]
+features = [
+    "rpc-client-categories",
+    "rpc-client-listings",
+    "rpc-client-users",
+    "rust_decimal",
+    "serde",
+    "time",
+]
 
 [dev-dependencies]
 fake = "4.0.0"

@@ -8,6 +8,7 @@ instance-name = "alpha"
 hostname = "http://localhost:2210"
 users-service = "http://localhost:1304"
 categories-service = "http://localhost:1610"
+listings-service = "http://localhost:1810"
 
 # vim:ft=toml
 

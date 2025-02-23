@@ -22,6 +22,8 @@ pub struct HutConfig {
     pub categories_service: String,
     #[serde(rename = "instance-name")]
     pub instance_name: String,
+    #[serde(rename = "listings-service")]
+    pub listings_service: String,
 }
 
 pub async fn run(
