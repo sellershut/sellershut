@@ -7,8 +7,11 @@ use activitypub_federation::{
     kinds::object::{ImageType, ObjectType, PlaceType},
     traits::Object,
 };
+use sellershut_core::listings::GetListingByApIdRequest;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
+use tonic::IntoRequest;
+use tracing::{debug, info_span, Instrument};
 use url::Url;
 
 use crate::{server::error::AppError, state::AppHandle};
@@ -18,8 +21,10 @@ use super::user::HutUser;
 #[derive(Debug, Clone)]
 pub struct HutListing(sellershut_core::listings::Listing);
 
-impl From<HutListing> for Listing {
-    fn from(value: HutListing) -> Self {
+impl TryFrom<HutListing> for Listing {
+    type Error = AppError;
+
+    fn try_from(value: HutListing) -> Result<Self, Self::Error> {
         todo!()
     }
 }
@@ -39,6 +44,14 @@ pub struct Listing {
     #[serde(rename = "endTime")]
     end_time: Option<OffsetDateTime>,
     published: OffsetDateTime,
+}
+
+impl TryFrom<Listing> for HutListing {
+    type Error = AppError;
+
+    fn try_from(value: Listing) -> Result<Self, Self::Error> {
+        todo!()
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -79,7 +92,28 @@ impl Object for HutListing {
         object_id: Url,
         data: &Data<Self::DataType>,
     ) -> Result<Option<Self>, Self::Error> {
-        todo!()
+        let mut client = data.query_listings_client.clone();
+        let query_by_ap_id = GetListingByApIdRequest {
+            ap_id: object_id.to_string(),
+        };
+
+        debug!(id = ?object_id, "getting listing");
+
+        let resp = client
+            .listings_by_ap_id(query_by_ap_id.into_request())
+            .instrument(info_span!("grpc.listing.get"))
+            .await?
+            .into_inner()
+            .listing;
+
+        if let Some(resp) = resp {
+            debug!(id = ?object_id, "listing found {resp:?}");
+            let listing = HutListing(resp);
+            Ok(Some(listing))
+        } else {
+            debug!(id = ?object_id, "listing not found");
+            Ok(None)
+        }
     }
 
     #[doc = " Convert database type to Activitypub type."]
@@ -88,7 +122,7 @@ impl Object for HutListing {
     #[doc = " gets sent in an activity."]
     #[must_use]
     async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
-        todo!()
+        Self::Kind::try_from(self)
     }
 
     #[doc = " Verifies that the received object is valid."]

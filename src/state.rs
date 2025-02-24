@@ -9,13 +9,16 @@ use sellershut_core::{
         mutate_categories_client::MutateCategoriesClient,
         query_categories_client::QueryCategoriesClient,
     },
+    listings::{
+        mutate_listings_client::MutateListingsClient, query_listings_client::QueryListingsClient,
+    },
     users::{
         mutate_users_client::MutateUsersClient, query_users_client::QueryUsersClient,
         CreateUserRequest, QueryUserByApIdRequest, User,
     },
 };
 use tonic::{transport::Endpoint, IntoRequest};
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, trace};
 use url::Url;
 
 use crate::{
@@ -33,6 +36,8 @@ pub struct AppState {
     pub mutate_users_client: MutateUsersClient<Intercepted>,
     pub query_categories_client: QueryCategoriesClient<Intercepted>,
     pub mutate_categories_client: MutateCategoriesClient<Intercepted>,
+    pub query_listings_client: QueryListingsClient<Intercepted>,
+    pub mutate_listings_client: MutateListingsClient<Intercepted>,
     pub system_user: HutUser,
     pub domain: Arc<str>,
 }
@@ -41,17 +46,33 @@ impl AppState {
     pub async fn new(port: u16, hut_config: HutConfig) -> Result<Self> {
         let listen_address = SocketAddr::from((Ipv6Addr::UNSPECIFIED, port));
 
-        debug!(host = %hut_config.users_service, "connecting to users service");
+        let users_channel = async {
+            trace!(host = %hut_config.users_service, "connecting to users service");
+            Endpoint::new(hut_config.users_service.to_string())?
+                .connect()
+                .await
+                .inspect_err(|e| error!("could not connect to users service: {e}"))
+        };
 
-        let users_channel = Endpoint::new(hut_config.users_service.to_string())?
-            .connect()
-            .await
-            .inspect_err(|e| error!("could not connect to users service: {e}"))?;
+        let categories_channel = async {
+            trace!(host = %hut_config.categories_service, "connecting to categories service");
+            Endpoint::new(hut_config.categories_service.to_string())?
+                .connect()
+                .await
+                .inspect_err(|e| error!("could not connect to categories service: {e}"))
+        };
 
-        let categories_channel = Endpoint::new(hut_config.categories_service.to_string())?
-            .connect()
-            .await
-            .inspect_err(|e| error!("could not connect to categories service: {e}"))?;
+        let listings_channel = async {
+            trace!(host = %hut_config.listings_service, "connecting to listings service");
+            Endpoint::new(hut_config.listings_service.to_string())?
+                .connect()
+                .await
+                .inspect_err(|e| error!("could not connect to listings service: {e}"))
+        };
+
+        let (users_channel, categories_channel, listings_channel) =
+            futures_util::future::try_join3(users_channel, categories_channel, listings_channel)
+                .await?;
 
         let mut query_users_client =
             QueryUsersClient::with_interceptor(users_channel.clone(), MyInterceptor);
@@ -64,6 +85,12 @@ impl AppState {
         let mutate_categories_client =
             MutateCategoriesClient::with_interceptor(categories_channel, MyInterceptor);
         info!(host = %hut_config.categories_service, "connected to categories service");
+
+        let query_listings_client =
+            QueryListingsClient::with_interceptor(listings_channel.clone(), MyInterceptor);
+        let mutate_listings_client =
+            MutateListingsClient::with_interceptor(listings_channel, MyInterceptor);
+        info!(host = %hut_config.categories_service, "connected to listings service");
 
         let (system_user, domain) = Self::check_user(
             hut_config,
@@ -80,6 +107,8 @@ impl AppState {
             domain: domain.as_str().into(),
             query_categories_client,
             mutate_categories_client,
+            query_listings_client,
+            mutate_listings_client,
         })
     }
 

@@ -18,10 +18,10 @@ where
     T: Clone + Send + Sync + 'static,
 {
     router
-        .route("/users/:name/inbox", post(http_post_user_inbox))
+        .route("/users/:id/inbox", post(http_post_user_inbox))
         .route("/.well-known/webfinger", get(web_finger))
         //.route("/users/{user}", get(routes::users::http_get_user)) -- AXUM 0.8
-        .route("/users/:name", get(http_get_user))
-        .route("/users/:name/following", get(http_get_user_following))
-        .route("/users/:name/followers", get(http_get_user_followers))
+        .route("/users/:id", get(http_get_user))
+        .route("/users/:id/following", get(http_get_user_following))
+        .route("/users/:id/followers", get(http_get_user_followers))
 }

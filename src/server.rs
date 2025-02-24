@@ -1,13 +1,13 @@
 pub mod error;
 pub mod graphql;
 pub mod grpc;
-pub mod routes;
+pub mod http;
 
 use std::time::Duration;
 
 use activitypub_federation::config::{FederationConfig, FederationMiddleware};
 use axum::{routing::get, Router};
-use routes::{categories, users};
+use http::{categories, listings, users};
 use tokio::signal;
 use tower_http::{timeout::TimeoutLayer, trace::TraceLayer};
 use tracing::info;
@@ -20,17 +20,19 @@ pub async fn serve(
 ) -> anyhow::Result<()> {
     let addr = data.addr;
     // Create a regular axum app.
-    let app = Router::new().route("/health", get(routes::health_check));
+    let app = Router::new().route("/health", get(http::health_check));
 
-    let app = routes::graphql(app, data.clone());
-    let app = categories::router(users::router(app))
-        .layer(FederationMiddleware::new(data))
-        .layer((
-            TraceLayer::new_for_http(),
-            // Graceful shutdown will wait for outstanding requests to complete. Add a timeout so
-            // requests don't hang forever.
-            TimeoutLayer::new(Duration::from_secs(10)),
-        ));
+    let app = http::graphql(app, data.clone());
+    let app = listings::router(app);
+    let app = categories::router(app);
+    let app = users::router(app);
+
+    let app = app.layer(FederationMiddleware::new(data)).layer((
+        TraceLayer::new_for_http(),
+        // Graceful shutdown will wait for outstanding requests to complete. Add a timeout so
+        // requests don't hang forever.
+        TimeoutLayer::new(Duration::from_secs(10)),
+    ));
 
     // Create a `TcpListener` using tokio.
 

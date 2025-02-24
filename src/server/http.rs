@@ -1,5 +1,6 @@
 pub mod categories;
 mod health;
+pub mod listings;
 pub mod users;
 mod webfinger;
 
