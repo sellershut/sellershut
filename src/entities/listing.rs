@@ -7,7 +7,8 @@ use activitypub_federation::{
     kinds::object::{ImageType, ObjectType, PlaceType},
     traits::Object,
 };
-use sellershut_core::listings::GetListingByApIdRequest;
+use anyhow::anyhow;
+use sellershut_core::listings::{GetListingByApIdRequest, UpsertistingRequest};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use tonic::IntoRequest;
@@ -16,7 +17,7 @@ use url::Url;
 
 use crate::{server::error::AppError, state::AppHandle};
 
-use super::user::HutUser;
+use super::{category::HutCategory, user::HutUser};
 
 #[derive(Debug, Clone)]
 pub struct HutListing(sellershut_core::listings::Listing);
@@ -44,6 +45,18 @@ pub struct Listing {
     #[serde(rename = "endTime")]
     end_time: Option<OffsetDateTime>,
     published: OffsetDateTime,
+    attachment: Vec<Media>,
+    image: Media,
+    // category
+    tag: ObjectId<HutCategory>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Media {
+    #[serde(rename = "type")]
+    kind: ImageType,
+    url: Url,
 }
 
 impl TryFrom<Listing> for HutListing {
@@ -134,11 +147,11 @@ impl Object for HutListing {
     #[doc = " like `Delete/Note`, which shouldn\'t perform any database write for the inner `Note`."]
     #[must_use]
     async fn verify(
-        json: &Self::Kind,
-        expected_domain: &Url,
-        data: &Data<Self::DataType>,
+        _json: &Self::Kind,
+        _expected_domain: &Url,
+        _data: &Data<Self::DataType>,
     ) -> Result<(), Self::Error> {
-        todo!()
+        Ok(())
     }
 
     #[doc = " Convert object from ActivityPub type to database type."]
@@ -148,6 +161,42 @@ impl Object for HutListing {
     #[doc = " create and update, so an `upsert` operation should be used."]
     #[must_use]
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
-        todo!()
+        let id = json.id;
+
+        debug!(id = ?id, "upserting listing");
+
+        let request = UpsertistingRequest {
+            listing: Some(sellershut_core::listings::Listing {
+                user_ap_id: json.attributed_to.into_inner().to_string(),
+                title: json.name,
+                description: json.summary,
+                expires_at: json.end_time.map(Into::into),
+                created_at: Some(json.published.into()),
+                ap_id: id.clone().into_inner().to_string(),
+                quantity: todo!(),
+                status: todo!(),
+                price: todo!(),
+                liked_by: todo!(),
+                category_ap_id: todo!(),
+                location: todo!(),
+                city: todo!(),
+                region: todo!(),
+                country: todo!(),
+                ..Default::default()
+            }),
+        }
+        .into_request();
+
+        let mut client = data.mutate_listings_client.clone();
+        let resp = client
+            .upsert_listing(request)
+            .instrument(info_span!("grpc.listing.upsert"))
+            .await?
+            .into_inner()
+            .listing
+            .ok_or_else(|| anyhow!("listing not returned from upsert"))?;
+        debug!(id = ?id, "listing upserted");
+
+        Ok(HutListing(resp))
     }
 }

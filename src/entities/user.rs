@@ -273,6 +273,7 @@ impl Object for HutUser {
         let mut client = data.mutate_users_client.clone();
         let resp = client
             .upsert_user(request)
+            .instrument(info_span!("grpc.user.upsert"))
             .await?
             .into_inner()
             .user

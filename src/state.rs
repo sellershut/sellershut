@@ -154,6 +154,7 @@ impl AppState {
                 url.to_string()
             };
 
+            // should be a service type
             let request = CreateUserRequest {
                 user: Some(User {
                     ap_id: id.to_string(),
