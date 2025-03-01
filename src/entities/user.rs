@@ -15,7 +15,7 @@ use sellershut_core::users::{QueryUserByApIdRequest, UpsertUserRequest, User};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use tonic::IntoRequest;
-use tracing::{debug, info_span, instrument, Instrument};
+use tracing::{debug, info_span, instrument, trace, Instrument};
 use url::Url;
 
 use crate::{
@@ -209,7 +209,7 @@ impl Object for HutUser {
             .user;
 
         if let Some(resp) = resp {
-            debug!("user found {resp:?}");
+            trace!("user found {resp:?}");
             let user = HutUser(resp);
             Ok(Some(user))
         } else {

@@ -58,7 +58,6 @@ impl ActivityHandler for FollowActivity {
     #[doc = ""]
     #[doc = " This needs to be a separate method, because it might be used for activities"]
     #[doc = " like `Undo/Follow`, which shouldn\'t perform any database write for the inner `Follow`."]
-    #[must_use]
     async fn verify(&self, _data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -67,7 +66,6 @@ impl ActivityHandler for FollowActivity {
     #[doc = ""]
     #[doc = " Should perform validation and possibly write action to the database. In case the activity"]
     #[doc = " has a nested `object` field, must call `object.from_json` handler."]
-    #[must_use]
     async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
         let id = self.object.inner().to_string();
 

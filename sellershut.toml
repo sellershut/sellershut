@@ -1,13 +1,13 @@
 [application]
 env = "development"
-port = 2210
+port = 12210
 log-level = "h2=info,tower_http=info,debug"
 
 [misc]
 instance-name = "alpha"
-hostname = "http://localhost:2210"
-users-service = "http://localhost:1304"
-categories-service = "http://localhost:1610"
+hostname = "http://localhost:12210"
+users-service = "http://localhost:11304"
+categories-service = "http://localhost:11610"
 listings-service = "http://localhost:1810"
 
 # vim:ft=toml

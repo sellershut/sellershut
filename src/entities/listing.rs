@@ -12,12 +12,15 @@ use sellershut_core::listings::{GetListingByApIdRequest, UpsertistingRequest};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use tonic::IntoRequest;
-use tracing::{debug, info_span, Instrument};
+use tracing::{Instrument, debug, info_span};
 use url::Url;
 
 use crate::{server::error::AppError, state::AppHandle};
 
-use super::{category::HutCategory, user::HutUser};
+use super::{
+    category::{CategoryItem, HutCategory},
+    user::HutUser,
+};
 
 #[derive(Debug, Clone)]
 pub struct HutListing(sellershut_core::listings::Listing);
@@ -45,10 +48,11 @@ pub struct Listing {
     #[serde(rename = "endTime")]
     end_time: Option<OffsetDateTime>,
     published: OffsetDateTime,
+    updated: OffsetDateTime,
     attachment: Vec<Media>,
     image: Media,
-    // category
-    tag: ObjectId<HutCategory>,
+    // category?? more tags?
+    tag: CategoryItem,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -100,7 +104,6 @@ impl Object for HutListing {
     #[doc = " Try to read the object with given `id` from local database."]
     #[doc = ""]
     #[doc = " Should return `Ok(None)` if not found."]
-    #[must_use]
     async fn read_from_id(
         object_id: Url,
         data: &Data<Self::DataType>,
@@ -133,7 +136,6 @@ impl Object for HutListing {
     #[doc = ""]
     #[doc = " Called when a local object gets fetched by another instance over HTTP, or when an object"]
     #[doc = " gets sent in an activity."]
-    #[must_use]
     async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
         Self::Kind::try_from(self)
     }
@@ -145,7 +147,6 @@ impl Object for HutListing {
     #[doc = ""]
     #[doc = " It is necessary to use a separate method for this, because it might be used for activities"]
     #[doc = " like `Delete/Note`, which shouldn\'t perform any database write for the inner `Note`."]
-    #[must_use]
     async fn verify(
         _json: &Self::Kind,
         _expected_domain: &Url,
@@ -159,7 +160,6 @@ impl Object for HutListing {
     #[doc = " Called when an object is received from HTTP fetch or as part of an activity. This method"]
     #[doc = " should write the received object to database. Note that there is no distinction between"]
     #[doc = " create and update, so an `upsert` operation should be used."]
-    #[must_use]
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
         let id = json.id;
 

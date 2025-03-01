@@ -142,7 +142,6 @@ impl Object for HutCategory {
     #[doc = " Try to read the object with given `id` from local database."]
     #[doc = ""]
     #[doc = " Should return `Ok(None)` if not found."]
-    #[must_use]
     async fn read_from_id(
         object_id: Url,
         data: &Data<Self::DataType>,
@@ -175,7 +174,6 @@ impl Object for HutCategory {
     #[doc = ""]
     #[doc = " Called when a local object gets fetched by another instance over HTTP, or when an object"]
     #[doc = " gets sent in an activity."]
-    #[must_use]
     async fn into_json(self, _data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
         Self::Kind::try_from(self)
     }
@@ -187,7 +185,6 @@ impl Object for HutCategory {
     #[doc = ""]
     #[doc = " It is necessary to use a separate method for this, because it might be used for activities"]
     #[doc = " like `Delete/Note`, which shouldn\'t perform any database write for the inner `Note`."]
-    #[must_use]
     async fn verify(
         json: &Self::Kind,
         expected_domain: &Url,
@@ -202,7 +199,6 @@ impl Object for HutCategory {
     #[doc = " Called when an object is received from HTTP fetch or as part of an activity. This method"]
     #[doc = " should write the received object to database. Note that there is no distinction between"]
     #[doc = " create and update, so an `upsert` operation should be used."]
-    #[must_use]
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
         let id = json.id;
         debug!(id = ?id, "upserting category");

@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use sellershut_core::{
     categories::{
         mutate_categories_client::MutateCategoriesClient,
@@ -13,18 +13,18 @@ use sellershut_core::{
         mutate_listings_client::MutateListingsClient, query_listings_client::QueryListingsClient,
     },
     users::{
-        mutate_users_client::MutateUsersClient, query_users_client::QueryUsersClient,
-        CreateUserRequest, QueryUserByApIdRequest, User,
+        CreateUserRequest, QueryUserByApIdRequest, User, mutate_users_client::MutateUsersClient,
+        query_users_client::QueryUsersClient,
     },
 };
-use tonic::{transport::Endpoint, IntoRequest};
+use tonic::{IntoRequest, transport::Endpoint};
 use tracing::{debug, error, info, trace};
 use url::Url;
 
 use crate::{
+    HutConfig,
     entities::user::HutUser,
     server::grpc::interceptor::{Intercepted, MyInterceptor},
-    HutConfig,
 };
 
 pub type AppHandle = Arc<AppState>;
@@ -40,6 +40,7 @@ pub struct AppState {
     pub mutate_listings_client: MutateListingsClient<Intercepted>,
     pub system_user: HutUser,
     pub domain: Arc<str>,
+    pub hostname: Arc<str>,
 }
 
 impl AppState {
@@ -93,7 +94,7 @@ impl AppState {
         info!(host = %hut_config.categories_service, "connected to listings service");
 
         let (system_user, domain) = Self::check_user(
-            hut_config,
+            &hut_config,
             &mut query_users_client,
             &mut mutate_users_client,
         )
@@ -109,18 +110,28 @@ impl AppState {
             mutate_categories_client,
             query_listings_client,
             mutate_listings_client,
+            hostname: hut_config.hostname.into(),
         })
     }
 
     async fn check_user(
-        hut_config: HutConfig,
+        hut_config: &HutConfig,
         query_users_client: &mut QueryUsersClient<Intercepted>,
         mutate_users_client: &mut MutateUsersClient<Intercepted>,
     ) -> Result<(HutUser, String)> {
         let hostname = hut_config.hostname.as_str();
+        let mut id = Url::parse(hostname)?;
+
+        println!("{}", id.to_string());
+        println!("{:?}", id.domain());
+
+        let domain = id
+            .domain()
+            .ok_or_else(|| anyhow::anyhow!("no domain from url"))?
+            .to_string();
+
         let username = hut_config.instance_name.as_str();
 
-        let mut id = Url::parse(hostname)?;
         id.set_path(&format!("users/{username}"));
 
         debug!(id = ?id, "getting user by id");
@@ -179,8 +190,6 @@ impl AppState {
             user.ok_or_else(|| anyhow!("no user was returned from create"))?
         };
 
-        //   let domain = utils::get_domain_with_port(&hostname)?;
-
-        Ok((HutUser(user), hostname.to_string()))
+        Ok((HutUser(user), domain.to_string()))
     }
 }

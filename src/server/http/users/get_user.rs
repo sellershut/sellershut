@@ -1,6 +1,6 @@
 use activitypub_federation::{
-    axum::json::FederationJson, config::Data, fetch::object_id::ObjectId,
-    protocol::context::WithContext, traits::Object, FEDERATION_CONTENT_TYPE,
+    FEDERATION_CONTENT_TYPE, axum::json::FederationJson, config::Data, fetch::object_id::ObjectId,
+    protocol::context::WithContext, traits::Object,
 };
 use axum::{extract::Path, http::HeaderMap, response::IntoResponse};
 
@@ -13,7 +13,7 @@ pub async fn http_get_user(
 ) -> Result<impl IntoResponse, AppError> {
     let accept = header_map.get("accept").map(|v| v.to_str().unwrap());
     if accept == Some(FEDERATION_CONTENT_TYPE) {
-        let user_id = ObjectId::<HutUser>::parse(&format!("{}/users/{name}", data.domain()))?;
+        let user_id = ObjectId::<HutUser>::parse(&format!("{}/users/{name}", data.hostname))?;
         let user = user_id.dereference(&data).await?;
 
         let json_user = user.into_json(&data).await?;
