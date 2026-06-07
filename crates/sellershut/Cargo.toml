@@ -1,0 +1,9 @@
+[package]
+name = "sellershut"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+
+[dependencies]
