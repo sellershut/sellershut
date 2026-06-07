@@ -8,3 +8,6 @@ homepage = "https://github.com/sellershut/sellershut"
 license = "AGPL-3.0-only"
 
 [workspace.dependencies]
+tokio = "1.52.3"
+tracing = "0.1.44"
+uuid = "1.23.2"

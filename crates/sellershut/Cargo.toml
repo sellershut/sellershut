@@ -7,3 +7,24 @@ homepage.workspace = true
 documentation.workspace = true
 
 [dependencies]
+anyhow = "1.0.102"
+axum = { version = "0.8.9", features = ["tracing"] }
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
+tower = "0.5.3"
+tower-http = { version = "0.6.11", features = ["cors", "request-id", "timeout", "trace"] }
+tracing.workspace = true
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+utoipa = { version = "5.5.0", features = ["time", "axum_extras"] }
+utoipa-axum = "0.2.0"
+utoipa-rapidoc = { version = "6.0.0", optional = true }
+utoipa-redoc = { version = "6.0.0", optional = true }
+utoipa-scalar = { version = "0.3.0", optional = true }
+utoipa-swagger-ui = { version = "9.0.2", optional = true }
+uuid = { workspace = true, features = ["v7"] }
+
+[features]
+default = ["doc-scalar"]
+doc-swagger = ["dep:utoipa-swagger-ui", "utoipa-swagger-ui/axum"]
+doc-redoc = ["dep:utoipa-redoc", "utoipa-redoc/axum"]
+doc-rapidoc = ["dep:utoipa-rapidoc", "utoipa-rapidoc/axum"]
+doc-scalar = ["dep:utoipa-scalar", "utoipa-scalar/axum"]
