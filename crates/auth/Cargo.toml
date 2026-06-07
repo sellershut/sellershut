@@ -1,0 +1,10 @@
+[package]
+name = "auth"
+version = "0.0.0"
+edition = "2024"
+documentation.workspace = true
+homepage.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]

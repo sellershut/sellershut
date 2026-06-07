@@ -1,5 +1,8 @@
 use axum::{Router, middleware};
-use utoipa::OpenApi;
+use utoipa::{
+    Modify, OpenApi,
+    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
+};
 use utoipa_axum::router::OpenApiRouter;
 
 use crate::{
@@ -9,16 +12,35 @@ use crate::{
 
 #[derive(OpenApi)]
 #[openapi(
+    modifiers(&SecurityAddon),
     tags(
         (name = "sellershut", description = env!("CARGO_PKG_DESCRIPTION")),
     ),
 )]
 pub struct ApiDoc;
 
+pub struct SecurityAddon;
+
+impl Modify for SecurityAddon {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        if let Some(components) = openapi.components.as_mut() {
+            components.add_security_scheme(
+                "api_key",
+                SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new("Authorization"))),
+            );
+        }
+    }
+}
+
 pub async fn router(state: AppState) -> Router<()> {
     let mut doc = ApiDoc::openapi();
 
     let stubs = OpenApiRouter::with_openapi(doc)
+        .routes(utoipa_axum::routes!(routes::protected::protected))
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(),
+            server::middleware::auth,
+        ))
         .routes(utoipa_axum::routes!(routes::health::health))
         .with_state(state);
 

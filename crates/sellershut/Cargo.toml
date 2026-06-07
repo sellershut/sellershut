@@ -8,6 +8,7 @@ documentation.workspace = true
 
 [dependencies]
 anyhow = "1.0.102"
+auth = { path = "../auth/", version = "0.0.0" }
 axum = { version = "0.8.9", features = ["tracing"] }
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
 tower = "0.5.3"
@@ -28,3 +29,8 @@ doc-swagger = ["dep:utoipa-swagger-ui", "utoipa-swagger-ui/axum"]
 doc-redoc = ["dep:utoipa-redoc", "utoipa-redoc/axum"]
 doc-rapidoc = ["dep:utoipa-rapidoc", "utoipa-rapidoc/axum"]
 doc-scalar = ["dep:utoipa-scalar", "utoipa-scalar/axum"]
+
+[dependencies.activitypub_federation]
+version = "0.7.0-beta.11"
+features = ["axum"]
+default-features = false
