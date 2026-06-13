@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use std::{env, path::PathBuf};
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
@@ -6,12 +6,9 @@ use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitEx
 pub type LogHandle = tracing_subscriber::reload::Handle<EnvFilter, tracing_subscriber::Registry>;
 
 pub fn log(
-    level: Option<&str>,
-    log_dir: Option<&PathBuf>,
+    level: &str,
+    log_dir: &PathBuf,
 ) -> Result<(LogHandle, tracing_appender::non_blocking::WorkerGuard)> {
-    let level = level.context("missing log level")?;
-    let log_dir = log_dir.context("missing log dir")?;
-
     let file_appender = RollingFileAppender::new(Rotation::DAILY, log_dir, env!("CARGO_PKG_NAME"));
 
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);

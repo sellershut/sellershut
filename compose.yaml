@@ -1,0 +1,76 @@
+name: sellershut
+
+services:
+  database:
+    image: docker.io/postgres:18.4-alpine3.23
+    restart: always
+    shm_size: 128mb
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: sellershut
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - sellershut
+
+  vault:
+    image: docker.io/hashicorp/vault:2.0.2
+    restart: unless-stopped
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_ADDR: "http://127.0.0.1:8200"
+      VAULT_API_ADDR: "http://127.0.0.1:8200"
+      VAULT_LOCAL_CONFIG: |
+        {
+          "ui": true,
+          "disable_mlock": true,
+          "storage": {
+            "file": {
+              "path": "/vault/file"
+            }
+          },
+          "listener": [
+            {
+              "tcp": {
+                "address": "0.0.0.0:8200",
+                "tls_disable": true
+              }
+            }
+          ],
+          "default_lease_ttl": "168h",
+          "max_lease_ttl": "720h"
+        }
+    command: server
+    volumes:
+      - vault-file:/vault/file
+      - vault-logs:/vault/logs
+    healthcheck:
+      # 0 = unsealed, 2 = sealed, 1 = error.
+      # 0 and 2 are healthy.
+      test:
+        [
+          "CMD-SHELL",
+          "vault status >/dev/null 2>&1; code=$$?; [ $$code -eq 0 ] || [ $$code -eq 2 ]"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - sellershut
+
+volumes:
+  vault-file:
+  vault-logs:
+  postgres_data:
+
+networks:
+  sellershut:
