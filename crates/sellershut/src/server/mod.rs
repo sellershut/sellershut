@@ -2,3 +2,36 @@ pub mod middleware;
 mod router;
 mod routes;
 pub use router::router;
+
+#[cfg(test)]
+mod boostrap {
+    use std::sync::OnceLock;
+
+    use tracing_subscriber::{EnvFilter, Registry, layer::SubscriberExt, reload};
+
+    use crate::{
+        logs::LogHandle,
+        server::{self},
+        state::AppState,
+    };
+
+    static TEST_LOG_DATA: OnceLock<LogHandle> = OnceLock::new();
+
+    pub async fn test_app() -> axum::Router {
+        let log_handle = TEST_LOG_DATA
+            .get_or_init(|| {
+                let filter = EnvFilter::new("warn");
+                let (layer, handle) = reload::Layer::new(filter);
+
+                let subscriber = Registry::default().with(layer);
+
+                let _ = tracing::subscriber::set_global_default(subscriber);
+
+                handle
+            })
+            .clone();
+        let state = AppState::builder().log_handle(log_handle).build();
+
+        server::router(state).await
+    }
+}

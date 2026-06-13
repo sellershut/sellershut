@@ -11,8 +11,8 @@ pub mod state;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    logs::log();
-    let app = server::router(AppState).await;
+    let (log_handle, _log_guard) = logs::log(None, None)?;
+    let app = server::router(AppState::builder().log_handle(log_handle).build()).await;
 
     let addr = SocketAddr::from((Ipv6Addr::UNSPECIFIED, 2210));
 
