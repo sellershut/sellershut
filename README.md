@@ -22,5 +22,5 @@ docker logs -f sellershut-vault-1
 
 To run:
 ```sh
-SH_SERVER__VAULT__TOKEN=<root-token> cargo run
+HUT_SERVER__VAULT__TOKEN=<root-token> cargo run
 ```

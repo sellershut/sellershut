@@ -1,0 +1,15 @@
+name: sellershut
+
+services:
+  adminer:
+    image: docker.io/adminer:5.4.2
+    restart: always
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    ports:
+      - 8080:8080
+    networks:
+      - sellershut
+
+networks:
+  sellershut:

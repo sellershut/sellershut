@@ -1,5 +1,9 @@
-use std::net::{Ipv6Addr, SocketAddr};
+use std::{
+    collections::HashMap,
+    net::{Ipv6Addr, SocketAddr},
+};
 
+use auth::BasicClient;
 use clap::Parser;
 use figment::{
     Figment,
@@ -10,6 +14,7 @@ use tracing::info;
 
 use crate::{
     config::{Args, Commands, Config},
+    server::OauthProvider,
     state::AppState,
 };
 
@@ -32,12 +37,24 @@ async fn main() -> anyhow::Result<()> {
     if let Some(file) = args.config {
         config = config.merge(Toml::file(file));
     }
-    let config: Config = config.merge(Env::prefixed("SH_").split("__")).extract()?;
+    let config: Config = config
+        .merge(
+            Env::prefixed("HUT_")
+                .split("__")
+                // replace - with _ in envs
+                .map(|v| v.to_string().to_ascii_lowercase().replace("-", "_").into()),
+        )
+        .extract()?;
 
     let (log_handle, _log_guard) = logs::log(
         &config.server.logging.log_level,
         &config.server.logging.log_directory,
     )?;
+
+    let mut oauth_clients = HashMap::default();
+    let discord = BasicClient::try_from(&config.auth.discord)?;
+    oauth_clients.insert(OauthProvider::Discord, discord);
+
     let app = server::router(
         AppState::builder()
             .vault(&config.server.vault)
@@ -45,6 +62,7 @@ async fn main() -> anyhow::Result<()> {
             .log_handle(log_handle)
             .database(&config.server.database)
             .await?
+            .oauth_clients(oauth_clients.into())
             .build(),
     )
     .await;

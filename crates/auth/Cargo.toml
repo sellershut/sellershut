@@ -8,3 +8,8 @@ license.workspace = true
 publish = false
 
 [dependencies]
+oauth2 = "5.0.0"
+serde = { workspace = true, features = ["derive"] }
+thiserror.workspace = true
+tracing.workspace = true
+url = { workspace = true, features = ["serde"] }

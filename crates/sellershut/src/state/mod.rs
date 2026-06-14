@@ -1,13 +1,16 @@
 pub mod vault;
 
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
+use auth::BasicClient;
 use bon::Builder;
 use sqlx::PgPool;
+use tokio::sync::RwLock;
 
 use crate::{
     config::server_config::{DatabaseConfig, VaultConfig},
     logs::LogHandle,
+    server::OauthProvider,
     state::{
         app_state_builder::{IsUnset, SetDatabase, SetVault, State},
         vault::check_vault_startup,
@@ -23,6 +26,8 @@ pub struct AppState {
 
     #[builder(setters(vis = "", name = database_internal))]
     pub database: PgPool,
+
+    pub oauth_clients: Arc<HashMap<OauthProvider, BasicClient>>,
 }
 
 impl<S: State> AppStateBuilder<S> {

@@ -1,9 +1,10 @@
+pub mod auth;
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 
-use crate::config::server_config::ServerConfig;
+use crate::config::{auth::AuthConfig, server_config::ServerConfig};
 
 pub mod logs;
 pub mod server_config;
@@ -12,6 +13,7 @@ pub mod server_config;
 #[serde(rename_all = "kebab-case", default)]
 pub struct Config {
     pub server: ServerConfig,
+    pub auth: AuthConfig,
 }
 
 /// A federated marketplace platform

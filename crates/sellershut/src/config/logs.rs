@@ -13,7 +13,10 @@ impl Default for LogConfig {
     fn default() -> Self {
         Self {
             log_directory: temp_dir(),
-            log_level: String::from("info"),
+            log_level: format!(
+                "{}=debug,tower_http=debug,axum::rejection=trace",
+                env!("CARGO_CRATE_NAME")
+            ),
         }
     }
 }

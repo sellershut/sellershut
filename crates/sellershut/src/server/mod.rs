@@ -1,7 +1,38 @@
+pub mod cache_key;
+pub mod error;
 pub mod middleware;
 mod router;
 mod routes;
 pub use router::router;
+
+#[non_exhaustive]
+/// The oauth provider
+#[derive(
+    Debug,
+    Clone,
+    Eq,
+    PartialEq,
+    PartialOrd,
+    Ord,
+    Hash,
+    utoipa::ToSchema,
+    serde::Deserialize,
+    serde::Serialize,
+)]
+#[schema(example = "discord")]
+#[serde(rename_all = "camelCase")]
+pub enum OauthProvider {
+    /// Discord
+    Discord,
+}
+
+impl OauthProvider {
+    pub fn scopes(&self) -> Vec<&str> {
+        match self {
+            OauthProvider::Discord => vec!["identify", "email"],
+        }
+    }
+}
 
 #[cfg(test)]
 mod boostrap {
