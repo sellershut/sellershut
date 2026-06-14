@@ -1,15 +1,15 @@
 use anyhow::{Context, Result};
 use serde_json::{Value, json};
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, trace};
 use vaultrs::{client::VaultClient, kv2, sys, token};
 
 pub async fn check_vault_startup(client: &VaultClient, mount: &str) -> Result<()> {
-    info!("checking vault status");
+    trace!("checking vault status");
 
     let status = sys::status(client).await?;
     debug!(?status, "vault status received");
 
-    info!("checking vault token");
+    trace!("checking vault token");
 
     token::lookup_self(client)
         .await
@@ -19,7 +19,7 @@ pub async fn check_vault_startup(client: &VaultClient, mount: &str) -> Result<()
 
     let healthcheck_path = "__healthcheck__/startup";
 
-    info!(
+    trace!(
         mount = %mount,
         path = %healthcheck_path,
         "checking kv-v2 write access"
@@ -46,7 +46,7 @@ pub async fn check_vault_startup(client: &VaultClient, mount: &str) -> Result<()
         format!("Vault KV write check failed. Is KV v2 enabled at mount '{mount}'?")
     })?;
 
-    info!(
+    trace!(
         mount = %mount,
         path = %healthcheck_path,
         "checking kv-v2 read access"

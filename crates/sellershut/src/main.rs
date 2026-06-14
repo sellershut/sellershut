@@ -43,6 +43,8 @@ async fn main() -> anyhow::Result<()> {
             .vault(&config.server.vault)
             .await?
             .log_handle(log_handle)
+            .database(&config.server.database)
+            .await?
             .build(),
     )
     .await;
