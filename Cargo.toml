@@ -9,7 +9,9 @@ license = "AGPL-3.0-only"
 
 [workspace.dependencies]
 bon = "3.9.1"
+secrecy = "0.10.3"
 serde = "1.0.228"
 tokio = "1.52.3"
 tracing = "0.1.44"
+url = "2.5.8"
 uuid = "1.23.2"

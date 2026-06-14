@@ -19,3 +19,8 @@ docker exec -it sellershut-vault-1 vault secrets enable -path=secret kv-v2
 
 docker logs -f sellershut-vault-1
 ```
+
+To run:
+```sh
+SH_SERVER__VAULT__TOKEN=<root-token> cargo run
+```

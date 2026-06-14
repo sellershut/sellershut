@@ -3,7 +3,7 @@ use std::net::{Ipv6Addr, SocketAddr};
 use clap::Parser;
 use figment::{
     Figment,
-    providers::{Env, Format as _, Serialized, Toml},
+    providers::{Env, Format as _, Toml},
 };
 use tokio::net::TcpListener;
 use tracing::info;
@@ -28,17 +28,24 @@ async fn main() -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let mut config = Figment::from(Serialized::defaults(Config::default()));
+    let mut config = Figment::new();
     if let Some(file) = args.config {
         config = config.merge(Toml::file(file));
     }
-    let config: Config = config.merge(Env::prefixed("SH_")).extract()?;
+    let config: Config = config.merge(Env::prefixed("SH_").split("__")).extract()?;
 
     let (log_handle, _log_guard) = logs::log(
         &config.server.logging.log_level,
         &config.server.logging.log_directory,
     )?;
-    let app = server::router(AppState::builder().log_handle(log_handle).build()).await;
+    let app = server::router(
+        AppState::builder()
+            .vault(&config.server.vault)
+            .await?
+            .log_handle(log_handle)
+            .build(),
+    )
+    .await;
 
     let addr = SocketAddr::from((Ipv6Addr::UNSPECIFIED, config.server.port));
 
