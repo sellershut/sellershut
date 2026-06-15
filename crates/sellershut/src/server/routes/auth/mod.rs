@@ -11,7 +11,7 @@ use utoipa::{IntoParams, OpenApi};
 use utoipa_axum::router::OpenApiRouter;
 
 use crate::{
-    server::{OauthProvider, error::AppError},
+    server::{OauthProvider, cache_key::CacheKey, error::AppError},
     state::AppState,
 };
 
@@ -72,8 +72,12 @@ pub async fn auth(
     let mut session = Session::new();
     session.insert(CSRF_TOKEN, &csrf_token)?;
 
-    // TODO: save session in mem
-    let _cache_session = serde_json::to_vec(&session)?;
+    let cache_key = CacheKey::Session(session.id());
+
+    let cache_client = state.cache;
+    let cache_session = serde_json::to_vec(&session)?;
+
+    cache_client.set(cache_key, cache_session).await?;
 
     let cookie = session.into_cookie_value().context("missing session")?;
     let cookie = format!("{COOKIE_NAME}={cookie}; SameSite=Lax; HttpOnly; Secure; Path=/");

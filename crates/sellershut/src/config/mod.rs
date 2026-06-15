@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod cache;
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};

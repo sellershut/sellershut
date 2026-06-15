@@ -18,5 +18,7 @@ create table "hut_user" (
   -- profile picture
   avatar text,
   -- profile description
-  description text 
+  description text,
+  -- profile creation
+  created_at timestamptz not null default now()
 );

@@ -3,7 +3,7 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::config::logs::LogConfig;
+use crate::config::{cache::RedisConfig, logs::LogConfig};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case", default)]
@@ -12,6 +12,7 @@ pub struct ServerConfig {
     pub logging: LogConfig,
     pub vault: VaultConfig,
     pub database: DatabaseConfig,
+    pub cache: RedisConfig,
 }
 
 impl Default for ServerConfig {
@@ -21,6 +22,7 @@ impl Default for ServerConfig {
             logging: Default::default(),
             vault: Default::default(),
             database: Default::default(),
+            cache: Default::default(),
         }
     }
 }

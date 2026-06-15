@@ -1,3 +1,4 @@
+pub use oauth2::CsrfToken;
 pub mod error;
 use std::{ops::Deref, str::FromStr};
 
@@ -5,8 +6,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use oauth2::{
-    AuthUrl, ClientId, ClientSecret, CsrfToken, EndpointNotSet, EndpointSet, RedirectUrl, Scope,
-    TokenUrl,
+    AuthUrl, ClientId, ClientSecret, EndpointNotSet, EndpointSet, RedirectUrl, Scope, TokenUrl,
 };
 
 use crate::error::AuthClientError;

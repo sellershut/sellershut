@@ -10,12 +10,12 @@ use figment::{
     providers::{Env, Format as _, Toml},
 };
 use tokio::net::TcpListener;
-use tracing::info;
+use tracing::{error, info};
 
 use crate::{
     config::{Args, Commands, Config},
     server::OauthProvider,
-    state::AppState,
+    state::{AppState, cache::RedisClient},
 };
 
 pub mod config;
@@ -58,11 +58,24 @@ async fn main() -> anyhow::Result<()> {
     let app = server::router(
         AppState::builder()
             .vault(&config.server.vault)
-            .await?
+            .await
+            .inspect_err(|e| {
+                error!(error = %e, "Failed to connect to vault");
+            })?
             .log_handle(log_handle)
             .database(&config.server.database)
-            .await?
+            .await
+            .inspect_err(|e| {
+                error!(error = %e, "Database");
+            })?
             .oauth_clients(oauth_clients.into())
+            .cache(
+                RedisClient::new(&config.server.cache)
+                    .await
+                    .inspect_err(|e| {
+                        error!(error = %e, "Failed to connect to cache");
+                    })?,
+            )
             .build(),
     )
     .await;

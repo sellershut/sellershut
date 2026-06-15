@@ -1,3 +1,4 @@
+pub mod cache;
 pub mod vault;
 
 use std::{collections::HashMap, sync::Arc};
@@ -5,7 +6,7 @@ use std::{collections::HashMap, sync::Arc};
 use auth::BasicClient;
 use bon::Builder;
 use sqlx::PgPool;
-use tokio::sync::RwLock;
+use tracing::debug;
 
 use crate::{
     config::server_config::{DatabaseConfig, VaultConfig},
@@ -13,6 +14,7 @@ use crate::{
     server::OauthProvider,
     state::{
         app_state_builder::{IsUnset, SetDatabase, SetVault, State},
+        cache::RedisClient,
         vault::check_vault_startup,
     },
 };
@@ -23,11 +25,10 @@ pub struct AppState {
     pub log_handle: LogHandle,
     #[builder(setters(vis = "", name = vault_internal))]
     pub vault: Arc<VaultClient>,
-
     #[builder(setters(vis = "", name = database_internal))]
     pub database: PgPool,
-
     pub oauth_clients: Arc<HashMap<OauthProvider, BasicClient>>,
+    pub cache: RedisClient,
 }
 
 impl<S: State> AppStateBuilder<S> {
@@ -35,7 +36,7 @@ impl<S: State> AppStateBuilder<S> {
     where
         S::Vault: IsUnset,
     {
-        tracing::debug!(endpoint = ?config.address, "connecting to vault");
+        debug!(endpoint = ?&config.address.to_string(), "connecting to vault");
         let vault = VaultClient::new(
             VaultClientSettingsBuilder::default()
                 .address(config.address.as_str())
@@ -54,14 +55,17 @@ impl<S: State> AppStateBuilder<S> {
     where
         S::Database: IsUnset,
     {
-        tracing::debug!(endpoint = ?config.host, "connecting to database");
+        debug!(endpoint = ?config.host, "connecting to database");
 
-        Ok(self.database_internal(
-            sqlx::postgres::PgPoolOptions::new()
-                .max_connections(config.pool_size)
-                .connect(&config.connection_string())
-                .await
-                .inspect_err(|e| tracing::error!("{e}"))?,
-        ))
+        let db = sqlx::postgres::PgPoolOptions::new()
+            .max_connections(config.pool_size)
+            .connect(&config.connection_string())
+            .await
+            .inspect_err(|e| tracing::error!("{e}"))?;
+
+        debug!("running database migrations");
+        sqlx::migrate!("../../migrations").run(&db).await?;
+
+        Ok(self.database_internal(db))
     }
 }

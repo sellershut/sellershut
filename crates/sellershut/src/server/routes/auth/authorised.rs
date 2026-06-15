@@ -1,3 +1,6 @@
+use anyhow::Context;
+use async_session::Session;
+use auth::{CsrfToken, validate_session};
 use axum::{
     extract::{Path, Query, State},
     response::IntoResponse,
@@ -7,7 +10,11 @@ use serde::Deserialize;
 use utoipa::{IntoParams, ToSchema};
 
 use crate::{
-    server::{error::AppError, routes::auth::OauthParams},
+    server::{
+        cache_key::CacheKey,
+        error::AppError,
+        routes::auth::{CSRF_TOKEN, OauthParams},
+    },
     state::AppState,
 };
 
@@ -42,5 +49,33 @@ pub async fn authorised(
     Path(provider): Path<super::OauthProvider>,
     TypedHeader(cookies): TypedHeader<headers::Cookie>,
 ) -> Result<impl IntoResponse, AppError> {
-    Ok(String::default())
+    let cookie = cookies
+        .get(super::COOKIE_NAME)
+        .context("missing cookie name")?;
+
+    let client = state
+        .oauth_clients
+        .get(&provider)
+        .context("oauth provider not configured")?;
+
+    let id = Session::id_from_cookie_value(cookie)?;
+    let cache_key = CacheKey::Session(&id);
+
+    let session = state.cache.get::<Vec<u8>>(cache_key).await?;
+    let session: Session = serde_json::from_slice(&session)?;
+
+    if let Some(session) = session.validate() {
+        if let Some(token) = session.get::<CsrfToken>(CSRF_TOKEN) {
+            state.cache.del(cache_key).await?;
+            if *token.secret() != params.state {
+                Err(anyhow::anyhow!("token mismatch").into())
+            } else {
+                Ok(())
+            }
+        } else {
+            Err(anyhow::anyhow!("no token").into())
+        }
+    } else {
+        Err(anyhow::anyhow!("invalid session").into())
+    }
 }
