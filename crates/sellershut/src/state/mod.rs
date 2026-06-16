@@ -6,6 +6,7 @@ use std::{collections::HashMap, sync::Arc};
 use auth::BasicClient;
 use bon::Builder;
 use sqlx::PgPool;
+use tower_sessions_sqlx_store::PostgresStore;
 use tracing::debug;
 
 use crate::{
@@ -29,6 +30,9 @@ pub struct AppState {
     pub database: PgPool,
     pub oauth_clients: Arc<HashMap<OauthProvider, BasicClient>>,
     pub cache: RedisClient,
+    pub http_client: reqwest::Client,
+    #[builder(skip = PostgresStore::new(database.clone()))]
+    pub session_store: PostgresStore,
 }
 
 impl<S: State> AppStateBuilder<S> {

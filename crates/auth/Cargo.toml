@@ -9,6 +9,8 @@ publish = false
 
 [dependencies]
 oauth2 = "5.0.0"
+reqwest = { workspace = true, features = ["json"] }
+sellershut-core = { workspace = true, features = ["users"] }
 serde = { workspace = true, features = ["derive"] }
 thiserror.workspace = true
 tracing.workspace = true

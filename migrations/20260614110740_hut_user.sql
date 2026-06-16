@@ -20,5 +20,19 @@ create table "hut_user" (
   -- profile description
   description text,
   -- profile creation
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
+
+create or replace function update_updated_at_column()
+returns trigger as $$
+begin
+    new.updated_at = now();
+    return new;
+end;
+$$ language 'plpgsql';
+
+create trigger update_hut_user_updated_at
+before update on hut_user
+for each row
+execute procedure update_updated_at_column();

@@ -1,9 +1,9 @@
 mod authorised;
+mod csrf;
+mod onboard;
 use anyhow::Context;
-use async_session::Session;
 use axum::{
     extract::{Query, State},
-    http::{HeaderMap, header::SET_COOKIE},
     response::{IntoResponse, Redirect},
 };
 use serde::Deserialize;
@@ -11,15 +11,15 @@ use utoipa::{IntoParams, OpenApi};
 use utoipa_axum::router::OpenApiRouter;
 
 use crate::{
-    server::{OauthProvider, cache_key::CacheKey, error::AppError},
+    server::{OauthProvider, error::AppError},
     state::AppState,
 };
+use tracing::{info, instrument, trace};
 
 const AUTH: &str = "Authentication";
 
-static COOKIE_NAME: &str = "SESSION";
-
-static CSRF_TOKEN: &str = "csrf_token";
+const SESSION_PENDING_OAUTH_ID: &str = "pending_oauth_id";
+const SESSION_USER_ID: &str = "user_id";
 
 #[derive(OpenApi)]
 #[openapi(tags((name = AUTH, description = "Auth endpoints")),components(schemas(OauthProvider))) ]
@@ -36,6 +36,8 @@ pub fn router(store: AppState) -> OpenApiRouter<AppState> {
 
     let router = router
         .routes(utoipa_axum::routes!(auth))
+        .routes(utoipa_axum::routes!(csrf::get))
+        .routes(utoipa_axum::routes!(onboard::complete_profile))
         .routes(utoipa_axum::routes!(authorised::authorised));
 
     router.with_state(store)
@@ -59,34 +61,44 @@ pub fn router(store: AppState) -> OpenApiRouter<AppState> {
     tag = AUTH,
     params(OauthParams)
 )]
+#[instrument(
+    name = "oauth_auth",
+    skip_all,
+    err(Debug),
+    fields(provider = ?params.provider)
+)]
+#[axum::debug_handler]
 pub async fn auth(
     Query(params): Query<OauthParams>,
     State(state): State<AppState>,
+    session: tower_sessions::Session,
 ) -> Result<impl IntoResponse, AppError> {
+    trace!("starting oauth auth flow");
+
     let client = state
         .oauth_clients
         .get(&params.provider)
         .context("selected auth provider is not supported")?;
+
+    trace!("oauth client found");
+
     let (auth_url, csrf_token) = auth::create_csrf_token(client, &params.provider.scopes());
 
-    let mut session = Session::new();
-    session.insert(CSRF_TOKEN, &csrf_token)?;
+    trace!("created auth url and csrf token");
 
-    let cache_key = CacheKey::Session(session.id());
+    let session_state = session_oauth_state_key(params.provider);
+    session
+        .insert(&session_state, csrf_token.secret().to_owned())
+        .await?;
 
-    let cache_client = state.cache;
-    let cache_session = serde_json::to_vec(&session)?;
-
-    cache_client.set(cache_key, cache_session).await?;
-
-    let cookie = session.into_cookie_value().context("missing session")?;
-    let cookie = format!("{COOKIE_NAME}={cookie}; SameSite=Lax; HttpOnly; Secure; Path=/");
-
-    let mut headers = HeaderMap::new();
-    headers.insert(
-        SET_COOKIE,
-        cookie.parse().context("failed to parse cookie")?,
+    info!(
+        redirect_url = %auth_url.as_ref(),
+        "redirecting to oauth provider"
     );
 
-    Ok((headers, Redirect::to(auth_url.as_ref())))
+    Ok(Redirect::to(auth_url.as_ref()))
+}
+
+fn session_oauth_state_key(provider: OauthProvider) -> String {
+    format!("oauth_state:{provider}")
 }

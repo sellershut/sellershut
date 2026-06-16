@@ -3,6 +3,8 @@ pub mod error;
 pub mod middleware;
 mod router;
 mod routes;
+use std::fmt::Display;
+
 pub use router::router;
 
 #[non_exhaustive]
@@ -10,6 +12,7 @@ pub use router::router;
 #[derive(
     Debug,
     Clone,
+    Copy,
     Eq,
     PartialEq,
     PartialOrd,
@@ -31,6 +34,18 @@ impl OauthProvider {
         match self {
             OauthProvider::Discord => vec!["identify", "email"],
         }
+    }
+}
+
+impl Display for OauthProvider {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                OauthProvider::Discord => "discord",
+            }
+        )
     }
 }
 

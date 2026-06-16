@@ -9,7 +9,8 @@ use figment::{
     Figment,
     providers::{Env, Format as _, Toml},
 };
-use tokio::net::TcpListener;
+use tokio::{net::TcpListener, task::AbortHandle};
+use tower_sessions::ExpiredDeletion;
 use tracing::{error, info};
 
 use crate::{
@@ -55,37 +56,73 @@ async fn main() -> anyhow::Result<()> {
     let discord = BasicClient::try_from(&config.auth.discord)?;
     oauth_clients.insert(OauthProvider::Discord, discord);
 
-    let app = server::router(
-        AppState::builder()
-            .vault(&config.server.vault)
-            .await
-            .inspect_err(|e| {
-                error!(error = %e, "Failed to connect to vault");
-            })?
-            .log_handle(log_handle)
-            .database(&config.server.database)
-            .await
-            .inspect_err(|e| {
-                error!(error = %e, "Database");
-            })?
-            .oauth_clients(oauth_clients.into())
-            .cache(
-                RedisClient::new(&config.server.cache)
-                    .await
-                    .inspect_err(|e| {
-                        error!(error = %e, "Failed to connect to cache");
-                    })?,
-            )
-            .build(),
-    )
-    .await;
+    let state = AppState::builder()
+        .http_client(reqwest::Client::new())
+        .vault(&config.server.vault)
+        .await
+        .inspect_err(|e| {
+            error!(error = %e, "Failed to connect to vault");
+        })?
+        .log_handle(log_handle)
+        .database(&config.server.database)
+        .await
+        .inspect_err(|e| {
+            error!(error = %e, "Database");
+        })?
+        .oauth_clients(oauth_clients.into())
+        .cache(
+            RedisClient::new(&config.server.cache)
+                .await
+                .inspect_err(|e| {
+                    error!(error = %e, "Failed to connect to cache");
+                })?,
+        )
+        .build();
+
+    let session_store = state.session_store.clone();
+
+    let app = server::router(state).await?;
+
+    let session_cleanup_task = tokio::task::spawn(
+        session_store
+            .clone()
+            .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
+    );
 
     let addr = SocketAddr::from((Ipv6Addr::UNSPECIFIED, config.server.port));
 
     let listener = TcpListener::bind(addr).await?;
     info!(addr = ?listener.local_addr().expect("local addr"), "starting server");
 
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal(session_cleanup_task.abort_handle()))
+        .await?;
+
+    let _ = session_cleanup_task.await;
 
     Ok(())
+}
+
+async fn shutdown_signal(deletion_task_abort_handle: AbortHandle) {
+    let ctrl_c = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => deletion_task_abort_handle.abort(),
+        _ = terminate => deletion_task_abort_handle.abort(),
+    }
 }

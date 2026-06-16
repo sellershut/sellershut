@@ -1,0 +1,15 @@
+[package]
+name = "sellershut-core"
+version = "0.0.0"
+edition = "2024"
+documentation.workspace = true
+homepage.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+serde = { workspace = true, optional = true }
+
+[features]
+default = []
+users = ["serde", "serde/derive"]

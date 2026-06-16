@@ -1,4 +1,9 @@
+mod http_client;
+pub use http_client::*;
+pub mod discord;
 pub use oauth2::CsrfToken;
+use reqwest::IntoUrl;
+use sellershut_core::users::User;
 pub mod error;
 use std::{ops::Deref, str::FromStr};
 
@@ -6,10 +11,11 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use oauth2::{
-    AuthUrl, ClientId, ClientSecret, EndpointNotSet, EndpointSet, RedirectUrl, Scope, TokenUrl,
+    AuthUrl, AuthorizationCode, ClientId, ClientSecret, EndpointNotSet, EndpointSet, RedirectUrl,
+    Scope, TokenResponse, TokenUrl,
 };
 
-use crate::error::AuthClientError;
+use crate::error::{AuthClientError, UserRetrievalError};
 
 type C = oauth2::basic::BasicClient<
     EndpointSet,
@@ -83,4 +89,38 @@ pub fn create_csrf_token(client: &BasicClient, scopes: &[&str]) -> (Url, CsrfTok
         builder = builder.add_scope(Scope::new(pat.to_string()));
     }
     builder.url()
+}
+
+pub async fn get_oauth_user<T>(
+    client: &BasicClient,
+    code: &str,
+    http_client: reqwest::Client,
+    user_endpoint: impl IntoUrl,
+) -> Result<User, UserRetrievalError>
+where
+    User: TryFrom<T>,
+    T: serde::de::DeserializeOwned,
+{
+    let http_client = AuthHttpClient::from(http_client);
+
+    let token = client
+        .exchange_code(AuthorizationCode::new(code.to_owned()))
+        .request_async(&http_client)
+        .await
+        .map_err(|e| {
+            println!("{e:#?}");
+            UserRetrievalError::UserToken
+        })?;
+
+    let user_data: T = http_client
+        .get(user_endpoint)
+        .bearer_auth(token.access_token().secret())
+        .send()
+        .await
+        .map_err(|_e| UserRetrievalError::UserRetrieval)?
+        .json::<T>()
+        .await
+        .map_err(|_e| UserRetrievalError::UserDeserialisation)?;
+
+    User::try_from(user_data).map_err(|_e| UserRetrievalError::UserDeserialisation)
 }
