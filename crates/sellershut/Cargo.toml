@@ -2,5 +2,20 @@
 name = "sellershut"
 version = "0.1.0"
 edition = "2024"
+license.workspace = true
 
 [dependencies]
+anyhow = "1.0.104"
+axum = "0.8.9"
+clap = { version = "4.6.6", features = ["derive"] }
+serde = { workspace = true, features = ["derive"] }
+tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread"] }
+toml = "1.1.4"
+tower = "0.5.3"
+tower-http = { version = "0.7.0", features = ["cors", "request-id", "timeout", "trace"] }
+tracing.workspace = true
+tracing-appender = "0.2.5"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+utoipa = { workspace = true, features = ["axum_extras"] }
+utoipa-axum = "0.2.0"
+utoipa-scalar = { version = "0.3.0", features = ["axum"] }
