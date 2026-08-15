@@ -1,0 +1,29 @@
+{
+    "formatter": {
+        "indentStyle": "space",
+        "lineWidth": 100
+    },
+    "javascript": {
+        "formatter": {
+            "quoteStyle": "single",
+            "lineWidth": 120
+        }
+    },
+    "json": {
+        "formatter": {
+            "enabled": false
+        }
+    },
+    "html": {
+        "experimentalFullSupportEnabled": true,
+        "formatter": {
+            "enabled": true
+        }
+    },
+    "files": {
+        "includes": [
+            "**",
+            "!!**/.svelte-kit"
+        ]
+    }
+}
