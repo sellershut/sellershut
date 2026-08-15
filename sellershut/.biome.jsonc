@@ -25,5 +25,10 @@
             "**",
             "!!**/.svelte-kit"
         ]
+    },
+    "css": {
+        "parser": {
+          "tailwindDirectives": true
+        }
     }
 }

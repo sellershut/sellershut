@@ -1,1 +1,123 @@
 @import "tailwindcss";
+@import "./fonts.css";
+
+/*
+ * Tailwind's `dark:` variant is controlled by the
+ * `.dark` class on <html>.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * ============================================================
+ * LIGHT THEME
+ * ============================================================
+ */
+
+:root {
+  /* Brand / accent */
+  --primary: #da294f;
+  --primary-foreground: #ffffff;
+
+  /* Base */
+  --background: #ffffff;
+  --foreground: #09090b;
+
+  /* Muted */
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+
+  /* Cards */
+  --card: #ffffff;
+  --card-foreground: #09090b;
+
+  /* Borders / inputs */
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+
+  /* Focus rings */
+  --ring: #da294f;
+}
+
+/*
+ * ============================================================
+ * DARK THEME
+ * ============================================================
+ */
+
+html.dark {
+  --background: #09090b;
+  --foreground: #fafafa;
+
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+
+  --card: #18181b;
+  --card-foreground: #fafafa;
+
+  --border: #27272a;
+  --input: #27272a;
+
+  --ring: #da294f;
+}
+
+/*
+ * ============================================================
+ * SYSTEM THEME
+ * ============================================================
+ *
+ */
+
+@media (prefers-color-scheme: dark) {
+  html:not(.light):not(.dark) {
+    --background: #09090b;
+    --foreground: #fafafa;
+
+    --muted: #27272a;
+    --muted-foreground: #a1a1aa;
+
+    --card: #18181b;
+    --card-foreground: #fafafa;
+
+    --border: #27272a;
+    --input: #27272a;
+
+    --ring: #da294f;
+  }
+}
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+
+  --color-ring: var(--ring);
+  --font-sans: "Mona Sans VF", ui-sans-serif, system-ui, sans-serif;
+  --font-title: "Hubot Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+/*
+ * ============================================================
+ * GLOBALS
+ * ============================================================
+ */
+
+html {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
