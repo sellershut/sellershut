@@ -19,3 +19,4 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 utoipa = { workspace = true, features = ["axum_extras"] }
 utoipa-axum = "0.2.0"
 utoipa-scalar = { version = "0.3.0", features = ["axum"] }
+uuid = { workspace = true, features = ["v7"] }

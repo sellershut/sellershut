@@ -7,7 +7,7 @@ pub struct Server {
     pub request: Request,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Clone, Copy, Deserialize, Serialize, Debug)]
 pub struct Port(u16);
 
 impl Default for Port {
@@ -16,10 +16,16 @@ impl Default for Port {
     }
 }
 
+impl From<Port> for u16 {
+    fn from(value: Port) -> Self {
+        value.0
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "kebab-case", default)]
 pub struct Request {
-    timeout_duration: u32,
+    pub timeout_duration: u64,
 }
 
 impl Default for Request {
