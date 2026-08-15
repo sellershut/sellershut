@@ -4,7 +4,7 @@ mod routes;
 use std::time::Duration;
 
 use axum::{Router, http::StatusCode};
-use tower_http::timeout::TimeoutLayer;
+use tower_http::{cors::CorsLayer, timeout::TimeoutLayer};
 use utoipa::{
     Modify, OpenApi,
     openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
@@ -47,10 +47,23 @@ pub async fn router(config: Configuration) -> anyhow::Result<Router> {
         router.merge(utoipa_scalar::Scalar::with_url("/scalar", api))
     };
 
+    let cors = &config.server.cors;
+    let methods: Vec<_> = (&cors.allowed_methods).into();
+    let origins: Result<Vec<_>, _> = cors
+        .allowed_origins
+        .iter()
+        .map(|v| v.as_str().parse())
+        .collect();
+
     Ok(middleware::trace_layer(router)
         .layer(TimeoutLayer::with_status_code(
             StatusCode::REQUEST_TIMEOUT,
             Duration::from_secs(config.server.request.timeout_duration),
         ))
+        .layer(
+            CorsLayer::new()
+                .allow_origin(origins.expect("valid allow_origin"))
+                .allow_methods(methods),
+        )
         .layer(axum::middleware::from_fn(middleware::request_id)))
 }
