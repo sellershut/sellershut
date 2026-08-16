@@ -1,0 +1,15 @@
+[package]
+name = "sellershut-svc"
+version = "0.0.0"
+edition = "2024"
+license.workspace = true
+
+[dependencies]
+sellershut-core.workspace = true
+serde = { workspace = true, features = ["derive"] }
+sqlx = { workspace = true, optional = true }
+url = { workspace = true, features = ["serde"] }
+
+[features]
+default = []
+postgres = ["dep:sqlx"]

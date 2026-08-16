@@ -9,7 +9,7 @@ const error = $derived(page.url.searchParams.get('error'));
 </script>
 
 <svelte:head>
-  <title>Sign in · Relay</title>
+  <title>Sign in · sellershut</title>
 
   <meta name="description" content="Sign in to your marketplace account.">
 </svelte:head>
@@ -25,7 +25,7 @@ const error = $derived(page.url.searchParams.get('error'));
 		sm:px-6
 	"
 >
-  <section class="w-full max-w-[400px]">
+  <section class="w-full max-w-100">
     <!-- Brand -->
     <div class="mb-9 text-center">
       <div

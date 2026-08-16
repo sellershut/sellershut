@@ -1,5 +1,6 @@
 pub mod cli;
 pub mod log;
+pub mod oauth;
 pub mod server;
 
 use std::path::PathBuf;
@@ -11,6 +12,12 @@ use serde::{Deserialize, Serialize};
 pub struct Configuration {
     pub server: server::Server,
     pub log: log::Log,
+    pub database: Database
+}
+
+#[derive(Deserialize, Serialize, Debug, Default)]
+pub struct Database {
+    auth: sellershut_svc::database::Config
 }
 
 pub fn load(cli: Option<&PathBuf>) -> Configuration {

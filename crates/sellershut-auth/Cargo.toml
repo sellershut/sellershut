@@ -1,0 +1,15 @@
+[package]
+name = "sellershut-auth"
+version = "0.0.0"
+edition = "2024"
+license.workspace = true
+publish = false
+
+[dependencies]
+oauth2 = "5.0.0"
+sellershut-core = { workspace = true, features = ["serde"] }
+sellershut-svc.workspace = true
+secrecy = { workspace = true, features = ["serde"] }
+serde = { workspace = true, features = ["derive"] }
+thiserror.workspace = true
+url = { workspace = true, features = ["serde"] }

@@ -1,0 +1,17 @@
+[package]
+name = "sellershut-core"
+version = "0.0.0"
+edition = "2024"
+license.workspace = true
+publish = false
+
+[dependencies]
+secrecy.workspace = true
+serde = { workspace = true, optional = true }
+utoipa = { workspace = true, optional = true }
+
+[features]
+default = []
+serde = ["dep:serde", "serde/derive", "secrecy/serde"]
+utoipa = ["dep:utoipa"]
+
