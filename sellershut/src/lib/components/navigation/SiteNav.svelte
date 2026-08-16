@@ -1,0 +1,76 @@
+<script lang="ts">
+import { onMount } from 'svelte';
+import DesktopMegaMenu from './DesktopMegaMenu.svelte';
+import NavBar from './NavBar.svelte';
+
+import type { MenuKey } from './navigation';
+import type { NavUser } from './types';
+
+let {
+  user = null,
+  brandName = 'Sellershut',
+  brandHref = '/',
+  signOutHref = '/logout',
+}: {
+  user?: NavUser | null;
+  brandName?: string;
+  brandHref?: string;
+  signOutHref?: string;
+} = $props();
+
+let activeMenu = $state<MenuKey | null>(null);
+let scrolled = $state(false);
+
+function updateScrollState() {
+  scrolled = window.scrollY > 8;
+}
+
+function closeMenu() {
+  activeMenu = null;
+}
+
+function setMenu(menu: MenuKey | null) {
+  activeMenu = menu;
+}
+
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    closeMenu();
+  }
+}
+
+function closeOnPointerLeave(node: HTMLElement) {
+  function handlePointerLeave() {
+    closeMenu();
+  }
+
+  node.addEventListener('pointerleave', handlePointerLeave);
+
+  return {
+    destroy() {
+      node.removeEventListener('pointerleave', handlePointerLeave);
+    },
+  };
+}
+
+onMount(() => {
+  updateScrollState();
+});
+</script>
+
+<svelte:window onscroll={updateScrollState} onkeydown={handleKeydown} />
+
+<header class="sticky top-0 z-50" use:closeOnPointerLeave>
+  <NavBar
+    {user}
+    {brandName}
+    {brandHref}
+    {signOutHref}
+    {scrolled}
+    {activeMenu}
+    onMenuChange={setMenu}
+    onCloseMenu={closeMenu}
+  />
+
+  <DesktopMegaMenu {activeMenu} onClose={closeMenu} />
+</header>

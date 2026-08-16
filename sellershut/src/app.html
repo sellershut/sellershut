@@ -12,15 +12,31 @@
       crossorigin
     >
     <link rel="preload" href="/fonts/Hubot-Sans.woff2" as="font" type="font/woff2" crossorigin>
-    <script>
-    (function () {
-      const theme = localStorage.getItem('theme');
+    <script nonce="%sveltekit.nonce%">
+    (() => {
+      const root = document.documentElement;
+      const key = 'theme';
 
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else if (theme === 'light') {
-        document.documentElement.classList.add('light');
-      }
+      let theme = 'system';
+
+      try {
+        const saved = localStorage.getItem(key);
+
+        if (saved === 'light' || saved === 'dark' || saved === 'system') {
+          theme = saved;
+        }
+      } catch {}
+
+      const prefersDark = matchMedia('(prefers-color-scheme: dark)').matches;
+
+      const dark = theme === 'dark' || (theme === 'system' && prefersDark);
+
+      root.dataset.theme = theme;
+
+      root.classList.toggle('dark', dark);
+      root.classList.toggle('light', !dark);
+
+      root.style.colorScheme = dark ? 'dark' : 'light';
     })();
     </script>
     %sveltekit.head%

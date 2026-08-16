@@ -60,31 +60,6 @@ html.dark {
   --ring: #da294f;
 }
 
-/*
- * ============================================================
- * SYSTEM THEME
- * ============================================================
- *
- */
-
-@media (prefers-color-scheme: dark) {
-  html:not(.light):not(.dark) {
-    --background: #09090b;
-    --foreground: #fafafa;
-
-    --muted: #27272a;
-    --muted-foreground: #a1a1aa;
-
-    --card: #18181b;
-    --card-foreground: #fafafa;
-
-    --border: #27272a;
-    --input: #27272a;
-
-    --ring: #da294f;
-  }
-}
-
 @theme inline {
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
@@ -115,9 +90,45 @@ html.dark {
 html {
   background: var(--background);
   color: var(--foreground);
+  color-scheme: light;
+}
+
+html.light {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 body {
+  min-height: 100dvh;
   background: var(--background);
   color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/*
+ * Helps keep native inputs/form controls aligned with the
+ * selected theme.
+ */
+input,
+button,
+select,
+textarea {
+  font: inherit;
+}
+
+/*
+ * Respect reduced motion globally.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+  }
 }
