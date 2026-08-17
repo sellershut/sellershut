@@ -1,4 +1,3 @@
-// src/routes/api/login/+server.ts
 import { BACKEND_URL } from '$env/static/private';
 import type { RequestHandler } from './$types';
 
@@ -9,7 +8,7 @@ export const GET: RequestHandler = async ({ url, fetch }) => {
     return new Response('Missing provider', { status: 400 });
   }
 
-  const backendUrl = new URL('/auth', BACKEND_URL);
+  const backendUrl = new URL('/auth/login', BACKEND_URL);
   backendUrl.searchParams.set('provider', provider);
 
   const response = await fetch(backendUrl, {
@@ -22,7 +21,7 @@ export const GET: RequestHandler = async ({ url, fetch }) => {
     });
   }
 
-  const { authorization_url } = await response.json();
+  const { authorisation_url } = await response.json();
 
-  return Response.redirect(authorization_url, 302);
+  return Response.redirect(authorisation_url, 302);
 };

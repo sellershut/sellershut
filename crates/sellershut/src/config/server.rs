@@ -17,7 +17,7 @@ pub struct Server {
 pub struct Port(u16);
 
 #[derive(Clone, Deserialize, Serialize, Debug)]
-pub struct OauthConfig(HashMap<OauthProvider, sellershut_auth::Configuration>);
+pub struct OauthConfig(pub HashMap<OauthProvider, sellershut_auth::Configuration>);
 
 impl Default for OauthConfig {
     fn default() -> Self {

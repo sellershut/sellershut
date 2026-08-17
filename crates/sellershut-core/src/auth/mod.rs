@@ -12,6 +12,18 @@ pub enum OauthProvider {
     Google,
 }
 
+impl OauthProvider {
+    pub fn scopes(&self) -> Vec<String> {
+        match self {
+            OauthProvider::Discord => vec![String::from("identify")],
+            OauthProvider::Google => todo!(),
+        }
+    }
+    pub fn cookie_name(&self) -> String {
+        format!("auth_oauth_state_{self}")
+    }
+}
+
 impl Display for OauthProvider {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(

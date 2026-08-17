@@ -6,10 +6,15 @@ license.workspace = true
 publish = false
 
 [dependencies]
+async-trait.workspace = true
 oauth2 = "5.0.0"
+reqwest = { workspace = true, features = ["json"] }
 sellershut-core = { workspace = true, features = ["serde"] }
 sellershut-svc.workspace = true
 secrecy = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive"] }
+sqlx = { workspace = true, features = ["time"] }
 thiserror.workspace = true
+time.workspace = true
 url = { workspace = true, features = ["serde"] }
+sha2 = "0.11.0"

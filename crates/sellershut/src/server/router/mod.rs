@@ -13,7 +13,10 @@ use utoipa_axum::router::OpenApiRouter;
 
 use crate::{
     config::Configuration,
-    server::router::routes::auth::{self, AuthDoc},
+    server::{
+        router::routes::auth::{self, AuthDoc},
+        state::AppState,
+    },
 };
 
 pub struct SecurityAddon;
@@ -38,13 +41,13 @@ impl Modify for SecurityAddon {
     }
 }
 
-pub async fn router(config: Configuration) -> anyhow::Result<Router> {
+pub async fn router(state: AppState, config: Configuration) -> anyhow::Result<Router> {
     let mut doc = ApiDoc::openapi();
     doc.merge(AuthDoc::openapi());
 
     let stubs = OpenApiRouter::with_openapi(doc)
         .routes(utoipa_axum::routes!(routes::health))
-        .nest("/auth", auth::router());
+        .nest("/auth", auth::router(state.clone()));
 
     let (router, api) = stubs.split_for_parts();
 

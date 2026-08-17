@@ -2,11 +2,36 @@ use sellershut_core::types::RedactedSecret;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-#[derive(Debug,Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Config {
     #[serde(flatten)]
     pub database: DatabaseConfig,
     pub max_connections: MaxConnections,
+}
+
+impl Config {
+    pub async fn connect(&self) -> Result<sqlx::PgPool, sqlx::Error> {
+        match &self.database {
+            DatabaseConfig::Url { url } => sqlx::PgPool::connect(url.as_str()).await,
+
+            DatabaseConfig::Connection {
+                username,
+                password,
+                host,
+                db_name,
+            } => {
+                sqlx::postgres::PgPoolOptions::new()
+                    .connect_with(
+                        sqlx::postgres::PgConnectOptions::new()
+                            .host(host)
+                            .username(username)
+                            .password(&password.expose())
+                            .database(db_name),
+                    )
+                    .await
+            }
+        }
+    }
 }
 
 /// Max database connections

@@ -4,14 +4,21 @@ mod server;
 #[cfg(test)]
 mod test;
 
-use std::net::{Ipv6Addr, SocketAddr};
+use std::{
+    net::{Ipv6Addr, SocketAddr},
+    sync::Arc,
+};
 
 use anyhow::Result;
 use clap::Parser;
+use sellershut_auth::AuthService;
 use tokio::net::TcpListener;
 use tracing::info;
 
-use crate::config::cli::{Args, Commands};
+use crate::{
+    config::cli::{Args, Commands},
+    server::state::AppState,
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -28,7 +35,15 @@ async fn main() -> Result<()> {
 
     let addr = SocketAddr::from((Ipv6Addr::UNSPECIFIED, config.server.port.into()));
 
-    let app = server::router::router(config).await?;
+    let database = config.database.auth.connect().await?;
+    let auth = AuthService::new(database, config.server.oauth.0.clone())?;
+
+    let state = AppState {
+        auth: Arc::new(auth),
+        cookie_secure: false,
+    };
+
+    let app = server::router::router(state, config).await?;
 
     let listener = TcpListener::bind(addr).await?;
     info!(addr = ?listener.local_addr().expect("local addr"), "starting server");
