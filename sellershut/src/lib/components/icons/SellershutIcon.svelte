@@ -12,7 +12,6 @@ let {
   role="img"
   viewBox="0 0 611.79148 619.03172"
   xmlns="http://www.w3.org/2000/svg"
-  xmlns:svg="http://www.w3.org/2000/svg"
 >
   <title id="logo">logo</title>
   <defs id="defs1" />

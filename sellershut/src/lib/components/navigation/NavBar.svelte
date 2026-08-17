@@ -42,7 +42,7 @@ let {
     class="
 			mx-auto
 			flex h-12
-			max-w-[1120px]
+			max-w-280
 			items-center
 			justify-between
 			gap-4

@@ -99,7 +99,7 @@ pub async fn login(
         .into_response())
 }
 
-fn auth_cookie(
+pub fn auth_cookie(
     name: String,
     value: String,
     path: String,

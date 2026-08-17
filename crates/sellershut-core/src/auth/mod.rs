@@ -15,7 +15,7 @@ pub enum OauthProvider {
 impl OauthProvider {
     pub fn scopes(&self) -> Vec<String> {
         match self {
-            OauthProvider::Discord => vec![String::from("identify")],
+            OauthProvider::Discord => vec!["identify".into(), "email".into()],
             OauthProvider::Google => todo!(),
         }
     }

@@ -1,19 +1,23 @@
 pub mod error;
+pub(crate) mod profile;
 
+use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+use oauth2_reqwest::ReqwestClient;
+use rand::{TryRng, rngs::SysRng};
 use std::collections::HashMap;
 use time::{Duration, OffsetDateTime};
 
 use async_trait::async_trait;
 use oauth2::{
-    AuthUrl, ClientId, ClientSecret, CsrfToken, EndpointNotSet, EndpointSet, PkceCodeChallenge,
-    RedirectUrl, Scope, TokenUrl,
+    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointNotSet, EndpointSet,
+    PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse, TokenUrl,
 };
 use sellershut_core::{auth::OauthProvider, types::RedactedSecret};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use url::Url;
 
-use crate::error::AuthError;
+use crate::{error::AuthError, profile::OAuthProfile};
 
 type BasicClient = oauth2::basic::BasicClient<
     EndpointSet,
@@ -64,16 +68,46 @@ pub struct AuthorizationStart {
     pub browser_state: String,
 }
 
+#[derive(Clone, Debug, Serialize)]
+pub struct User {
+    pub id: String,
+    pub email: String,
+    pub username: String,
+    pub created_at: OffsetDateTime,
+}
+
+pub struct AuthenticatedSession {
+    /// The raw session token. Store it in an HttpOnly cookie; do not persist it in plaintext.
+    pub token: String,
+    pub user: User,
+}
+
+pub enum LoginOutcome {
+    Authenticated(AuthenticatedSession),
+    OnboardingRequired {
+        /// The raw onboarding token. In an HttpOnly cookie.
+        onboarding_token: String,
+    },
+}
+
 #[async_trait::async_trait]
 pub trait OauthDriver: Send + Sync {
     fn providers(&self) -> Vec<OauthProvider>;
     async fn start_oauth(&self, provider: OauthProvider) -> Result<AuthorizationStart, AuthError>;
+    async fn authorise(
+        &self,
+        provider: OauthProvider,
+        code: &str,
+        callback_state: &str,
+        browser_state: &str,
+    ) -> Result<LoginOutcome, AuthError>;
 }
 
 pub struct AuthService {
     database: sqlx::PgPool,
     providers: HashMap<OauthProvider, BasicClient>,
-    http_client: reqwest::Client,
+    http_client: ReqwestClient,
+    reqwest_client: reqwest::Client,
     oauth_flow_ttl: Duration,
     onboarding_ttl: Duration,
     session_ttl: Duration,
@@ -113,10 +147,11 @@ impl AuthService {
         Ok(Self {
             database: pool,
             providers,
-            http_client: http,
+            http_client: ReqwestClient::from(http.clone()),
             oauth_flow_ttl: Duration::seconds(OAUTH_STATE_MAX_AGE_SECONDS),
             onboarding_ttl: Duration::seconds(ONBOARDING_MAX_AGE_SECONDS),
             session_ttl: Duration::seconds(SESSION_MAX_AGE_SECONDS),
+            reqwest_client: http,
         })
     }
 
@@ -124,6 +159,70 @@ impl AuthService {
         self.providers
             .get(&provider)
             .ok_or_else(|| AuthError::UnsupportedProvider(provider.to_string()))
+    }
+
+    async fn resolve_profile(&self, profile: OAuthProfile) -> Result<LoginOutcome, AuthError> {
+        let OAuthProfile {
+            provider,
+            id,
+            email,
+        } = profile;
+        let email = email.trim().to_owned();
+        let email_normalized = normalise_email(&email)?;
+
+        let mut tx = self.database.begin().await?;
+        if let Some(user) = find_user_by_identity(tx.as_mut(), provider, &id).await? {
+            touch_identity(tx.as_mut(), provider, &id, &email).await?;
+            let session = self.create_session(tx.as_mut(), user).await?;
+            tx.commit().await?;
+            return Ok(LoginOutcome::Authenticated(session));
+        }
+
+        if let Some(user) = find_user_by_email(tx.as_mut(), &email_normalized).await? {
+            ensure_identity(tx.as_mut(), provider, &id, user.id, &email).await?;
+            let session = self.create_session(tx.as_mut(), user).await?;
+            tx.commit().await?;
+            return Ok(LoginOutcome::Authenticated(session));
+        }
+
+        let onboarding_token = random_token();
+        let onboarding_token_hash = hash_token(&onboarding_token);
+        let expires_at = expires_at(self.onboarding_ttl)?;
+
+        sqlx::query!(
+            r#"
+            insert into pending_oauth_login (
+                token_hash,
+                provider,
+                provider_subject,
+                email,
+                email_normalised,
+                expires_at
+            )
+            values ($1, $2, $3, $4, $5, $6)
+            on conflict (provider, provider_subject)
+            do update set
+                token_hash = excluded.token_hash,
+                email = excluded.email,
+                email_normalised = excluded.email_normalised,
+                expires_at = excluded.expires_at,
+                created_at = now()
+            "#,
+            onboarding_token_hash,
+            provider.to_string(),
+            &id,
+            &email,
+            &email_normalized,
+            expires_at,
+        )
+        .execute(tx.as_mut())
+        .await?;
+
+        tx.commit().await?;
+
+        Ok(LoginOutcome::OnboardingRequired {
+            onboarding_token: onboarding_token.to_owned(),
+        })
     }
 }
 
@@ -171,48 +270,51 @@ impl OauthDriver for AuthService {
             browser_state,
         })
     }
-    //
-    // async fn finish_oauth(
-    //     &self,
-    //     provider: Provider,
-    //     code: &str,
-    //     callback_state: &str,
-    //     browser_state: &str,
-    // ) -> Result<LoginOutcome, AuthError> {
-    //     if hash_token(callback_state) != hash_token(browser_state) {
-    //         return Err(AuthError::InvalidOAuthState);
-    //     }
-    //
-    //     let flow = sqlx::query_as::<_, OAuthFlowRow>(
-    //         r#"
-    //         DELETE FROM oauth_flows
-    //         WHERE state_hash = $1
-    //           AND provider = $2
-    //           AND expires_at > now()
-    //         RETURNING pkce_verifier
-    //         "#,
-    //     )
-    //     .bind(hash_token(callback_state))
-    //     .bind(provider.as_str())
-    //     .fetch_optional(&self.pool)
-    //     .await?
-    //     .ok_or(AuthError::InvalidOAuthState)?;
-    //
-    //     let configured = self.configured_provider(provider)?;
-    //     let token = configured
-    //         .client
-    //         .exchange_code(AuthorizationCode::new(code.to_owned()))
-    //         .set_pkce_verifier(PkceCodeVerifier::new(flow.pkce_verifier))
-    //         .request_async(&self.http)
-    //         .await
-    //         .map_err(|error| AuthError::TokenExchange(error.to_string()))?;
-    //
-    //     let profile = configured
-    //         .fetch_profile(&self.http, token.access_token().secret())
-    //         .await?;
-    //
-    //     self.resolve_profile(profile).await
-    // }
+
+    async fn authorise(
+        &self,
+        provider: OauthProvider,
+        code: &str,
+        callback_state: &str,
+        browser_state: &str,
+    ) -> Result<LoginOutcome, AuthError> {
+        if hash_token(callback_state) != hash_token(browser_state) {
+            return Err(AuthError::InvalidOAuthState);
+        }
+
+        let pkce_verifier = sqlx::query_scalar!(
+            "
+             delete from oauth_flow
+             where state_hash = $1
+               and provider = $2
+               and expires_at > now()
+             returning pkce_verifier
+             ",
+            hash_token(callback_state),
+            provider.to_string()
+        )
+        .fetch_optional(&self.database)
+        .await?
+        .ok_or(AuthError::InvalidOAuthState)?;
+
+        let configured = self.configured_provider(provider)?;
+        let token = configured
+            .exchange_code(AuthorizationCode::new(code.to_owned()))
+            .set_pkce_verifier(PkceCodeVerifier::new(pkce_verifier))
+            .request_async(&self.http_client)
+            .await
+            .map_err(|error| AuthError::TokenExchange(error.to_string()))?;
+
+        let profile = profile::fetch_profile(
+            provider,
+            &self.reqwest_client,
+            token.access_token().secret(),
+        )
+        .await?;
+
+        self.resolve_profile(profile).await;
+        todo!()
+    }
     //
     // async fn complete_onboarding(
     //     &self,
@@ -357,4 +459,20 @@ fn expires_at(ttl: Duration) -> Result<OffsetDateTime, AuthError> {
     OffsetDateTime::now_utc()
         .checked_add(ttl)
         .ok_or_else(|| AuthError::Configuration("auth TTL overflows the clock".to_owned()))
+}
+
+fn normalise_email(email: &str) -> Result<String, AuthError> {
+    let email = email.trim();
+    if email.is_empty() || !email.contains('@') {
+        return Err(AuthError::MissingVerifiedEmail);
+    }
+
+    Ok(email.to_lowercase())
+}
+
+fn random_token() -> String {
+    let mut bytes = [0_u8; 32];
+    let mut rng = SysRng;
+    rng.try_fill_bytes(&mut bytes).unwrap();
+    URL_SAFE_NO_PAD.encode(bytes)
 }
