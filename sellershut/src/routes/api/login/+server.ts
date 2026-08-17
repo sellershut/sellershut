@@ -1,0 +1,28 @@
+// src/routes/api/login/+server.ts
+import { BACKEND_URL } from '$env/static/private';
+import type { RequestHandler } from './$types';
+
+export const GET: RequestHandler = async ({ url, fetch }) => {
+  const provider = url.searchParams.get('provider');
+
+  if (!provider) {
+    return new Response('Missing provider', { status: 400 });
+  }
+
+  const backendUrl = new URL('/auth', BACKEND_URL);
+  backendUrl.searchParams.set('provider', provider);
+
+  const response = await fetch(backendUrl, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    return new Response('Backend request failed', {
+      status: response.status,
+    });
+  }
+
+  const { authorization_url } = await response.json();
+
+  return Response.redirect(authorization_url, 302);
+};

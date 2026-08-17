@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "./fonts.css";
+@plugin "@tailwindcss/forms";
+@plugin "@tailwindcss/typography";
 
 /*
  * Tailwind's `dark:` variant is controlled by the
