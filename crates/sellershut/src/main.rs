@@ -12,7 +12,8 @@ use std::{
 use anyhow::Result;
 use clap::Parser;
 use sellershut_auth::AuthService;
-use sellershut_users::{UserDriver, UserService};
+use sellershut_core::types::user::ActorType;
+use sellershut_users::{CreateUser, UserDriver, UserService};
 use tokio::net::TcpListener;
 use tracing::info;
 
@@ -43,8 +44,23 @@ async fn main() -> Result<()> {
     let system_user = if let Some(user) = user.get_user(&config.server.instance_name).await? {
         user
     } else {
-        // create system user
-        todo!()
+        //create system user
+        let keypair = activitypub_federation::http_signatures::generate_actor_keypair()?;
+        let inbox = server::utilities::inbox_url(
+            config.server.port.into(),
+            &config.server.domain,
+            env!("CARGO_PKG_NAME"),
+        )?;
+        let data = CreateUser {
+            kind: ActorType::Service,
+            username: config.server.instance_name.clone(),
+            name: None,
+            inbox,
+            public_key: keypair.public_key,
+            private_key: Some(keypair.private_key),
+            is_local: true,
+        };
+        user.create_user(&data).await?
     };
 
     let state = AppState {

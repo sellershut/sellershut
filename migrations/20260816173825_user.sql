@@ -16,7 +16,7 @@ create table "user" (
     public_key text not null,
     private_key text,
     kind user_kind not null default 'person',
-    last_refreshed_at timestamptz not null,
+    last_refreshed_at timestamptz not null default now(),
     is_local boolean not null,
     created_at timestamptz not null default now(),
     -- private_key is NULL if and only if local is FALSE

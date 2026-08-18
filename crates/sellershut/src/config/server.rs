@@ -7,6 +7,7 @@ use url::Url;
 #[derive(Deserialize, Serialize, Debug, Default)]
 #[serde(rename_all = "kebab-case", default)]
 pub struct Server {
+    pub domain: String,
     pub port: Port,
     pub request: Request,
     pub cors: Cors,

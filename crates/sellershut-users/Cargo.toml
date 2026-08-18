@@ -13,4 +13,4 @@ sqlx = { workspace = true, features = ["time", "uuid"] }
 thiserror.workspace = true
 time = { workspace = true, features = ["serde"] }
 url = { workspace = true, features = ["serde"] }
-uuid = { workspace = true, features = ["serde"] }
+uuid = { workspace = true, features = ["serde", "v7"] }

@@ -5,6 +5,7 @@ use axum::{
 
 pub mod router;
 pub mod state;
+pub mod utilities;
 
 // Make our own error that wraps `anyhow::Error`.
 pub struct AppError(anyhow::Error);
