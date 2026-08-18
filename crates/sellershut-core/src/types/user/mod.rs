@@ -2,6 +2,8 @@ use sqlx::prelude::Type;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
+use crate::types::RedactedSecret;
+
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct User {
@@ -11,7 +13,7 @@ pub struct User {
     pub inbox: String,
     pub public_key: String,
     pub kind: ActorType,
-    pub private_key: Option<String>,
+    pub private_key: Option<RedactedSecret>,
     pub created_at: OffsetDateTime,
     pub last_refreshed_at: OffsetDateTime,
     pub is_local: bool,

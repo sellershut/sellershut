@@ -1,6 +1,9 @@
 pub mod error;
 
-use sellershut_core::types::user::{ActorType, User};
+use sellershut_core::types::{
+    RedactedSecret,
+    user::{ActorType, User},
+};
 use url::Url;
 use uuid::Uuid;
 
@@ -38,7 +41,7 @@ impl UserDriver for UserService {
                 name,
                 inbox,
                 public_key,
-                private_key,
+                private_key as "private_key: RedactedSecret",
                 kind as "kind: ActorType",
                 last_refreshed_at,
                 created_at,
@@ -77,7 +80,7 @@ impl UserDriver for UserService {
                 name,
                 inbox,
                 public_key,
-                private_key,
+                private_key as "private_key: RedactedSecret",
                 kind as "kind: ActorType",
                 last_refreshed_at,
                 created_at,
@@ -88,7 +91,7 @@ impl UserDriver for UserService {
             data.name,
             data.inbox.to_string(),
             data.public_key,
-            data.private_key,
+            data.private_key as _,
             data.kind as _,
             data.is_local,
         )

@@ -18,4 +18,3 @@ default = []
 serde = ["dep:serde", "serde/derive", "secrecy/serde", "uuid/serde"]
 utoipa = ["dep:utoipa"]
 users = []
-
