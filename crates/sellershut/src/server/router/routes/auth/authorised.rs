@@ -25,7 +25,7 @@ pub struct OauthResponse {
 /// Handles the OAuth authorization callback for the specified authentication provider.
 #[utoipa::path(
     get,
-    path = "/auth/{provider}/authorised",
+    path = "/{provider}/authorised",
     params(
         ("provider" = OauthProvider, Path, description = "OAuth provider")
     ),
@@ -50,8 +50,10 @@ pub async fn authorised(
 ) -> Result<impl IntoResponse, AppError> {
     let code = callback.code;
     let callback_state = callback.state;
-    let browser_state = jar
-        .get(&provider.cookie_name())
+    let browser_state = jar.get(&provider.cookie_name());
+    dbg!("cookie", browser_state);
+
+    let browser_state = browser_state
         .map(|cookie| cookie.value().to_owned())
         .context("Invalid oauth state")?;
 

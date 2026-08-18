@@ -16,8 +16,9 @@ sellershut-core = { workspace = true, features = ["serde"] }
 sellershut-svc.workspace = true
 secrecy = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive"] }
-sqlx = { workspace = true, features = ["time"] }
+sqlx = { workspace = true, features = ["time", "uuid"] }
 thiserror.workspace = true
 time = { workspace = true, features = ["serde"] }
 url = { workspace = true, features = ["serde"] }
+uuid = { workspace = true, features = ["serde"] }
 sha2 = "0.11.0"

@@ -11,17 +11,18 @@ export const GET: RequestHandler = async ({ url, fetch }) => {
   const backendUrl = new URL('/auth/login', BACKEND_URL);
   backendUrl.searchParams.set('provider', provider);
 
-  const response = await fetch(backendUrl, {
-    credentials: 'include',
-  });
-
-  if (!response.ok) {
-    return new Response('Backend request failed', {
-      status: response.status,
-    });
-  }
-
-  const { authorisation_url } = await response.json();
-
-  return Response.redirect(authorisation_url, 302);
+  return Response.redirect(backendUrl, 302);
+  // const response = await fetch(backendUrl, {
+  //   credentials: 'include',
+  // });
+  //
+  // if (!response.ok) {
+  //   return new Response('Backend request failed', {
+  //     status: response.status,
+  //   });
+  // }
+  //
+  // const { authorisation_url } = await response.json();
+  //
+  // return Response.redirect(authorisation_url, 302);
 };

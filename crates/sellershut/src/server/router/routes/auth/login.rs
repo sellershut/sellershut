@@ -1,7 +1,7 @@
 use axum::{
     Json,
     extract::{Query, State},
-    response::IntoResponse,
+    response::{IntoResponse, Redirect},
 };
 use axum_extra::extract::{
     CookieJar,
@@ -92,9 +92,10 @@ pub async fn login(
 
     Ok((
         jar,
-        Json(StartOAuthResponse {
-            authorisation_url: start.authorisation_url,
-        }),
+        Redirect::to(&start.authorisation_url),
+        // Json(StartOAuthResponse {
+        //     authorisation_url: start.authorisation_url,
+        // }),
     )
         .into_response())
 }

@@ -6,6 +6,7 @@ use oauth2_reqwest::ReqwestClient;
 use rand::{TryRng, rngs::SysRng};
 use std::collections::HashMap;
 use time::{Duration, OffsetDateTime};
+use uuid::Uuid;
 
 use async_trait::async_trait;
 use oauth2::{
@@ -70,7 +71,7 @@ pub struct AuthorizationStart {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct User {
-    pub id: String,
+    pub id: Uuid,
     pub email: String,
     pub username: String,
     pub created_at: OffsetDateTime,
@@ -167,8 +168,7 @@ impl AuthService {
             id,
             email,
         } = profile;
-        let email = email.trim().to_owned();
-        let email_normalized = normalise_email(&email)?;
+        let email = email.trim().to_lowercase();
 
         let mut tx = self.database.begin().await?;
         if let Some(user) = find_user_by_identity(tx.as_mut(), provider, &id).await? {
@@ -178,7 +178,7 @@ impl AuthService {
             return Ok(LoginOutcome::Authenticated(session));
         }
 
-        if let Some(user) = find_user_by_email(tx.as_mut(), &email_normalized).await? {
+        if let Some(user) = find_user_by_email(tx.as_mut(), &email).await? {
             ensure_identity(tx.as_mut(), provider, &id, user.id, &email).await?;
             let session = self.create_session(tx.as_mut(), user).await?;
             tx.commit().await?;
@@ -196,15 +196,13 @@ impl AuthService {
                 provider,
                 provider_subject,
                 email,
-                email_normalised,
                 expires_at
             )
-            values ($1, $2, $3, $4, $5, $6)
+            values ($1, $2, $3, $4, $5)
             on conflict (provider, provider_subject)
             do update set
                 token_hash = excluded.token_hash,
                 email = excluded.email,
-                email_normalised = excluded.email_normalised,
                 expires_at = excluded.expires_at,
                 created_at = now()
             "#,
@@ -212,7 +210,6 @@ impl AuthService {
             provider.to_string(),
             &id,
             &email,
-            &email_normalized,
             expires_at,
         )
         .execute(tx.as_mut())
@@ -223,6 +220,30 @@ impl AuthService {
         Ok(LoginOutcome::OnboardingRequired {
             onboarding_token: onboarding_token.to_owned(),
         })
+    }
+
+    async fn create_session(
+        &self,
+        connection: &mut sqlx::PgConnection,
+        user: User,
+    ) -> Result<AuthenticatedSession, AuthError> {
+        let token = random_token();
+        let token_hash = hash_token(&token);
+        let expires_at = expires_at(self.session_ttl)?;
+
+        sqlx::query!(
+            r#"
+            insert into auth_session (token_hash, user_id, expires_at)
+            values ($1, $2, $3)
+            "#,
+            token_hash,
+            user.id,
+            expires_at
+        )
+        .execute(connection)
+        .await?;
+
+        Ok(AuthenticatedSession { token, user })
     }
 }
 
@@ -312,8 +333,7 @@ impl OauthDriver for AuthService {
         )
         .await?;
 
-        self.resolve_profile(profile).await;
-        todo!()
+        self.resolve_profile(profile).await
     }
     //
     // async fn complete_onboarding(
@@ -461,18 +481,118 @@ fn expires_at(ttl: Duration) -> Result<OffsetDateTime, AuthError> {
         .ok_or_else(|| AuthError::Configuration("auth TTL overflows the clock".to_owned()))
 }
 
-fn normalise_email(email: &str) -> Result<String, AuthError> {
-    let email = email.trim();
-    if email.is_empty() || !email.contains('@') {
-        return Err(AuthError::MissingVerifiedEmail);
-    }
-
-    Ok(email.to_lowercase())
-}
-
 fn random_token() -> String {
     let mut bytes = [0_u8; 32];
     let mut rng = SysRng;
     rng.try_fill_bytes(&mut bytes).unwrap();
     URL_SAFE_NO_PAD.encode(bytes)
+}
+
+async fn touch_identity(
+    connection: &mut sqlx::PgConnection,
+    provider: OauthProvider,
+    provider_subject: &str,
+    provider_email: &str,
+) -> Result<(), AuthError> {
+    sqlx::query!(
+        "
+        update oauth_identity
+        set provider_email = $3,
+            last_login_at = now()
+        where provider = $1
+          and provider_id = $2
+        ",
+        provider.to_string(),
+        provider_subject,
+        provider_email,
+    )
+    .execute(connection)
+    .await?;
+
+    Ok(())
+}
+async fn find_user_by_email(
+    connection: &mut sqlx::PgConnection,
+    email: &str,
+) -> Result<Option<User>, AuthError> {
+    Ok(sqlx::query_as!(
+        User,
+        r#"
+        select id, email, username, created_at
+        from "user"
+        where email = $1
+        for update
+        "#,
+        email.to_lowercase()
+    )
+    .fetch_optional(connection)
+    .await?)
+}
+
+async fn find_user_by_identity(
+    connection: &mut sqlx::PgConnection,
+    provider: OauthProvider,
+    provider_subject: &str,
+) -> Result<Option<User>, AuthError> {
+    Ok(sqlx::query_as!(
+        User,
+        r#"
+        select u.id, u.email, u.username, u.created_at
+        from oauth_identity as oi
+        join "user" as u on u.id = oi.user_id
+        where oi.provider = $1
+          and oi.provider_id = $2
+        for update of oi
+        "#,
+        provider.to_string(),
+        provider_subject
+    )
+    .fetch_optional(connection)
+    .await?)
+}
+
+async fn ensure_identity(
+    connection: &mut sqlx::PgConnection,
+    provider: OauthProvider,
+    provider_subject: &str,
+    user_id: Uuid,
+    provider_email: &str,
+) -> Result<(), AuthError> {
+    sqlx::query(
+        r#"
+        INSERT INTO oauth_identities (
+            provider,
+            provider_subject,
+            user_id,
+            provider_email
+        )
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (provider, provider_subject) DO NOTHING
+        "#,
+    )
+    .bind(provider.to_string())
+    .bind(provider_subject)
+    .bind(user_id)
+    .bind(provider_email)
+    .execute(&mut *connection)
+    .await?;
+
+    let linked_user_id = sqlx::query_scalar::<_, Uuid>(
+        r#"
+        SELECT user_id
+        FROM oauth_identities
+        WHERE provider = $1
+          AND provider_subject = $2
+        "#,
+    )
+    .bind(provider.to_string())
+    .bind(provider_subject)
+    .fetch_one(&mut *connection)
+    .await?;
+
+    if linked_user_id != user_id {
+        return Err(AuthError::IdentityConflict);
+    }
+
+    touch_identity(connection, provider, provider_subject, provider_email).await
 }
