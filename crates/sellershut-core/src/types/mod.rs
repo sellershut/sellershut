@@ -1,3 +1,6 @@
+#[cfg(feature = "users")]
+pub mod user;
+
 use secrecy::{ExposeSecret, SecretString};
 
 #[derive(Debug, Clone, Default)]

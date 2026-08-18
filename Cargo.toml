@@ -7,6 +7,7 @@ license = "AGPL-3.0-only"
 
 [workspace.dependencies]
 async-trait = "0.1.92"
+activitypub_federation =  { version = "0.7.0-beta.11", default-features = false }
 base64 = "0.23.1"
 rand = "0.10.2"
 reqwest = "0.13.4"

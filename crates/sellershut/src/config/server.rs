@@ -12,6 +12,12 @@ pub struct Server {
     pub cors: Cors,
     pub oauth: OauthConfig,
     pub url: FrontendUrl,
+    #[serde(default = "instance_name")]
+    pub instance_name: String,
+}
+
+fn instance_name() -> String {
+    env!("CARGO_PKG_NAME").to_owned()
 }
 
 #[derive(Clone, Copy, Deserialize, Serialize, Debug)]

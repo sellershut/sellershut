@@ -14,7 +14,13 @@ use oauth2::{
     AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointNotSet, EndpointSet,
     PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse, TokenUrl,
 };
-use sellershut_core::{auth::OauthProvider, types::RedactedSecret};
+use sellershut_core::{
+    auth::OauthProvider,
+    types::{
+        RedactedSecret,
+        user::{ActorType, User},
+    },
+};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use url::Url;
@@ -69,14 +75,6 @@ impl From<Configuration> for BasicClient {
 pub struct AuthorizationStart {
     pub authorisation_url: String,
     pub state: String,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct User {
-    pub id: Uuid,
-    pub email: String,
-    pub username: String,
-    pub created_at: OffsetDateTime,
 }
 
 pub struct AuthenticatedSession {
@@ -514,12 +512,25 @@ async fn find_user_by_email(
     Ok(sqlx::query_as!(
         User,
         r#"
-        select id, email, username, created_at
-        from "user"
-        where email = $1
+        select
+            u.id,
+            u.username,
+            u.name,
+            u.inbox,
+            u.public_key,
+            u.private_key,
+            u.kind as "kind: ActorType",
+            u.last_refreshed_at,
+            u.created_at,
+            u.is_local
+            from "user" as u
+            join "oauth_identity" as oi on u.id = oi.user_id
+            where
+                oi.provider_email = $1
+                and u.is_local
         for update
         "#,
-        email.to_lowercase()
+        email
     )
     .fetch_optional(connection)
     .await?)
@@ -533,7 +544,17 @@ async fn find_user_by_identity(
     Ok(sqlx::query_as!(
         User,
         r#"
-        select u.id, u.email, u.username, u.created_at
+        select
+            u.id,
+            u.username,
+            u.name,
+            u.inbox,
+            u.public_key,
+            u.private_key,
+            u.kind as "kind: ActorType",
+            u.last_refreshed_at,
+            u.created_at,
+            u.is_local
         from oauth_identity as oi
         join "user" as u on u.id = oi.user_id
         where oi.provider = $1
@@ -556,14 +577,14 @@ async fn ensure_identity(
 ) -> Result<(), AuthError> {
     sqlx::query(
         r#"
-        INSERT INTO oauth_identities (
+        insert into oauth_identities (
             provider,
             provider_subject,
             user_id,
             provider_email
         )
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (provider, provider_subject) DO NOTHING
+        values ($1, $2, $3, $4)
+        on conflict (provider, provider_subject) do nothing
         "#,
     )
     .bind(provider.to_string())

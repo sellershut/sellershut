@@ -3,8 +3,8 @@ use axum::{
     extract::{Path, State},
     response::IntoResponse,
 };
-use sellershut_auth::{AuthenticatedSession, LoginOutcome, User};
-use sellershut_core::auth::OauthProvider;
+use sellershut_auth::{AuthenticatedSession, LoginOutcome};
+use sellershut_core::{auth::OauthProvider, types::user::User};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 

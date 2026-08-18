@@ -5,12 +5,14 @@ edition = "2024"
 license.workspace = true
 
 [dependencies]
+activitypub_federation = { workspace = true, features = ["axum"] }
 anyhow = "1.0.104"
 axum = "0.8.9"
 clap = { version = "4.6.6", features = ["derive"] }
-sellershut-auth = { path = "../sellershut-auth/" }
-sellershut-core = { workspace = true, features = ["serde", "utoipa"] }
+sellershut-auth = { path = "../sellershut-auth" }
+sellershut-core = { workspace = true, features = ["serde", "users", "utoipa"] }
 sellershut-svc = { workspace = true, features = ["postgres"] }
+sellershut-users = { path = "../sellershut-users" }
 serde = { workspace = true, features = ["derive"] }
 tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread"] }
 toml = "1.1.4"

@@ -24,13 +24,6 @@ create table pending_oauth_login (
 
 create index pending_oauth_logins_expires_at_idx on pending_oauth_login(expires_at);
 
-create table "user" (
-    id uuid primary key,
-    email citext not null,
-    username citext not null,
-    created_at timestamptz not null default now()
-);
-
 create table oauth_identity (
     provider text not null,
     provider_id text not null,

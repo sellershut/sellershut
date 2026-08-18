@@ -12,12 +12,7 @@ use serde::{Deserialize, Serialize};
 pub struct Configuration {
     pub server: server::Server,
     pub log: log::Log,
-    pub database: Database,
-}
-
-#[derive(Deserialize, Serialize, Debug, Default)]
-pub struct Database {
-    pub auth: sellershut_svc::database::Config,
+    pub database: sellershut_svc::database::Config,
 }
 
 pub fn load(cli: Option<&PathBuf>) -> Configuration {

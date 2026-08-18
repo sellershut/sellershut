@@ -12,6 +12,7 @@ use std::{
 use anyhow::Result;
 use clap::Parser;
 use sellershut_auth::AuthService;
+use sellershut_users::{UserDriver, UserService};
 use tokio::net::TcpListener;
 use tracing::info;
 
@@ -35,11 +36,20 @@ async fn main() -> Result<()> {
 
     let addr = SocketAddr::from((Ipv6Addr::UNSPECIFIED, config.server.port.into()));
 
-    let database = config.database.auth.connect().await?;
-    let auth = AuthService::new(database, config.server.oauth.0.clone())?;
+    let database = config.database.connect().await?;
+    let auth = AuthService::new(database.clone(), config.server.oauth.0.clone())?;
+    let user = UserService::new(database);
+
+    let system_user = if let Some(user) = user.get_user(&config.server.instance_name).await? {
+        user
+    } else {
+        // create system user
+        todo!()
+    };
 
     let state = AppState {
         auth: Arc::new(auth),
+        user: Arc::new(user),
     };
 
     let app = server::router::router(state, config).await?;
