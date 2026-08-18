@@ -1,4 +1,3 @@
-use cookie::{Cookie, SameSite};
 use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 
@@ -17,18 +16,6 @@ pub fn router(state: AppState) -> OpenApiRouter {
 
 const AUTH_TAG: &str = "Authentication";
 
-const ONBOARDING_COOKIE: &str = "auth_onboarding";
-const SESSION_COOKIE: &str = "auth_session";
-
 #[derive(OpenApi)]
 #[openapi(tags((name = AUTH_TAG, description = "Authentication")))]
 pub struct AuthDoc;
-
-fn removal_cookie(name: String, path: String, secure: bool) -> Cookie<'static> {
-    Cookie::build(name)
-        .path(path)
-        .http_only(true)
-        .same_site(SameSite::Lax)
-        .secure(secure)
-        .build()
-}

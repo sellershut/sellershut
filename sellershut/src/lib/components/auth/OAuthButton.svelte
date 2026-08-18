@@ -9,7 +9,7 @@ let {
   provider: OAuthProvider;
 } = $props();
 
-const Icon = provider.icon;
+const Icon = $derived(provider.icon);
 </script>
 
 <a

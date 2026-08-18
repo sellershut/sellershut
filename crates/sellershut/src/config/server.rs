@@ -11,10 +11,20 @@ pub struct Server {
     pub request: Request,
     pub cors: Cors,
     pub oauth: OauthConfig,
+    pub url: FrontendUrl,
 }
 
 #[derive(Clone, Copy, Deserialize, Serialize, Debug)]
 pub struct Port(u16);
+
+#[derive(Clone, Deserialize, Serialize, Debug)]
+pub struct FrontendUrl(Url);
+
+impl Default for FrontendUrl {
+    fn default() -> Self {
+        Self(Url::parse("http://localhost:5173").expect("frontend url"))
+    }
+}
 
 #[derive(Clone, Deserialize, Serialize, Debug)]
 pub struct OauthConfig(pub HashMap<OauthProvider, sellershut_auth::Configuration>);

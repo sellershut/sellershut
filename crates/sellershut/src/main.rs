@@ -40,7 +40,6 @@ async fn main() -> Result<()> {
 
     let state = AppState {
         auth: Arc::new(auth),
-        cookie_secure: false,
     };
 
     let app = server::router::router(state, config).await?;

@@ -1,15 +1,10 @@
 use axum::{
     Json,
     extract::{Query, State},
-    response::{IntoResponse, Redirect},
+    response::{IntoResponse},
 };
-use axum_extra::extract::{
-    CookieJar,
-    cookie::{Cookie, SameSite},
-};
-use sellershut_auth::OAUTH_STATE_MAX_AGE_SECONDS;
 use sellershut_core::auth::OauthProvider;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize};
 use utoipa::IntoParams;
 
 use crate::server::{AppError, router::routes::auth::AUTH_TAG, state::AppState};
@@ -22,14 +17,9 @@ pub struct AuthQuery {
     provider: OauthProvider,
 }
 
-#[derive(Serialize)]
-struct StartOAuthResponse {
-    authorisation_url: String,
-}
-
 /// Oauth login
 #[utoipa::path(
-    get,
+    post,
     responses(
         (
             status = 302,
@@ -76,42 +66,10 @@ struct StartOAuthResponse {
 pub async fn login(
     Query(query): Query<AuthQuery>,
     State(state): State<AppState>,
-    jar: CookieJar,
 ) -> Result<impl IntoResponse, AppError> {
-    let start = state.auth.start_oauth(query.provider).await.unwrap();
+    let start = state.auth.start_oauth(query.provider).await?;
 
-    let callback_url = format!("/auth/{}/authorised", query.provider);
-
-    let jar = jar.add(auth_cookie(
-        query.provider.cookie_name(),
-        start.browser_state,
-        callback_url,
-        OAUTH_STATE_MAX_AGE_SECONDS,
-        state.cookie_secure,
-    ));
-
-    Ok((
-        jar,
-        Redirect::to(&start.authorisation_url),
-        // Json(StartOAuthResponse {
-        //     authorisation_url: start.authorisation_url,
-        // }),
-    )
+    Ok(
+        Json(start)
         .into_response())
-}
-
-pub fn auth_cookie(
-    name: String,
-    value: String,
-    path: String,
-    max_age_seconds: i64,
-    secure: bool,
-) -> Cookie<'static> {
-    Cookie::build((name, value))
-        .path(path)
-        .http_only(true)
-        .same_site(SameSite::Lax)
-        .secure(secure)
-        .max_age(cookie::time::Duration::seconds(max_age_seconds))
-        .build()
 }

@@ -56,23 +56,23 @@ pub async fn router(state: AppState, config: Configuration) -> anyhow::Result<Ro
         router.merge(utoipa_scalar::Scalar::with_url("/scalar", api))
     };
 
-    let cors = &config.server.cors;
-    let methods: Vec<_> = (&cors.allowed_methods).into();
-    let origins: Result<Vec<_>, _> = cors
-        .allowed_origins
-        .iter()
-        .map(|v| v.as_str().parse())
-        .collect();
+    // let cors = &config.server.cors;
+    // let methods: Vec<_> = (&cors.allowed_methods).into();
+    // let origins: Result<Vec<_>, _> = cors
+    //     .allowed_origins
+    //     .iter()
+    //     .map(|v| v.as_str().parse())
+    //     .collect();
 
     Ok(middleware::trace_layer(router)
         .layer(TimeoutLayer::with_status_code(
             StatusCode::REQUEST_TIMEOUT,
             Duration::from_secs(config.server.request.timeout_duration),
         ))
-        .layer(
-            CorsLayer::new()
-                .allow_origin(origins.expect("valid allow_origin"))
-                .allow_methods(methods),
-        )
+        // .layer(
+        //     CorsLayer::new()
+        //         .allow_origin(origins.expect("valid allow_origin"))
+        //         .allow_methods(methods),
+        // )
         .layer(axum::middleware::from_fn(middleware::request_id)))
 }

@@ -1,7 +1,8 @@
+import { redirect } from '@sveltejs/kit';
 import { BACKEND_URL } from '$env/static/private';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async ({ url, fetch }) => {
+export const GET: RequestHandler = async ({ cookies, url, fetch }) => {
   const provider = url.searchParams.get('provider');
 
   if (!provider) {
@@ -11,18 +12,25 @@ export const GET: RequestHandler = async ({ url, fetch }) => {
   const backendUrl = new URL('/auth/login', BACKEND_URL);
   backendUrl.searchParams.set('provider', provider);
 
-  return Response.redirect(backendUrl, 302);
-  // const response = await fetch(backendUrl, {
-  //   credentials: 'include',
-  // });
-  //
-  // if (!response.ok) {
-  //   return new Response('Backend request failed', {
-  //     status: response.status,
-  //   });
-  // }
-  //
-  // const { authorisation_url } = await response.json();
-  //
-  // return Response.redirect(authorisation_url, 302);
+  const response = await fetch(backendUrl, {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    return new Response('Backend request failed', {
+      status: response.status,
+    });
+  }
+
+  const { authorisation_url, state } = await response.json();
+  const cookieName = `oauth_state_${provider}`;
+
+  cookies.set(cookieName, state, {
+    httpOnly: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 10 * 60,
+  });
+
+  return redirect(303, authorisation_url);
 };

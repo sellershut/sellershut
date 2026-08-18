@@ -1,30 +1,33 @@
-use anyhow::Context;
 use axum::{
-    extract::{Path, Query, State},
-    response::{IntoResponse, Redirect},
+    Json,
+    extract::{Path, State},
+    response::{IntoResponse},
 };
-use axum_extra::extract::CookieJar;
 use sellershut_auth::{
-    AuthenticatedSession, LoginOutcome, ONBOARDING_MAX_AGE_SECONDS, SESSION_MAX_AGE_SECONDS,
+    AuthenticatedSession, LoginOutcome, User,
 };
 use sellershut_core::auth::OauthProvider;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-use crate::server::{
-    AppError,
-    router::routes::auth::{ONBOARDING_COOKIE, SESSION_COOKIE, login::auth_cookie, removal_cookie},
-    state::AppState,
-};
+use crate::server::{AppError, state::AppState};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct OauthResponse {
     code: String,
     state: String,
 }
 
-/// Handles the OAuth authorization callback for the specified authentication provider.
+#[derive(Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+enum OAuthCallbackResponse {
+    Authenticated { session_token: String, user: User },
+    OnboardingRequired { onboarding_token: String },
+}
+
+/// OAuth authorisation callback
 #[utoipa::path(
-    get,
+    post,
     path = "/{provider}/authorised",
     params(
         ("provider" = OauthProvider, Path, description = "OAuth provider")
@@ -44,60 +47,25 @@ pub struct OauthResponse {
 )]
 pub async fn authorised(
     State(state): State<AppState>,
-    Query(callback): Query<OauthResponse>,
     Path(provider): Path<OauthProvider>,
-    jar: CookieJar,
+    Json(callback): Json<OauthResponse>,
 ) -> Result<impl IntoResponse, AppError> {
     let code = callback.code;
-    let callback_state = callback.state;
-    let browser_state = jar.get(&provider.cookie_name());
-    dbg!("cookie", browser_state);
-
-    let browser_state = browser_state
-        .map(|cookie| cookie.value().to_owned())
-        .context("Invalid oauth state")?;
 
     let outcome = state
         .auth
-        .authorise(provider, &code, &callback_state, &browser_state)
+        .authorise(provider, &code, &callback.state)
         .await?;
-
-    let jar = jar.remove(removal_cookie(
-        provider.cookie_name(),
-        format!("/auth/{provider}/authorised"),
-        state.cookie_secure,
-    ));
-
-    match outcome {
-        LoginOutcome::Authenticated(AuthenticatedSession { token, .. }) => {
-            let jar = jar
-                .remove(removal_cookie(
-                    ONBOARDING_COOKIE.to_owned(),
-                    "/auth".to_owned(),
-                    state.cookie_secure,
-                ))
-                .add(auth_cookie(
-                    SESSION_COOKIE.to_owned(),
-                    token,
-                    "/".to_owned(),
-                    SESSION_MAX_AGE_SECONDS,
-                    state.cookie_secure,
-                ));
-
-            //Ok((jar, Redirect::to(&state.frontend_authenticated_url)).into_response())
-            Ok((jar, Redirect::to("http://localhost:5173")).into_response())
+    let resp = match outcome {
+        LoginOutcome::Authenticated(AuthenticatedSession { token, user }) => {
+            OAuthCallbackResponse::Authenticated {
+                session_token: token,
+                user,
+            }
         }
         LoginOutcome::OnboardingRequired { onboarding_token } => {
-            let jar = jar.add(auth_cookie(
-                ONBOARDING_COOKIE.to_owned(),
-                onboarding_token,
-                "/auth".to_owned(),
-                ONBOARDING_MAX_AGE_SECONDS,
-                state.cookie_secure,
-            ));
-            Ok((jar, Redirect::to("http://localhost:5173")).into_response())
-
-            //            Ok((jar, Redirect::to(&state.frontend_onboarding_url)).into_response())
+            OAuthCallbackResponse::OnboardingRequired { onboarding_token }
         }
-    }
+    };
+    Ok(Json(resp).into_response())
 }

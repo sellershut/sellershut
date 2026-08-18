@@ -20,5 +20,6 @@ sqlx = { workspace = true, features = ["time", "uuid"] }
 thiserror.workspace = true
 time = { workspace = true, features = ["serde"] }
 url = { workspace = true, features = ["serde"] }
+utoipa.workspace = true
 uuid = { workspace = true, features = ["serde"] }
 sha2 = "0.11.0"

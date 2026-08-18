@@ -4,6 +4,7 @@ pub(crate) mod profile;
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use oauth2_reqwest::ReqwestClient;
 use rand::{TryRng, rngs::SysRng};
+use utoipa::ToSchema;
 use std::collections::HashMap;
 use time::{Duration, OffsetDateTime};
 use uuid::Uuid;
@@ -64,12 +65,13 @@ impl From<Configuration> for BasicClient {
     }
 }
 
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct AuthorizationStart {
     pub authorisation_url: String,
-    pub browser_state: String,
+    pub state: String,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct User {
     pub id: Uuid,
     pub email: String,
@@ -99,8 +101,7 @@ pub trait OauthDriver: Send + Sync {
         &self,
         provider: OauthProvider,
         code: &str,
-        callback_state: &str,
-        browser_state: &str,
+        state: &str,
     ) -> Result<LoginOutcome, AuthError>;
 }
 
@@ -270,8 +271,8 @@ impl OauthDriver for AuthService {
             .set_pkce_challenge(pkce_challenge)
             .url();
 
-        let browser_state = state.secret().to_owned();
-        let state_hash = hash_token(&browser_state);
+        let state = state.secret().to_owned();
+        let state_hash = hash_token(&state);
         let expires_at = expires_at(self.oauth_flow_ttl)?;
 
         sqlx::query!(
@@ -288,7 +289,7 @@ impl OauthDriver for AuthService {
 
         Ok(AuthorizationStart {
             authorisation_url: authorization_url.to_string(),
-            browser_state,
+            state,
         })
     }
 
@@ -296,13 +297,8 @@ impl OauthDriver for AuthService {
         &self,
         provider: OauthProvider,
         code: &str,
-        callback_state: &str,
-        browser_state: &str,
+        state: &str,
     ) -> Result<LoginOutcome, AuthError> {
-        if hash_token(callback_state) != hash_token(browser_state) {
-            return Err(AuthError::InvalidOAuthState);
-        }
-
         let pkce_verifier = sqlx::query_scalar!(
             "
              delete from oauth_flow
@@ -311,7 +307,7 @@ impl OauthDriver for AuthService {
                and expires_at > now()
              returning pkce_verifier
              ",
-            hash_token(callback_state),
+            hash_token(state),
             provider.to_string()
         )
         .fetch_optional(&self.database)
