@@ -44,31 +44,27 @@ export async function GET({ params, url, cookies, fetch }) {
 
   const result = await response.json();
 
-  //    if (result.kind === 'authenticated') {
-  cookies.set('auth_session', result.session_token, {
-    path: '/',
-    httpOnly: true,
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 30,
-  });
+  if (result.kind === 'authenticated') {
+    cookies.set('auth_session', result.session_token, {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 30,
+    });
 
-  redirect(303, '/');
-  // }
-  //
-  // if (result.kind === 'onboarding_required') {
-  //     cookies.set(
-  //         'auth_onboarding',
-  //         result.onboarding_token,
-  //         {
-  //             path: '/',
-  //             httpOnly: true,
-  //             sameSite: 'lax',
-  //             maxAge: 15 * 60
-  //         }
-  //     );
-  //
-  //     redirect(303, '/onboarding');
-  // }
+    redirect(303, '/');
+  }
+
+  if (result.kind === 'onboarding_required') {
+    cookies.set('auth_onboarding', result.onboarding_token, {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 15 * 60,
+    });
+
+    redirect(303, '/setup/profile');
+  }
 
   //   error(500, 'Unexpected OAuth response');
 }

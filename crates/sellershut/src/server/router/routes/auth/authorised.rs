@@ -1,11 +1,9 @@
 use axum::{
     Json,
     extract::{Path, State},
-    response::{IntoResponse},
+    response::IntoResponse,
 };
-use sellershut_auth::{
-    AuthenticatedSession, LoginOutcome, User,
-};
+use sellershut_auth::{AuthenticatedSession, LoginOutcome, User};
 use sellershut_core::auth::OauthProvider;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;

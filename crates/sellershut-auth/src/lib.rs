@@ -4,9 +4,9 @@ pub(crate) mod profile;
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use oauth2_reqwest::ReqwestClient;
 use rand::{TryRng, rngs::SysRng};
-use utoipa::ToSchema;
 use std::collections::HashMap;
 use time::{Duration, OffsetDateTime};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 use async_trait::async_trait;

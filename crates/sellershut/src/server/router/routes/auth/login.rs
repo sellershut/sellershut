@@ -1,10 +1,10 @@
 use axum::{
     Json,
     extract::{Query, State},
-    response::{IntoResponse},
+    response::IntoResponse,
 };
 use sellershut_core::auth::OauthProvider;
-use serde::{Deserialize};
+use serde::Deserialize;
 use utoipa::IntoParams;
 
 use crate::server::{AppError, router::routes::auth::AUTH_TAG, state::AppState};
@@ -69,7 +69,5 @@ pub async fn login(
 ) -> Result<impl IntoResponse, AppError> {
     let start = state.auth.start_oauth(query.provider).await?;
 
-    Ok(
-        Json(start)
-        .into_response())
+    Ok(Json(start).into_response())
 }
