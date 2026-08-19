@@ -11,7 +11,7 @@ use std::{
 
 use anyhow::Result;
 use clap::Parser;
-use sellershut_auth::AuthService;
+use sellershut_auth::{AuthService, OauthDriver};
 use sellershut_core::types::{redacted_secret::RedactedSecret, user::ActorType};
 use sellershut_users::{CreateUser, UserDriver, UserService};
 use tokio::net::TcpListener;
@@ -71,19 +71,54 @@ async fn main() -> Result<()> {
     }
     .into();
 
+    let auth = Arc::new(auth);
+
     let state = Arc::new(State {
-        auth: Arc::new(auth),
+        auth,
         user,
         system_user: Arc::new(system_user),
         port: config.server.port.into(),
     });
 
+    let auth = Arc::clone(&state.auth);
+
     let app = server::router::router(state, config).await?;
 
+    let maintenance_task = tokio::spawn(auth_housekeeping(auth));
     let listener = TcpListener::bind(addr).await?;
     info!(addr = ?listener.local_addr().expect("local addr"), "starting server");
 
     axum::serve(listener, app).await?;
 
+    maintenance_task.abort();
+
     Ok(())
+}
+
+async fn auth_housekeeping(auth: Arc<dyn OauthDriver>) {
+    let mut interval = tokio::time::interval(tokio::time::Duration::from_mins(15));
+
+    interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+
+    loop {
+        interval.tick().await;
+
+        match auth.house_keep().await {
+            Ok(result) => {
+                tracing::debug!(
+                    oauth_flows_deleted = result.oauth_flows_deleted,
+                    pending_logins_deleted = result.pending_logins_deleted,
+                    sessions_deleted = result.sessions_deleted,
+                    "auth housekeeping completed"
+                );
+            }
+
+            Err(error) => {
+                tracing::error!(
+                    %error,
+                    "auth maintenance failed"
+                );
+            }
+        }
+    }
 }

@@ -90,6 +90,13 @@ pub enum LoginOutcome {
     },
 }
 
+#[derive(Clone, Copy, Debug, Default)]
+pub struct HouseKeepResult {
+    pub oauth_flows_deleted: u64,
+    pub pending_logins_deleted: u64,
+    pub sessions_deleted: u64,
+}
+
 #[async_trait::async_trait]
 pub trait OauthDriver: Send + Sync {
     fn providers(&self) -> Vec<OauthProvider>;
@@ -106,6 +113,7 @@ pub trait OauthDriver: Send + Sync {
         state: &str,
     ) -> Result<LoginOutcome, AuthError>;
     async fn revoke_session(&self, session_token: &str) -> Result<(), AuthError>;
+    async fn house_keep(&self) -> Result<HouseKeepResult, AuthError>;
 }
 
 pub struct AuthService<T: UserDriver> {
@@ -433,6 +441,44 @@ impl<T: UserDriver> OauthDriver for AuthService<T> {
         .await?;
 
         Ok(())
+    }
+
+    async fn house_keep(&self) -> Result<HouseKeepResult, AuthError> {
+        let sessions_deleted = sqlx::query!(
+            r#"
+        delete from auth_session
+        where expires_at <= now()
+        "#,
+        )
+        .execute(&self.database)
+        .await?
+        .rows_affected();
+
+        let pending_logins_deleted = sqlx::query!(
+            r#"
+        delete from pending_oauth_login
+        where expires_at <= now()
+        "#,
+        )
+        .execute(&self.database)
+        .await?
+        .rows_affected();
+
+        let oauth_flows_deleted = sqlx::query!(
+            r#"
+        delete from oauth_flow
+        where expires_at <= now()
+        "#,
+        )
+        .execute(&self.database)
+        .await?
+        .rows_affected();
+
+        Ok(HouseKeepResult {
+            oauth_flows_deleted,
+            pending_logins_deleted,
+            sessions_deleted,
+        })
     }
 }
 
