@@ -3,16 +3,19 @@ use axum::{
     response::{IntoResponse, Response},
 };
 
+pub mod entities;
 pub mod router;
 pub mod state;
 pub mod utilities;
 
 // Make our own error that wraps `anyhow::Error`.
+#[derive(Debug)]
 pub struct AppError(anyhow::Error);
 
 // Tell axum how to convert `AppError` into a response.
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
+        tracing::error!("{}", self.0);
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             format!("Something went wrong: {}", self.0),

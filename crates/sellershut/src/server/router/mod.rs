@@ -3,8 +3,9 @@ mod routes;
 
 use std::time::Duration;
 
+use activitypub_federation::config::{FederationConfig, FederationMiddleware};
 use axum::{Router, http::StatusCode};
-use tower_http::{cors::CorsLayer, timeout::TimeoutLayer};
+use tower_http::timeout::TimeoutLayer;
 use utoipa::{
     Modify, OpenApi,
     openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
@@ -14,7 +15,13 @@ use utoipa_axum::router::OpenApiRouter;
 use crate::{
     config::Configuration,
     server::{
-        router::routes::auth::{self, AuthDoc},
+        router::{
+            middleware::url_verifier::MyUrlVerifier,
+            routes::{
+                auth::{self, AuthDoc},
+                users::{self, UsersDoc},
+            },
+        },
         state::AppState,
     },
 };
@@ -42,12 +49,22 @@ impl Modify for SecurityAddon {
 }
 
 pub async fn router(state: AppState, config: Configuration) -> anyhow::Result<Router> {
+    let federation_config = FederationConfig::builder()
+        .domain(config.server.domain)
+        .url_verifier(Box::new(MyUrlVerifier::from(state.clone())))
+        .signed_fetch_actor(&*state.system_user)
+        .app_data(state.clone())
+        .build()
+        .await?;
+
     let mut doc = ApiDoc::openapi();
     doc.merge(AuthDoc::openapi());
+    doc.merge(UsersDoc::openapi());
 
     let stubs = OpenApiRouter::with_openapi(doc)
         .routes(utoipa_axum::routes!(routes::health))
-        .nest("/auth", auth::router(state.clone()));
+        .nest("/auth", auth::router())
+        .nest("/users", users::router());
 
     let (router, api) = stubs.split_for_parts();
 
@@ -74,5 +91,6 @@ pub async fn router(state: AppState, config: Configuration) -> anyhow::Result<Ro
         //         .allow_origin(origins.expect("valid allow_origin"))
         //         .allow_methods(methods),
         // )
-        .layer(axum::middleware::from_fn(middleware::request_id)))
+        .layer(axum::middleware::from_fn(middleware::request_id))
+        .layer(FederationMiddleware::new(federation_config)))
 }

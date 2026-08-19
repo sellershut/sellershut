@@ -1,18 +1,19 @@
 <script lang="ts">
 import { onMount } from 'svelte';
+import type { User } from '$lib/types/user';
 import DesktopMegaMenu from './DesktopMegaMenu.svelte';
 import NavBar from './NavBar.svelte';
-
 import type { MenuKey } from './navigation';
-import type { NavUser } from './types';
 
 let {
-  user = null,
+  user = undefined,
+  domain,
   brandName = 'Sellershut',
   brandHref = '/',
   signOutHref = '/logout',
 }: {
-  user?: NavUser | null;
+  user?: User;
+  domain: string;
   brandName?: string;
   brandHref?: string;
   signOutHref?: string;
@@ -63,6 +64,7 @@ onMount(() => {
 <header class="sticky top-0 z-50" use:closeOnPointerLeave>
   <NavBar
     {user}
+    {domain}
     {brandName}
     {brandHref}
     {signOutHref}

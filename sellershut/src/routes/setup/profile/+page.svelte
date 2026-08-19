@@ -5,7 +5,7 @@ import { enhance } from '$app/forms';
 
 let { form } = $props();
 
-let username = $state(form?.username ?? '');
+let username = $derived(form?.username ?? '');
 
 let isValid = $derived(/^[a-z0-9_]{3,30}$/.test(username));
 

@@ -7,6 +7,7 @@ use url::Url;
 #[derive(Deserialize, Serialize, Debug, Default)]
 #[serde(rename_all = "kebab-case", default)]
 pub struct Server {
+    #[serde(default = "domain")]
     pub domain: String,
     pub port: Port,
     pub request: Request,
@@ -19,6 +20,10 @@ pub struct Server {
 
 fn instance_name() -> String {
     env!("CARGO_PKG_NAME").to_owned()
+}
+
+fn domain() -> String {
+    format!("localhost:{}", Port::default().0)
 }
 
 #[derive(Clone, Copy, Deserialize, Serialize, Debug)]

@@ -1,10 +1,10 @@
 pub mod error;
 pub(crate) mod profile;
 
-use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use oauth2_reqwest::ReqwestClient;
-use rand::{TryRng, rngs::SysRng};
-use std::collections::HashMap;
+use sellershut_users::{CreateUser, UserDriver, validate_username};
+use sellershut_utilities::auth::{hash_token, random_token};
+use std::{collections::HashMap, str::FromStr, sync::Arc};
 use time::{Duration, OffsetDateTime};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -17,12 +17,11 @@ use oauth2::{
 use sellershut_core::{
     auth::OauthProvider,
     types::{
-        RedactedSecret,
+        redacted_secret::RedactedSecret,
         user::{ActorType, User},
     },
 };
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use url::Url;
 
 use crate::{error::AuthError, profile::OAuthProfile};
@@ -95,15 +94,21 @@ pub enum LoginOutcome {
 pub trait OauthDriver: Send + Sync {
     fn providers(&self) -> Vec<OauthProvider>;
     async fn start_oauth(&self, provider: OauthProvider) -> Result<AuthorizationStart, AuthError>;
+    async fn complete_onboarding(
+        &self,
+        onboarding_token: &str,
+        data: &CreateUser,
+    ) -> Result<AuthenticatedSession, AuthError>;
     async fn authorise(
         &self,
         provider: OauthProvider,
         code: &str,
         state: &str,
     ) -> Result<LoginOutcome, AuthError>;
+    async fn revoke_session(&self, session_token: &str) -> Result<(), AuthError>;
 }
 
-pub struct AuthService {
+pub struct AuthService<T: UserDriver> {
     database: sqlx::PgPool,
     providers: HashMap<OauthProvider, BasicClient>,
     http_client: ReqwestClient,
@@ -111,12 +116,14 @@ pub struct AuthService {
     oauth_flow_ttl: Duration,
     onboarding_ttl: Duration,
     session_ttl: Duration,
+    users: Arc<T>,
 }
 
-impl AuthService {
+impl<T: UserDriver> AuthService<T> {
     pub fn new(
         pool: sqlx::PgPool,
         config: HashMap<OauthProvider, Configuration>,
+        users: Arc<T>,
     ) -> Result<Self, AuthError> {
         let mut providers = HashMap::with_capacity(config.len());
 
@@ -152,6 +159,7 @@ impl AuthService {
             onboarding_ttl: Duration::seconds(ONBOARDING_MAX_AGE_SECONDS),
             session_ttl: Duration::seconds(SESSION_MAX_AGE_SECONDS),
             reqwest_client: http,
+            users,
         })
     }
 
@@ -247,7 +255,7 @@ impl AuthService {
 }
 
 #[async_trait]
-impl OauthDriver for AuthService {
+impl<T: UserDriver> OauthDriver for AuthService<T> {
     fn providers(&self) -> Vec<OauthProvider> {
         [OauthProvider::Google, OauthProvider::Discord]
             .into_iter()
@@ -329,141 +337,103 @@ impl OauthDriver for AuthService {
 
         self.resolve_profile(profile).await
     }
-    //
-    // async fn complete_onboarding(
-    //     &self,
-    //     onboarding_token: &str,
-    //     username: &str,
-    // ) -> Result<AuthenticatedSession, AuthError> {
-    //     let (username, username_normalized) = validate_username(username)?;
-    //     let mut tx = self.pool.begin().await?;
-    //
-    //     // DELETE ... RETURNING consumes the token atomically. Any later error rolls the transaction
-    //     // back, so a username conflict does not destroy the pending login.
-    //     let pending = sqlx::query_as::<_, PendingLoginRow>(
-    //         r#"
-    //         DELETE FROM pending_oauth_logins
-    //         WHERE token_hash = $1
-    //           AND expires_at > now()
-    //         RETURNING provider, provider_subject, email, email_normalized
-    //         "#,
-    //     )
-    //     .bind(hash_token(onboarding_token))
-    //     .fetch_optional(tx.as_mut())
-    //     .await?
-    //     .ok_or(AuthError::InvalidOnboardingToken)?;
-    //
-    //     let provider = pending.provider.parse::<Provider>()?;
-    //
-    //     // Another request may have linked or created this account after the callback but before
-    //     // onboarding. Re-check both the provider identity and normalized email inside this
-    //     // transaction before inserting a new user.
-    //     if let Some(user) =
-    //         find_user_by_identity(tx.as_mut(), provider, &pending.provider_subject).await?
-    //     {
-    //         touch_identity(
-    //             tx.as_mut(),
-    //             provider,
-    //             &pending.provider_subject,
-    //             &pending.email,
-    //         )
-    //         .await?;
-    //         let session = self.create_session(tx.as_mut(), user).await?;
-    //         tx.commit().await?;
-    //         return Ok(session);
-    //     }
-    //
-    //     if let Some(user) = find_user_by_email(tx.as_mut(), &pending.email_normalized).await? {
-    //         ensure_identity(
-    //             tx.as_mut(),
-    //             provider,
-    //             &pending.provider_subject,
-    //             user.id,
-    //             &pending.email,
-    //         )
-    //         .await?;
-    //         let session = self.create_session(tx.as_mut(), user).await?;
-    //         tx.commit().await?;
-    //         return Ok(session);
-    //     }
-    //
-    //     let inserted = sqlx::query_as::<_, UserRow>(
-    //         r#"
-    //         INSERT INTO users (
-    //             id,
-    //             email,
-    //             email_normalized,
-    //             username,
-    //             username_normalized
-    //         )
-    //         VALUES ($1, $2, $3, $4, $5)
-    //         ON CONFLICT DO NOTHING
-    //         RETURNING id, email, username, created_at
-    //         "#,
-    //     )
-    //     .bind(Uuid::new_v4())
-    //     .bind(&pending.email)
-    //     .bind(&pending.email_normalized)
-    //     .bind(&username)
-    //     .bind(&username_normalized)
-    //     .fetch_optional(tx.as_mut())
-    //     .await?;
-    //
-    //     let user = match inserted {
-    //         Some(user) => user,
-    //         None => {
-    //             // ON CONFLICT may mean a concurrent login just created this email, in which case
-    //             // link to that user. If the email still does not exist, the username was taken.
-    //             find_user_by_email(tx.as_mut(), &pending.email_normalized)
-    //                 .await?
-    //                 .ok_or(AuthError::UsernameTaken)?
-    //         }
-    //     };
-    //
-    //     ensure_identity(
-    //         tx.as_mut(),
-    //         provider,
-    //         &pending.provider_subject,
-    //         user.id,
-    //         &pending.email,
-    //     )
-    //     .await?;
-    //
-    //     let session = self.create_session(tx.as_mut(), user).await?;
-    //     tx.commit().await?;
-    //     Ok(session)
-    // }
-    //
-    // async fn user_from_session(&self, session_token: &str) -> Result<User, AuthError> {
-    //     let user = sqlx::query_as::<_, UserRow>(
-    //         r#"
-    //         SELECT u.id, u.email, u.username, u.created_at
-    //         FROM auth_sessions AS s
-    //         JOIN users AS u ON u.id = s.user_id
-    //         WHERE s.token_hash = $1
-    //           AND s.expires_at > now()
-    //         "#,
-    //     )
-    //     .bind(hash_token(session_token))
-    //     .fetch_optional(&self.pool)
-    //     .await?
-    //     .ok_or(AuthError::InvalidSession)?;
-    //
-    //     Ok(user.into())
-    // }
-    //
-    // async fn revoke_session(&self, session_token: &str) -> Result<(), AuthError> {
-    //     sqlx::query("DELETE FROM auth_sessions WHERE token_hash = $1")
-    //         .bind(hash_token(session_token))
-    //         .execute(&self.pool)
-    //         .await?;
-    //
-    //     Ok(())
-    // }
-}
 
-fn hash_token(token: &str) -> Vec<u8> {
-    Sha256::digest(token.as_bytes()).to_vec()
+    async fn complete_onboarding(
+        &self,
+        onboarding_token: &str,
+        data: &CreateUser,
+    ) -> Result<AuthenticatedSession, AuthError> {
+        if !validate_username(&data.username) {
+            return Err(AuthError::InvalidUsername(String::from(
+                "3 to 15 characters long",
+            )));
+        };
+        struct PendingLoginRow {
+            provider: String,
+            provider_subject: String,
+            email: String,
+        }
+        let mut tx = self.database.begin().await?;
+
+        let pending = sqlx::query_as!(
+            PendingLoginRow,
+            r#"
+            delete from pending_oauth_login
+            where token_hash = $1
+              and expires_at > now()
+            returning provider, provider_subject, email
+            "#,
+            hash_token(onboarding_token)
+        )
+        .fetch_optional(tx.as_mut())
+        .await?
+        .ok_or(AuthError::InvalidOnboardingToken)?;
+
+        let provider = OauthProvider::from_str(&pending.provider)
+            .map_err(|_| AuthError::UnsupportedProvider(pending.provider))?;
+
+        // Another request may have linked or created this account after the callback but before
+        // onboarding. Re-check both the provider identity and normalized email inside this
+        // transaction before inserting a new user.
+        if let Some(user) =
+            find_user_by_identity(tx.as_mut(), provider, &pending.provider_subject).await?
+        {
+            touch_identity(
+                tx.as_mut(),
+                provider,
+                &pending.provider_subject,
+                &pending.email,
+            )
+            .await?;
+            let session = self.create_session(tx.as_mut(), user).await?;
+            tx.commit().await?;
+            return Ok(session);
+        }
+
+        if let Some(user) = find_user_by_email(tx.as_mut(), &pending.email).await? {
+            ensure_identity(
+                tx.as_mut(),
+                provider,
+                &pending.provider_subject,
+                user.id,
+                &pending.email,
+            )
+            .await?;
+            let session = self.create_session(tx.as_mut(), user).await?;
+            tx.commit().await?;
+            return Ok(session);
+        }
+
+        let user = self
+            .users
+            .create_user(data, Some(tx.as_mut()))
+            .await
+            .unwrap();
+
+        ensure_identity(
+            tx.as_mut(),
+            provider,
+            &pending.provider_subject,
+            user.id,
+            &pending.email,
+        )
+        .await?;
+
+        let session = self.create_session(tx.as_mut(), user).await?;
+        tx.commit().await?;
+        Ok(session)
+    }
+
+    async fn revoke_session(&self, session_token: &str) -> Result<(), AuthError> {
+        sqlx::query!(
+            "delete from auth_session where token_hash = $1",
+            hash_token(session_token)
+        )
+        .execute(&self.database)
+        .await?;
+
+        Ok(())
+    }
 }
 
 fn expires_at(ttl: Duration) -> Result<OffsetDateTime, AuthError> {
@@ -473,13 +443,6 @@ fn expires_at(ttl: Duration) -> Result<OffsetDateTime, AuthError> {
     OffsetDateTime::now_utc()
         .checked_add(ttl)
         .ok_or_else(|| AuthError::Configuration("auth TTL overflows the clock".to_owned()))
-}
-
-fn random_token() -> String {
-    let mut bytes = [0_u8; 32];
-    let mut rng = SysRng;
-    rng.try_fill_bytes(&mut bytes).unwrap();
-    URL_SAFE_NO_PAD.encode(bytes)
 }
 
 async fn touch_identity(
@@ -505,6 +468,7 @@ async fn touch_identity(
 
     Ok(())
 }
+
 async fn find_user_by_email(
     connection: &mut sqlx::PgConnection,
     email: &str,
@@ -514,10 +478,12 @@ async fn find_user_by_email(
         r#"
         select
             u.id,
+            u.ap_id,
             u.username,
             u.name,
             u.inbox,
             u.public_key,
+            u.avatar,
             u.private_key as "private_key: RedactedSecret",
             u.kind as "kind: ActorType",
             u.last_refreshed_at,
@@ -546,10 +512,12 @@ async fn find_user_by_identity(
         r#"
         select
             u.id,
+            u.ap_id,
             u.username,
             u.name,
             u.inbox,
             u.public_key,
+            u.avatar,
             u.private_key as "private_key: RedactedSecret",
             u.kind as "kind: ActorType",
             u.last_refreshed_at,
@@ -575,35 +543,35 @@ async fn ensure_identity(
     user_id: Uuid,
     provider_email: &str,
 ) -> Result<(), AuthError> {
-    sqlx::query(
+    sqlx::query!(
         r#"
-        insert into oauth_identities (
+        insert into oauth_identity (
             provider,
-            provider_subject,
+            provider_id,
             user_id,
             provider_email
         )
         values ($1, $2, $3, $4)
-        on conflict (provider, provider_subject) do nothing
+        on conflict (provider, provider_id) do nothing
         "#,
+        provider.to_string(),
+        provider_subject,
+        user_id,
+        provider_email,
     )
-    .bind(provider.to_string())
-    .bind(provider_subject)
-    .bind(user_id)
-    .bind(provider_email)
     .execute(&mut *connection)
     .await?;
 
-    let linked_user_id = sqlx::query_scalar::<_, Uuid>(
+    let linked_user_id = sqlx::query_scalar!(
         r#"
-        SELECT user_id
-        FROM oauth_identities
-        WHERE provider = $1
-          AND provider_subject = $2
+        select user_id
+        from oauth_identity
+        where provider = $1
+          and provider_id = $2
         "#,
+        provider.to_string(),
+        provider_subject,
     )
-    .bind(provider.to_string())
-    .bind(provider_subject)
     .fetch_one(&mut *connection)
     .await?;
 

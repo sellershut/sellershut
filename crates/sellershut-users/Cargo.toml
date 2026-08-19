@@ -8,6 +8,7 @@ license.workspace = true
 async-trait.workspace = true
 sellershut-core = { workspace = true, features = ["serde", "users"] }
 sellershut-svc.workspace = true
+sellershut-utilities.workspace = true
 serde = { workspace = true, features = ["derive"] }
 sqlx = { workspace = true, features = ["time", "uuid"] }
 thiserror.workspace = true

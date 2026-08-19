@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, str::FromStr};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -34,5 +34,17 @@ impl Display for OauthProvider {
                 OauthProvider::Google => "google",
             }
         )
+    }
+}
+
+impl FromStr for OauthProvider {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "discord" => Ok(Self::Discord),
+            "google" => Ok(Self::Google),
+            _ => Err(()),
+        }
     }
 }

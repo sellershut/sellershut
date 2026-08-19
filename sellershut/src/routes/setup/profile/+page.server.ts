@@ -1,33 +1,30 @@
-import { fail, redirect } from '@sveltejs/kit';
-import type { Actions, PageServerLoad } from './$types';
+import { error, fail, redirect } from '@sveltejs/kit';
+import { BACKEND_URL } from '$env/static/private';
 
 const USERNAME_REGEX = /^[a-z0-9_]{3,30}$/;
 
-export const load: PageServerLoad = async ({ locals }) => {
-  // // Your auth middleware should already have populated locals.user.
-  // if (!locals.user) {
-  // 	redirect(303, '/login');
-  // }
-  //
-  // // If the user already has a username, there is nothing to set up.
-  // if (locals.user.username) {
-  // 	redirect(303, '/');
-  // }
+import type { PageServerLoad } from './$types';
+
+export const load: PageServerLoad = ({ locals }) => {
+  if (locals.user) {
+    redirect(303, '/');
+  }
 };
 
-export const actions: Actions = {
-  default: async ({ request, locals }) => {
-    if (!locals.user) {
-      return fail(401, {
-        error: 'You must be signed in to continue.',
-      });
+export const actions = {
+  default: async ({ request, cookies, fetch }) => {
+    const onboardingToken = cookies.get('auth_onboarding');
+
+    if (!onboardingToken) {
+      error(401, 'No pending onboarding');
     }
 
-    const formData = await request.formData();
+    const form = await request.formData();
+    const username = form.get('username');
 
-    const username = String(formData.get('username') ?? '')
-      .trim()
-      .toLowerCase();
+    if (typeof username !== 'string') {
+      error(400, 'Username required');
+    }
 
     if (!USERNAME_REGEX.test(username)) {
       return fail(400, {
@@ -36,27 +33,35 @@ export const actions: Actions = {
       });
     }
 
-    /*
-     * Check username availability.
-     *
-     * Replace this with your UsersService / database call.
-     */
-    const existingUser = await locals.users.getByUsername(username);
-
-    if (existingUser) {
-      return fail(409, {
+    const response = await fetch(`${BACKEND_URL}/auth/onboard`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        onboarding_token: onboardingToken,
         username,
-        error: 'That username is already taken.',
-      });
+      }),
+    });
+
+    if (!response.ok) {
+      console.log(response);
+      error(response.status, 'Onboarding failed');
     }
 
-    /*
-     * Update the authenticated user.
-     *
-     * Ideally your database should also have a UNIQUE constraint
-     * on username so this remains race-safe.
-     */
-    await locals.users.setUsername(locals.user.id, username);
+    const result = await response.json();
+    console.log(result);
+
+    cookies.delete('auth_onboarding', {
+      path: '/',
+    });
+
+    cookies.set('auth_session', result.session_token, {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 30,
+    });
 
     redirect(303, '/');
   },

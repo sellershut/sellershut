@@ -11,3 +11,7 @@ pub fn base_url(port: u16, domain: &str) -> Result<Url, url::ParseError> {
 pub fn inbox_url(port: u16, domain: &str, username: &str) -> Result<Url, url::ParseError> {
     base_url(port, domain)?.join(&format!("users/{username}/inbox"))
 }
+
+pub fn users_url(port: u16, domain: &str, username: &str) -> Result<Url, url::ParseError> {
+    base_url(port, domain)?.join(&format!("users/{username}"))
+}

@@ -1,12 +1,18 @@
-import { BACKEND_URL } from '$env/static/private';
+import type { Handle } from '@sveltejs/kit';
+import { BACKEND_URL, INSTANCE_DOMAIN, INSTANCE_NAME, INSTANCE_URL } from '$env/static/private';
 
 export const handle: Handle = async ({ event, resolve }) => {
+  event.locals.instance = {
+    domain: INSTANCE_DOMAIN,
+    name: INSTANCE_NAME,
+    url: INSTANCE_URL,
+  };
   const session = event.cookies.get('auth_session');
 
-  event.locals.user = null;
+  event.locals.user = undefined;
 
   if (session) {
-    const response = await event.fetch(`${BACKEND_URL}/internal/auth/me`, {
+    const response = await event.fetch(`${BACKEND_URL}/users/me`, {
       headers: {
         authorization: `Bearer ${session}`,
       },

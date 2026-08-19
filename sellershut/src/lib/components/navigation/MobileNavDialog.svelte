@@ -14,16 +14,17 @@ import { Dialog } from 'bits-ui';
 
 import { cubicOut } from 'svelte/easing';
 import { fade, fly } from 'svelte/transition';
-
+import type { User } from '$lib/types/user';
 import { mobileLinks } from './navigation';
-import type { NavUser } from './types';
 
 let {
   user,
+  domain,
   signOutHref,
   onOpen,
 }: {
-  user: NavUser | null;
+  user?: User;
+  domain: string;
   signOutHref: string;
   onOpen: () => void;
 } = $props();
@@ -79,7 +80,7 @@ function initials(name: string) {
       class="
 				fixed
 				inset-0
-				z-[70]
+				z-70
 				bg-black/20
 				lg:hidden
 			"
@@ -101,7 +102,7 @@ function initials(name: string) {
       class="
 				fixed
 				inset-0
-				z-[80]
+				z-80
 				overflow-y-auto
 				bg-background
 				lg:hidden
@@ -256,10 +257,10 @@ function initials(name: string) {
 												text-background
 											"
                     >
-                      {#if user.avatarUrl}
-                        <img src={user.avatarUrl} alt="" class="size-full object-cover">
+                      {#if user.icon?.url}
+                        <img src={user.icon.url} alt="" class="size-full object-cover">
                       {:else}
-                        {initials(user.displayName)}
+                        {initials(user.name ?? user.preferredUsername)}
                       {/if}
                     </div>
 
@@ -271,7 +272,7 @@ function initials(name: string) {
 													font-semibold
 												"
                       >
-                        {user.displayName}
+                        {user.name ?? user.preferredUsername}
                       </div>
 
                       <div
@@ -281,7 +282,7 @@ function initials(name: string) {
 													text-muted-foreground
 												"
                       >
-                        {user.handle}
+                        {`@${user.preferredUsername}@${domain}`}
                       </div>
                     </div>
                   </div>
@@ -295,7 +296,7 @@ function initials(name: string) {
                   >
                     Signed in through
                     <span class="font-medium text-foreground">
-                      {user.instance.domain}
+                      {domain}
                     </span>
                   </div>
                 </div>

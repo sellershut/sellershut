@@ -1,8 +1,5 @@
-use axum::{
-    Json,
-    extract::{Query, State},
-    response::IntoResponse,
-};
+use activitypub_federation::config::Data;
+use axum::{Json, extract::Query, response::IntoResponse};
 use sellershut_core::auth::OauthProvider;
 use serde::Deserialize;
 use utoipa::IntoParams;
@@ -65,7 +62,7 @@ pub struct AuthQuery {
 )]
 pub async fn login(
     Query(query): Query<AuthQuery>,
-    State(state): State<AppState>,
+    state: Data<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
     let start = state.auth.start_oauth(query.provider).await?;
 

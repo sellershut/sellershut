@@ -1,4 +1,4 @@
-use sellershut_core::types::RedactedSecret;
+use sellershut_core::types::redacted_secret::RedactedSecret;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -11,7 +11,7 @@ pub struct Config {
 
 impl Config {
     pub async fn connect(&self) -> Result<sqlx::PgPool, sqlx::Error> {
-        match &self.database {
+        let database = match &self.database {
             DatabaseConfig::Url { url } => sqlx::PgPool::connect(url.as_str()).await,
 
             DatabaseConfig::Connection {
@@ -30,7 +30,10 @@ impl Config {
                     )
                     .await
             }
-        }
+        }?;
+        sqlx::migrate!("../../migrations").run(&database).await?;
+
+        Ok(database)
     }
 }
 

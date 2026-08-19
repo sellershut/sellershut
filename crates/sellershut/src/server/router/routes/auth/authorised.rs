@@ -1,14 +1,11 @@
-use axum::{
-    Json,
-    extract::{Path, State},
-    response::IntoResponse,
-};
+use activitypub_federation::config::Data;
+use axum::{Json, extract::Path, response::IntoResponse};
 use sellershut_auth::{AuthenticatedSession, LoginOutcome};
 use sellershut_core::{auth::OauthProvider, types::user::User};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::server::{AppError, state::AppState};
+use crate::server::{AppError, router::routes::auth::AUTH_TAG, state::AppState};
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct OauthResponse {
@@ -41,11 +38,12 @@ enum OAuthCallbackResponse {
          ),
         (status = 400, description = "Invalid provider"),
         (status = 401, description = "Unauthorized")
-    )
+    ),
+    tag = AUTH_TAG,
 )]
 pub async fn authorised(
-    State(state): State<AppState>,
     Path(provider): Path<OauthProvider>,
+    state: Data<AppState>,
     Json(callback): Json<OauthResponse>,
 ) -> Result<impl IntoResponse, AppError> {
     let code = callback.code;

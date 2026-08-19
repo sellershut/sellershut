@@ -10,11 +10,12 @@ secrecy.workspace = true
 serde = { workspace = true, optional = true }
 sqlx.workspace = true
 time.workspace = true
+url.workspace = true
 utoipa = { workspace = true, optional = true }
 uuid.workspace = true
 
 [features]
 default = []
-serde = ["dep:serde", "serde/derive", "secrecy/serde", "uuid/serde"]
+serde = ["dep:serde", "serde/derive", "secrecy/serde", "uuid/serde", "url/serde"]
 utoipa = ["dep:utoipa"]
 users = []

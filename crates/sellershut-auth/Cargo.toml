@@ -7,13 +7,13 @@ publish = false
 
 [dependencies]
 async-trait.workspace = true
-base64.workspace = true
 oauth2 = "5.0.0"
 oauth2-reqwest = "0.1.0-alpha.3"
-rand.workspace = true
 reqwest = { workspace = true, features = ["json"] }
 sellershut-core = { workspace = true, features = ["serde", "users"] }
 sellershut-svc.workspace = true
+sellershut-users = { path = "../sellershut-users" }
+sellershut-utilities.workspace = true
 secrecy = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive"] }
 sqlx = { workspace = true, features = ["time", "uuid"] }
@@ -22,4 +22,3 @@ time = { workspace = true, features = ["serde"] }
 url = { workspace = true, features = ["serde"] }
 utoipa.workspace = true
 uuid = { workspace = true, features = ["serde"] }
-sha2 = "0.11.0"

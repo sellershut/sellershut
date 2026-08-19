@@ -1,21 +1,23 @@
 create extension if not exists citext;
 
 create type user_kind as enum (
-    'person',
-    'service',
-    'organization',
-    'group',
-    'application'
+    'Person',
+    'Service',
+    'Organization',
+    'Group',
+    'Application'
 );
 
 create table "user" (
     id uuid primary key,
+    ap_id text not null unique,
     username citext not null,
     name text,
     inbox citext not null,
     public_key text not null,
     private_key text,
-    kind user_kind not null default 'person',
+    avatar text,
+    kind user_kind not null default 'Person',
     last_refreshed_at timestamptz not null default now(),
     is_local boolean not null,
     created_at timestamptz not null default now(),

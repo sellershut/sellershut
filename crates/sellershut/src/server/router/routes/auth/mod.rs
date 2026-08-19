@@ -1,17 +1,19 @@
 use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 
-use crate::server::state::AppState;
 pub mod authorised;
 pub mod login;
+pub mod logout;
+pub mod onboard;
 
-pub fn router(state: AppState) -> OpenApiRouter {
+pub fn router() -> OpenApiRouter {
     let router = OpenApiRouter::new();
 
     router
         .routes(utoipa_axum::routes!(login::login))
         .routes(utoipa_axum::routes!(authorised::authorised))
-        .with_state(state)
+        .routes(utoipa_axum::routes!(onboard::complete_onboarding))
+        .routes(utoipa_axum::routes!(logout::logout))
 }
 
 const AUTH_TAG: &str = "Authentication";
