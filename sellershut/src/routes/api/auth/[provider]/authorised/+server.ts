@@ -1,7 +1,8 @@
 import { error, redirect } from '@sveltejs/kit';
 import { BACKEND_URL } from '$env/static/private';
+import type { RequestHandler } from './$types';
 
-export async function GET({ params, url, cookies, fetch }) {
+export const GET: RequestHandler = async ({ cookies, url, fetch, params }) => {
   const provider = params.provider;
   const cookieName = `oauth_state_${provider}`;
 
@@ -67,4 +68,4 @@ export async function GET({ params, url, cookies, fetch }) {
   }
 
   //   error(500, 'Unexpected OAuth response');
-}
+};

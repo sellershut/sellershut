@@ -1,17 +1,16 @@
 <script lang="ts">
 import { Heart, LogOut, Mail, Package, Server, Settings, User } from '@lucide/svelte';
-import { DropdownMenu } from 'bits-ui';
-
+import { Button, DropdownMenu } from 'bits-ui';
 import type { User as UserType } from '$lib/types/user';
 
 let {
   user,
   domain,
-  signOutHref,
+  signOutAction,
 }: {
   user: UserType;
   domain: string;
-  signOutHref: string;
+  signOutAction: string;
 } = $props();
 
 function initials(name: string) {
@@ -224,10 +223,16 @@ const itemClass = `
 					`}
         >
           {#snippet child({ props })}
-            <a {...props} href={signOutHref}>
-              <LogOut class="size-4" strokeWidth={1.8} />
-              <span>Sign out</span>
-            </a>
+            <form method="POST" action={signOutAction}>
+              <Button.Root
+                {...props}
+                class={`appearance-none border-0 p-0 bg-transparent ${itemClass} w-full hover:bg-primary/10! cursor-pointer`}
+                type="submit"
+              >
+                <LogOut class="size-4 text-primary" strokeWidth={1.8} />
+                <span class="text-[13px] text-primary">Sign out</span>
+              </Button.Root>
+            </form>
           {/snippet}
         </DropdownMenu.Item>
       </DropdownMenu.Group>

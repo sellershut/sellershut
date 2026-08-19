@@ -14,17 +14,17 @@ let {
   domain,
   brandName,
   brandHref,
-  signOutHref,
   scrolled,
   activeMenu,
   onMenuChange,
   onCloseMenu,
+  signOutAction,
 }: {
   user?: User;
   domain: string;
   brandName: string;
   brandHref: string;
-  signOutHref: string;
+  signOutAction: string;
   scrolled: boolean;
   activeMenu: MenuKey | null;
   onMenuChange: (menu: MenuKey | null) => void;
@@ -139,7 +139,7 @@ let {
         </a>
 
         <div class="hidden sm:block">
-          <UserMenu {user} {domain} {signOutHref} />
+          <UserMenu {user} {signOutAction} {domain} />
         </div>
       {:else}
         <a
@@ -168,7 +168,7 @@ let {
         </a>
       {/if}
 
-      <MobileNavDialog {user} {domain} {signOutHref} onOpen={onCloseMenu} />
+      <MobileNavDialog {user} {domain} {signOutAction} onOpen={onCloseMenu} />
     </div>
   </nav>
 </div>

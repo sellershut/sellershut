@@ -7,6 +7,9 @@ export const POST: RequestHandler = async ({ cookies, fetch }) => {
   if (session) {
     await fetch(`${BACKEND_URL}/auth/logout`, {
       method: 'POST',
+      headers: {
+        authorization: `Bearer ${session}`,
+      },
     });
   }
   cookies.delete('auth_session', {

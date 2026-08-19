@@ -10,15 +10,14 @@ let {
   domain,
   brandName = 'Sellershut',
   brandHref = '/',
-  signOutHref = '/logout',
 }: {
   user?: User;
   domain: string;
   brandName?: string;
   brandHref?: string;
-  signOutHref?: string;
 } = $props();
 
+let signOutAction = '/api/logout';
 let activeMenu = $state<MenuKey | null>(null);
 let scrolled = $state(false);
 
@@ -65,9 +64,9 @@ onMount(() => {
   <NavBar
     {user}
     {domain}
+    {signOutAction}
     {brandName}
     {brandHref}
-    {signOutHref}
     {scrolled}
     {activeMenu}
     onMenuChange={setMenu}

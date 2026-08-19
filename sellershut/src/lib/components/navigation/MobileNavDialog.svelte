@@ -10,7 +10,7 @@ import {
   Settings,
   X,
 } from '@lucide/svelte';
-import { Dialog } from 'bits-ui';
+import { Button, Dialog } from 'bits-ui';
 
 import { cubicOut } from 'svelte/easing';
 import { fade, fly } from 'svelte/transition';
@@ -20,12 +20,12 @@ import { mobileLinks } from './navigation';
 let {
   user,
   domain,
-  signOutHref,
   onOpen,
+  signOutAction,
 }: {
   user?: User;
   domain: string;
-  signOutHref: string;
+  signOutAction: string;
   onOpen: () => void;
 } = $props();
 
@@ -366,22 +366,17 @@ function initials(name: string) {
                     Settings
                   </a>
 
-                  <a
-                    href={signOutHref}
-                    onclick={close}
-                    class="
-											flex h-10
-											items-center
-											gap-3
-											text-[13px]
-											font-medium
-											text-primary
-										"
-                  >
-                    <LogOut size={17} />
-
-                    Sign out
-                  </a>
+                  <form method="POST" action={signOutAction}>
+                    <Button.Root
+                      {...props}
+                      class={`appearance-none border-0 p-0 bg-transparent w-full flex h-10 gap-3 items-center font-medium hover:!bg-primary/10 cursor-pointer`}
+                      onclick={close}
+                      type="submit"
+                    >
+                      <LogOut class="size-4 text-primary font-medium" strokeWidth={1.8} />
+                      <span class="text-[13px] text-primary font-medium">Sign out</span>
+                    </Button.Root>
+                  </form>
                 </div>
               {:else}
                 <a

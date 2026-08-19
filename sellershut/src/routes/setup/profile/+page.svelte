@@ -14,6 +14,8 @@ function handleInput(event: Event) {
 
   username = input.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
 }
+
+let submitting = $state(false);
 </script>
 
 <svelte:head>
@@ -46,7 +48,14 @@ function handleInput(event: Event) {
     <!-- Form -->
     <form
       method="POST"
-      use:enhance
+      use:enhance={() => {
+		submitting = true;
+
+		return async ({ update }) => {
+			await update();
+			submitting = false;
+		};
+	}}
       class="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6"
     >
       <div class="space-y-2">
@@ -111,7 +120,7 @@ function handleInput(event: Event) {
 
       <Button.Root
         type="submit"
-        disabled={!isValid}
+        disabled={!isValid || submitting}
         class="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
       >
         Continue

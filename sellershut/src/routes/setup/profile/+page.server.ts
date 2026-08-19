@@ -3,7 +3,7 @@ import { BACKEND_URL } from '$env/static/private';
 
 const USERNAME_REGEX = /^[a-z0-9_]{3,30}$/;
 
-import type { PageServerLoad } from './$types';
+import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = ({ locals }) => {
   if (locals.user) {
@@ -65,4 +65,4 @@ export const actions = {
 
     redirect(303, '/');
   },
-};
+} satisfies Actions;
