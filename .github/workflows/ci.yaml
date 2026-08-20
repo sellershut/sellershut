@@ -83,13 +83,8 @@ jobs:
           tool: |
             clippy-sarif
             sarif-fmt
-      - &migrations
-        name: Run migrations
-        uses: taiki-e/install-action@v2
-        with:
-          tool: |
-            sqlx-cli
-        run: cargo sqlx migrate run
+      - uses: taiki-e/install-action@sqlx-cli
+      - run: cargo sqlx migrate run
       - name: Run rust-clippy
         run:
           cargo clippy
@@ -131,12 +126,13 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - &install-nextest
-        - name: Install nextest
-          uses: taiki-e/install-action@v2
-          with:
-            tool: |
-              cargo-nextest
-      - *migrations
+        name: Install nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: |
+            cargo-nextest
+      - uses: taiki-e/install-action@sqlx-cli
+      - run: cargo sqlx migrate run
       - name: cargo test --workspace
         run: cargo nextest run --no-run --workspace --locked --all-features --all-targets
       - name: cargo build
@@ -157,7 +153,8 @@ jobs:
         with:
           toolchain: ${{ matrix.msrv }}
       - uses: Swatinem/rust-cache@v2
-      - *migrations
+      - uses: taiki-e/install-action@sqlx-cli
+      - run: cargo sqlx migrate run
       - name: Install cargo-hack
         uses: taiki-e/install-action@v2
         with:
@@ -180,7 +177,8 @@ jobs:
         with:
           components: llvm-tools-preview
       - uses: Swatinem/rust-cache@v2
-      - *migrations
+      - uses: taiki-e/install-action@sqlx-cli
+      - run: cargo sqlx migrate run
       - *install-nextest
       - name: Install build dependencies
         uses: taiki-e/install-action@v2
