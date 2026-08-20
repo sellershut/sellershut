@@ -136,7 +136,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        msrv: ["1.91.0"]
+        msrv: ["1.94.0"]
     steps:
       - uses: actions/checkout@v7
       - name: Install ${{ matrix.msrv }}
