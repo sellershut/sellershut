@@ -114,7 +114,7 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest]
     env:
-      SQL_OFFLINE: true
+      SQLX_OFFLINE: true
     steps:
       - uses: actions/checkout@v7
       - name: Install stable
