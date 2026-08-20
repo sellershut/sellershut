@@ -3,10 +3,7 @@ use activitypub_federation::{
 };
 use axum::{Json, response::IntoResponse};
 use sellershut_auth::AuthenticatedSession;
-use sellershut_core::{
-    auth::OauthProvider,
-    types::{redacted_secret::RedactedSecret, user::ActorType},
-};
+use sellershut_core::{RedactedSecret, auth::OauthProvider, user::ActorType};
 use sellershut_users::CreateUser;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -20,12 +17,14 @@ use crate::server::{
 };
 
 #[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct OnboardingRequest {
     onboarding_token: String,
     username: String,
 }
 
 #[derive(Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 struct SessionResponse {
     session_token: String,
     user: Person,
@@ -39,7 +38,7 @@ struct SessionResponse {
         ("provider" = OauthProvider, Path, description = "OAuth provider")
     ),
     responses(
-        (status = 200, description = "Authorization successful",
+        (status = 200, description = "Authorization successful", body = SessionResponse,
             headers(
                 (
                     "x-request-id" = String,

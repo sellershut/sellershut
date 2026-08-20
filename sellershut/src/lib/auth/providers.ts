@@ -2,13 +2,13 @@ import type { Component } from 'svelte';
 import DiscordIcon from '$lib/components/auth/icons/DiscordIcon.svelte';
 import GoogleIcon from '$lib/components/auth/icons/GoogleIcon.svelte';
 
-export type OAuthProvider = {
+export type OauthProvider = {
   id: string;
   name: string;
   icon: Component;
 };
 
-export const oauthProviders: OAuthProvider[] = [
+export const oauthProviders: OauthProvider[] = [
   {
     id: 'google',
     name: 'Google',

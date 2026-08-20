@@ -2,7 +2,7 @@
 import { ShieldCheck } from '@lucide/svelte';
 import { page } from '$app/state';
 import { oauthProviders } from '$lib/auth/providers';
-import OAuthButton from '$lib/components/auth/OAuthButton.svelte';
+import OauthButton from '$lib/components/auth/OAuthButton.svelte';
 import SellershutIcon from '$lib/components/icons/SellershutIcon.svelte';
 
 const error = $derived(page.url.searchParams.get('error'));
@@ -90,7 +90,7 @@ const error = $derived(page.url.searchParams.get('error'));
     <!-- OAuth providers -->
     <div class="flex flex-col gap-2.5">
       {#each oauthProviders as provider (provider.id)}
-        <OAuthButton {provider} />
+        <OauthButton {provider} />
       {/each}
     </div>
 

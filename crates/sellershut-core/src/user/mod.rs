@@ -2,7 +2,7 @@ use sqlx::prelude::Type;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::types::{custom_url::Url, redacted_secret::RedactedSecret};
+use crate::{custom_url::Url, redacted_secret::RedactedSecret};
 
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -41,7 +41,7 @@ mod openapi {
         openapi::{RefOr, Schema, Type, schema::SchemaType},
     };
 
-    use crate::types::user::ActorType;
+    use crate::user::ActorType;
 
     impl utoipa::PartialSchema for ActorType {
         fn schema() -> RefOr<Schema> {

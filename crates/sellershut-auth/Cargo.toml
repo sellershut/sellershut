@@ -10,7 +10,7 @@ async-trait.workspace = true
 oauth2 = "5.0.0"
 oauth2-reqwest = "0.1.0-alpha.3"
 reqwest = { workspace = true, features = ["json"] }
-sellershut-core = { workspace = true, features = ["serde", "users"] }
+sellershut-core = { workspace = true, features = ["auth", "serde", "users"] }
 sellershut-svc.workspace = true
 sellershut-users = { path = "../sellershut-users" }
 sellershut-utilities.workspace = true

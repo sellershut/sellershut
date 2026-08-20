@@ -16,6 +16,10 @@ uuid.workspace = true
 
 [features]
 default = []
-serde = ["dep:serde", "serde/derive", "secrecy/serde", "uuid/serde", "url/serde"]
+serde = ["dep:serde", "serde/derive", "time/serde", "secrecy/serde", "uuid/serde", "url/serde"]
 utoipa = ["dep:utoipa"]
+auth = []
 users = []
+
+[dev-dependencies]
+serde_json.workspace = true

@@ -19,9 +19,6 @@ impl OauthProvider {
             OauthProvider::Google => todo!(),
         }
     }
-    pub fn cookie_name(&self) -> String {
-        format!("auth_oauth_state_{self}")
-    }
 }
 
 impl Display for OauthProvider {
@@ -46,5 +43,75 @@ impl FromStr for OauthProvider {
             "google" => Ok(Self::Google),
             _ => Err(()),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[track_caller]
+    fn check_parse(input: &str, expected_result: Result<OauthProvider, ()>) {
+        let actual_result = input.parse::<OauthProvider>();
+        assert_eq!(expected_result, actual_result);
+    }
+
+    #[track_caller]
+    fn check_display(input: OauthProvider, expected_result: &str) {
+        let actual_result = input.to_string();
+        assert_eq!(expected_result, actual_result);
+    }
+
+    #[track_caller]
+    fn check_scopes(input: OauthProvider, expected_result: &[&str]) {
+        let actual_result = input.scopes();
+        let expected_result = expected_result
+            .iter()
+            .map(|scope| (*scope).to_string())
+            .collect::<Vec<_>>();
+
+        assert_eq!(expected_result, actual_result);
+    }
+
+    #[test]
+    fn parse_empty() {
+        check_parse("", Err(()));
+    }
+
+    #[test]
+    fn parse_unknown() {
+        check_parse("github", Err(()));
+        check_parse("Discord", Err(()));
+        check_parse("GOOGLE", Err(()));
+    }
+
+    #[test]
+    fn parse_known() {
+        check_parse("discord", Ok(OauthProvider::Discord));
+        check_parse("google", Ok(OauthProvider::Google));
+    }
+
+    #[test]
+    fn display() {
+        check_display(OauthProvider::Discord, "discord");
+        check_display(OauthProvider::Google, "google");
+    }
+
+    #[test]
+    fn display_parse_round_trip() {
+        check_parse(
+            &OauthProvider::Discord.to_string(),
+            Ok(OauthProvider::Discord),
+        );
+
+        check_parse(
+            &OauthProvider::Google.to_string(),
+            Ok(OauthProvider::Google),
+        );
+    }
+
+    #[test]
+    fn discord_scopes() {
+        check_scopes(OauthProvider::Discord, &["identify", "email"]);
     }
 }

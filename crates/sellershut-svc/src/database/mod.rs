@@ -1,4 +1,4 @@
-use sellershut_core::types::redacted_secret::RedactedSecret;
+use sellershut_core::RedactedSecret;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -68,3 +68,6 @@ impl Default for DatabaseConfig {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

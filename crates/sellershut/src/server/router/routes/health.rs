@@ -32,6 +32,7 @@ mod tests {
     };
 
     use anyhow::Result;
+    use sqlx::PgPool;
     use tower::ServiceExt;
 
     async fn check(app: Router, method: &str, expected_result: StatusCode) -> Result<()> {
@@ -48,9 +49,10 @@ mod tests {
         Ok(())
     }
 
-    #[tokio::test]
-    async fn health() -> Result<()> {
-        let app = crate::test::test_app().await;
+    #[sqlx::test(migrations = "../../migrations")]
+    #[ignore = "requires a live db"]
+    async fn health(pool: PgPool) -> Result<()> {
+        let app = crate::test::test_app(pool).await;
         check(app.clone(), "GET", StatusCode::OK).await?;
         check(app.clone(), "HEAD", StatusCode::OK).await?;
         Ok(())

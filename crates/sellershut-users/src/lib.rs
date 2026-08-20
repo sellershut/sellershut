@@ -1,7 +1,7 @@
 pub mod error;
 
-use sellershut_core::types::{
-    redacted_secret::RedactedSecret,
+use sellershut_core::{
+    RedactedSecret,
     user::{ActorType, User},
 };
 use sellershut_utilities::auth::hash_token;
@@ -229,21 +229,4 @@ impl UserService {
     pub fn new(pool: sqlx::PgPool) -> Self {
         Self { database: pool }
     }
-}
-
-pub fn validate_username(username: &str) -> bool {
-    let username = username.trim();
-
-    if !(3..=15).contains(&username.len()) {
-        return false;
-    }
-
-    if !username
-        .bytes()
-        .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
-    {
-        return false;
-    }
-
-    true
 }

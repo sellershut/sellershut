@@ -2,6 +2,16 @@ import { error, redirect } from '@sveltejs/kit';
 import { BACKEND_URL } from '$env/static/private';
 import type { RequestHandler } from './$types';
 
+type Session =
+  | {
+      kind: 'onboardingRequired';
+      onboardingToken: string;
+    }
+  | {
+      kind: 'authenticated';
+      sessionToken: string;
+    };
+
 export const GET: RequestHandler = async ({ cookies, url, fetch, params }) => {
   const provider = params.provider;
   const cookieName = `oauth_state_${provider}`;
@@ -43,29 +53,32 @@ export const GET: RequestHandler = async ({ cookies, url, fetch, params }) => {
     error(response.status, 'OAuth authentication failed');
   }
 
-  const result = await response.json();
+  const result = (await response.json()) as Session;
 
-  if (result.kind === 'authenticated') {
-    cookies.set('auth_session', result.session_token, {
-      path: '/',
-      httpOnly: true,
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30,
-    });
+  switch (result.kind) {
+    case 'authenticated':
+      cookies.set('auth_session', result.sessionToken, {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 30,
+      });
 
-    redirect(303, '/');
+      redirect(303, '/');
+      break;
+
+    case 'onboardingRequired':
+      cookies.set('auth_onboarding', result.onboardingToken, {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 15 * 60,
+      });
+
+      redirect(303, '/setup/profile');
+      break;
+
+    default:
+      error(500, 'Unexpected OAuth response');
   }
-
-  if (result.kind === 'onboarding_required') {
-    cookies.set('auth_onboarding', result.onboarding_token, {
-      path: '/',
-      httpOnly: true,
-      sameSite: 'lax',
-      maxAge: 15 * 60,
-    });
-
-    redirect(303, '/setup/profile');
-  }
-
-  //   error(500, 'Unexpected OAuth response');
 };

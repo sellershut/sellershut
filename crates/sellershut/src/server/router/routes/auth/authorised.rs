@@ -1,7 +1,7 @@
 use activitypub_federation::config::Data;
 use axum::{Json, extract::Path, response::IntoResponse};
-use sellershut_auth::{AuthenticatedSession, LoginOutcome};
-use sellershut_core::{auth::OauthProvider, types::user::User};
+use sellershut_auth::LoginOutcome;
+use sellershut_core::{auth::OauthProvider, user::User};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -14,10 +14,25 @@ pub struct OauthResponse {
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case")]
-enum OAuthCallbackResponse {
-    Authenticated { session_token: String, user: User },
-    OnboardingRequired { onboarding_token: String },
+#[serde(rename_all = "camelCase")]
+pub struct LoginAuthenticated {
+    kind: AuthorisedKind,
+    session_token: String,
+    user: User,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OnboardingNeeded {
+    kind: AuthorisedKind,
+    onboarding_token: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AuthorisedKind {
+    OnboardingRequired,
+    Authenticated,
 }
 
 /// OAuth authorisation callback
@@ -53,15 +68,17 @@ pub async fn authorised(
         .authorise(provider, &code, &callback.state)
         .await?;
     let resp = match outcome {
-        LoginOutcome::Authenticated(AuthenticatedSession { token, user }) => {
-            OAuthCallbackResponse::Authenticated {
-                session_token: token,
-                user,
-            }
-        }
-        LoginOutcome::OnboardingRequired { onboarding_token } => {
-            OAuthCallbackResponse::OnboardingRequired { onboarding_token }
-        }
+        LoginOutcome::Authenticated(value) => Json(LoginAuthenticated {
+            kind: AuthorisedKind::Authenticated,
+            session_token: value.token,
+            user: value.user,
+        })
+        .into_response(),
+        LoginOutcome::OnboardingRequired { onboarding_token } => Json(OnboardingNeeded {
+            onboarding_token,
+            kind: AuthorisedKind::OnboardingRequired,
+        })
+        .into_response(),
     };
-    Ok(Json(resp).into_response())
+    Ok(resp)
 }

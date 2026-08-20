@@ -4,7 +4,7 @@ use activitypub_federation::{
     protocol::verification::verify_domains_match,
     traits::{Actor, Object},
 };
-use sellershut_core::types::user::ActorType;
+use sellershut_core::user::ActorType;
 use serde::{Deserialize, Serialize};
 use url::Url;
 use utoipa::{
@@ -16,7 +16,7 @@ use crate::server::{AppError, state::AppState};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct User {
-    data: sellershut_core::types::user::User,
+    data: sellershut_core::user::User,
     id: ObjectId<User>,
 }
 
@@ -37,6 +37,7 @@ pub struct Person {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct UserIcon {
     #[serde(rename = "type")]
     kind: String,
@@ -123,6 +124,7 @@ impl Actor for User {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PublicKey(activitypub_federation::protocol::public_key::PublicKey);
 
 impl ToSchema for PublicKey {}
@@ -157,8 +159,8 @@ impl PartialSchema for PublicKey {
     }
 }
 
-impl From<sellershut_core::types::user::User> for User {
-    fn from(value: sellershut_core::types::user::User) -> Self {
+impl From<sellershut_core::user::User> for User {
+    fn from(value: sellershut_core::user::User) -> Self {
         let id = value.ap_id.inner().into();
         Self { data: value, id }
     }

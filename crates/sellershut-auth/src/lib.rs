@@ -2,8 +2,11 @@ pub mod error;
 pub(crate) mod profile;
 
 use oauth2_reqwest::ReqwestClient;
-use sellershut_users::{CreateUser, UserDriver, validate_username};
-use sellershut_utilities::auth::{hash_token, random_token};
+use sellershut_users::{CreateUser, UserDriver};
+use sellershut_utilities::{
+    auth::{hash_token, random_token},
+    users::validate_username,
+};
 use std::{collections::HashMap, str::FromStr, sync::Arc};
 use time::{Duration, OffsetDateTime};
 use utoipa::ToSchema;
@@ -15,11 +18,9 @@ use oauth2::{
     PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse, TokenUrl,
 };
 use sellershut_core::{
+    RedactedSecret,
     auth::OauthProvider,
-    types::{
-        redacted_secret::RedactedSecret,
-        user::{ActorType, User},
-    },
+    user::{ActorType, User},
 };
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -71,6 +72,7 @@ impl From<Configuration> for BasicClient {
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct AuthorizationStart {
     pub authorisation_url: String,
     pub state: String,
@@ -83,7 +85,7 @@ pub struct AuthenticatedSession {
 }
 
 pub enum LoginOutcome {
-    Authenticated(AuthenticatedSession),
+    Authenticated(Box<AuthenticatedSession>),
     OnboardingRequired {
         /// The raw onboarding token. In an HttpOnly cookie.
         onboarding_token: String,
@@ -190,14 +192,14 @@ impl<T: UserDriver> AuthService<T> {
             touch_identity(tx.as_mut(), provider, &id, &email).await?;
             let session = self.create_session(tx.as_mut(), user).await?;
             tx.commit().await?;
-            return Ok(LoginOutcome::Authenticated(session));
+            return Ok(LoginOutcome::Authenticated(Box::new(session)));
         }
 
         if let Some(user) = find_user_by_email(tx.as_mut(), &email).await? {
             ensure_identity(tx.as_mut(), provider, &id, user.id, &email).await?;
             let session = self.create_session(tx.as_mut(), user).await?;
             tx.commit().await?;
-            return Ok(LoginOutcome::Authenticated(session));
+            return Ok(LoginOutcome::Authenticated(Box::new(session)));
         }
 
         let onboarding_token = random_token();

@@ -1,17 +1,10 @@
+#[cfg(feature = "auth")]
 pub mod auth;
-pub mod types;
+#[cfg(feature = "users")]
+pub mod user;
 
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+mod custom_url;
+mod redacted_secret;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub use custom_url::*;
+pub use redacted_secret::*;

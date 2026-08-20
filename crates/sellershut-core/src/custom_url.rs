@@ -66,3 +66,59 @@ impl From<String> for Url {
         Self(url)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[track_caller]
+    fn check_from(input: &str, expected_result: &str) {
+        let actual_result = Url::from(input.to_owned());
+
+        assert_eq!(expected_result, actual_result.inner().as_str());
+    }
+
+    #[track_caller]
+    fn check_size_hint(input: &str, expected_result: usize) {
+        let url = Url::from(input.to_owned());
+
+        assert_eq!(expected_result, url.size_hint());
+    }
+
+    #[test]
+    fn from_string() {
+        check_from("https://example.com", "https://example.com/");
+
+        check_from("https://example.com/foo", "https://example.com/foo");
+
+        check_from(
+            "https://example.com/foo?bar=baz",
+            "https://example.com/foo?bar=baz",
+        );
+    }
+
+    #[test]
+    fn size_hint() {
+        check_size_hint("https://example.com", "https://example.com/".len());
+
+        check_size_hint("https://example.com/foo", "https://example.com/foo".len());
+    }
+
+    #[test]
+    fn is_str() {
+        assert!(<Url as Type<Postgres>>::compatible(&<String as Type<
+            Postgres,
+        >>::type_info(
+        ),));
+    }
+
+    #[test]
+    fn can_enconde() {
+        let url = Url(url::Url::parse("http://example.com").expect("url"));
+        let mut buf = PgArgumentBuffer::default();
+        let result = url.encode_by_ref(&mut buf);
+
+        assert!(result.is_ok());
+        assert!(!buf.is_empty());
+    }
+}

@@ -1,6 +1,5 @@
 pub mod cli;
 pub mod log;
-pub mod oauth;
 pub mod server;
 
 use std::path::PathBuf;

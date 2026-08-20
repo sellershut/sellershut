@@ -61,3 +61,6 @@ impl<'r> Decode<'r, Postgres> for RedactedSecret {
         Ok(value.into())
     }
 }
+
+#[cfg(test)]
+mod tests;

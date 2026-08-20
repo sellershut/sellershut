@@ -11,6 +11,10 @@ export const load: PageServerLoad = ({ locals }) => {
   }
 };
 
+type OnboardingResponse = {
+  sessionToken: string;
+};
+
 export const actions = {
   default: async ({ request, cookies, fetch }) => {
     const onboardingToken = cookies.get('auth_onboarding');
@@ -39,24 +43,22 @@ export const actions = {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        onboarding_token: onboardingToken,
+        onboardingToken,
         username,
       }),
     });
 
     if (!response.ok) {
-      console.log(response);
       error(response.status, 'Onboarding failed');
     }
 
-    const result = await response.json();
-    console.log(result);
+    const { sessionToken } = (await response.json()) as OnboardingResponse;
 
     cookies.delete('auth_onboarding', {
       path: '/',
     });
 
-    cookies.set('auth_session', result.session_token, {
+    cookies.set('auth_session', sessionToken, {
       path: '/',
       httpOnly: true,
       sameSite: 'lax',

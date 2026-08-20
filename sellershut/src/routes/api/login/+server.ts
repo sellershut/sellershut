@@ -2,6 +2,11 @@ import { redirect } from '@sveltejs/kit';
 import { BACKEND_URL } from '$env/static/private';
 import type { RequestHandler } from './$types';
 
+type LoginResponse = {
+  authorisationUrl: string;
+  state: string;
+};
+
 export const GET: RequestHandler = async ({ cookies, url, fetch }) => {
   const provider = url.searchParams.get('provider');
 
@@ -22,7 +27,7 @@ export const GET: RequestHandler = async ({ cookies, url, fetch }) => {
     });
   }
 
-  const { authorisation_url, state } = await response.json();
+  const { authorisationUrl, state } = (await response.json()) as LoginResponse;
   const cookieName = `oauth_state_${provider}`;
 
   cookies.set(cookieName, state, {
@@ -32,5 +37,5 @@ export const GET: RequestHandler = async ({ cookies, url, fetch }) => {
     maxAge: 10 * 60,
   });
 
-  return redirect(303, authorisation_url);
+  return redirect(303, authorisationUrl);
 };

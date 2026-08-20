@@ -4,16 +4,12 @@ mod server;
 #[cfg(test)]
 mod test;
 
-use std::{
-    net::{Ipv6Addr, SocketAddr},
-    sync::Arc,
-};
+use std::{net::{Ipv6Addr, SocketAddr}, sync::Arc};
 
 use anyhow::Result;
 use clap::Parser;
-use sellershut_auth::{AuthService, OauthDriver};
-use sellershut_core::types::{redacted_secret::RedactedSecret, user::ActorType};
-use sellershut_users::{CreateUser, UserDriver, UserService};
+use sellershut_auth::OauthDriver;
+use sellershut_users::UserService;
 use tokio::net::TcpListener;
 use tracing::info;
 
@@ -38,53 +34,13 @@ async fn main() -> Result<()> {
     let addr = SocketAddr::from((Ipv6Addr::UNSPECIFIED, config.server.port.into()));
 
     let database = config.database.connect().await?;
-    let user = Arc::new(UserService::new(database.clone()));
-    let auth = AuthService::new(
-        database.clone(),
-        config.server.oauth.0.clone(),
-        Arc::clone(&user),
-    )?;
+    let user = UserService::new(database.clone());
 
-    let system_user = if let Some(user) = user.get_user(&config.server.instance_name).await? {
-        user
-    } else {
-        //create system user
-        let keypair = activitypub_federation::http_signatures::generate_actor_keypair()?;
-        let id = server::utilities::base_url(config.server.port.into(), &config.server.domain)?;
-        let inbox = server::utilities::inbox_url(
-            config.server.port.into(),
-            &config.server.domain,
-            &config.server.instance_name,
-        )?;
-        let data = CreateUser {
-            kind: ActorType::Service,
-            ap_id: id,
-            username: config.server.instance_name.clone(),
-            name: None,
-            inbox,
-            avatar: None,
-            public_key: keypair.public_key,
-            private_key: Some(RedactedSecret::from(keypair.private_key)),
-            is_local: true,
-        };
-        user.create_user(&data, None).await?
-    }
-    .into();
+    let state = State::new(&config, user, database.clone()).await?;
 
-    let auth = Arc::new(auth);
+    let app = server::router::router(Arc::clone(&state), config).await?;
 
-    let state = Arc::new(State {
-        auth,
-        user,
-        system_user: Arc::new(system_user),
-        port: config.server.port.into(),
-    });
-
-    let auth = Arc::clone(&state.auth);
-
-    let app = server::router::router(state, config).await?;
-
-    let maintenance_task = tokio::spawn(auth_housekeeping(auth));
+    let maintenance_task = tokio::spawn(auth_housekeeping(Arc::clone(&state.auth)));
     let listener = TcpListener::bind(addr).await?;
     info!(addr = ?listener.local_addr().expect("local addr"), "starting server");
 
