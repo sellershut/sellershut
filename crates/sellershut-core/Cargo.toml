@@ -1,0 +1,25 @@
+[package]
+name = "sellershut-core"
+version = "0.0.0"
+edition = "2024"
+license.workspace = true
+publish = false
+
+[dependencies]
+secrecy.workspace = true
+serde = { workspace = true, optional = true }
+sqlx.workspace = true
+time.workspace = true
+url.workspace = true
+utoipa = { workspace = true, optional = true }
+uuid.workspace = true
+
+[features]
+default = []
+serde = ["dep:serde", "serde/derive", "time/serde", "secrecy/serde", "uuid/serde", "url/serde"]
+utoipa = ["dep:utoipa"]
+auth = []
+users = []
+
+[dev-dependencies]
+serde_json.workspace = true

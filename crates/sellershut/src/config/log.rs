@@ -56,3 +56,47 @@ impl From<&Log> for RollingFileAppender {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::env::temp_dir;
+
+    use super::*;
+
+    #[test]
+    fn rotation_from() {
+        assert_eq!(
+            tracing_appender::rolling::Rotation::from(Rotation::Weekly),
+            tracing_appender::rolling::Rotation::WEEKLY
+        );
+        assert_eq!(
+            tracing_appender::rolling::Rotation::from(Rotation::Daily),
+            tracing_appender::rolling::Rotation::DAILY
+        );
+        assert_eq!(
+            tracing_appender::rolling::Rotation::from(Rotation::Hourly),
+            tracing_appender::rolling::Rotation::HOURLY
+        );
+        assert_eq!(
+            tracing_appender::rolling::Rotation::from(Rotation::Minutely),
+            tracing_appender::rolling::Rotation::MINUTELY
+        );
+        assert_eq!(
+            tracing_appender::rolling::Rotation::from(Rotation::Never),
+            tracing_appender::rolling::Rotation::NEVER
+        );
+    }
+
+    #[test]
+    fn log_from() {
+        let directory = temp_dir();
+
+        let log = Log {
+            directory,
+            log_level: "info".into(),
+            rotation: Rotation::Daily,
+        };
+
+        let _: RollingFileAppender = (&log).into();
+    }
+}

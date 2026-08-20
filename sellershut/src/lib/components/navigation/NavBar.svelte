@@ -1,28 +1,30 @@
 <script lang="ts">
 import { Mail, Plus } from '@lucide/svelte';
 import SellershutIcon from '$lib/components/icons/SellershutIcon.svelte';
+import type { User } from '$lib/types/user';
 import DesktopNav from './DesktopNav.svelte';
 import MobileNavDialog from './MobileNavDialog.svelte';
 import type { MenuKey } from './navigation';
 import SearchDialog from './SearchDialog.svelte';
 import ThemeMenu from './ThemeMenu.svelte';
-import type { NavUser } from './types';
 import UserMenu from './UserMenu.svelte';
 
 let {
   user,
+  domain,
   brandName,
   brandHref,
-  signOutHref,
   scrolled,
   activeMenu,
   onMenuChange,
   onCloseMenu,
+  signOutAction,
 }: {
-  user: NavUser | null;
+  user?: User;
+  domain: string;
   brandName: string;
   brandHref: string;
-  signOutHref: string;
+  signOutAction: string;
   scrolled: boolean;
   activeMenu: MenuKey | null;
   onMenuChange: (menu: MenuKey | null) => void;
@@ -42,7 +44,7 @@ let {
     class="
 			mx-auto
 			flex h-12
-			max-w-[1120px]
+			max-w-280
 			items-center
 			justify-between
 			gap-4
@@ -137,7 +139,7 @@ let {
         </a>
 
         <div class="hidden sm:block">
-          <UserMenu {user} {signOutHref} />
+          <UserMenu {user} {signOutAction} {domain} />
         </div>
       {:else}
         <a
@@ -166,7 +168,7 @@ let {
         </a>
       {/if}
 
-      <MobileNavDialog {user} {signOutHref} onOpen={onCloseMenu} />
+      <MobileNavDialog {user} {domain} {signOutAction} onOpen={onCloseMenu} />
     </div>
   </nav>
 </div>

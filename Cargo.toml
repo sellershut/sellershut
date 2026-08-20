@@ -1,13 +1,27 @@
 [workspace]
 members = [ "crates/*" ]
-resolver = "2"
+resolver = "3"
 
 [workspace.package]
 license = "AGPL-3.0-only"
 
 [workspace.dependencies]
+async-trait = "0.1.92"
+activitypub_federation =  { version = "0.7.0-beta.11", default-features = false }
+base64 = "0.23.1"
+rand = "0.10.2"
+reqwest = "0.13.4"
+secrecy = "0.10.3"
+sellershut-core = { path = "crates/sellershut-core", version = "0.0.0" }
+sellershut-svc = { path = "crates/sellershut-svc", version = "0.0.0" }
+sellershut-utilities = { path = "crates/sellershut-utilities", version = "0.0.0" }
 serde = "1.0.229"
 serde_json = "1.0.151"
+sha2 = "0.11.0"
+sqlx = { version = "0.9.0", default-features = false, features = ["postgres", "macros", "runtime-tokio"] }
+thiserror = "2.0.20"
+time = "0.3.55"
+tokio = "1.53.1"
 tracing = "0.1.44"
 url = "2.5.8"
 utoipa = "5.5.0"

@@ -10,21 +10,22 @@ import {
   Settings,
   X,
 } from '@lucide/svelte';
-import { Dialog } from 'bits-ui';
+import { Button, Dialog } from 'bits-ui';
 
 import { cubicOut } from 'svelte/easing';
 import { fade, fly } from 'svelte/transition';
-
+import type { User } from '$lib/types/user';
 import { mobileLinks } from './navigation';
-import type { NavUser } from './types';
 
 let {
   user,
-  signOutHref,
+  domain,
   onOpen,
+  signOutAction,
 }: {
-  user: NavUser | null;
-  signOutHref: string;
+  user?: User;
+  domain: string;
+  signOutAction: string;
   onOpen: () => void;
 } = $props();
 
@@ -79,7 +80,7 @@ function initials(name: string) {
       class="
 				fixed
 				inset-0
-				z-[70]
+				z-70
 				bg-black/20
 				lg:hidden
 			"
@@ -101,7 +102,7 @@ function initials(name: string) {
       class="
 				fixed
 				inset-0
-				z-[80]
+				z-80
 				overflow-y-auto
 				bg-background
 				lg:hidden
@@ -256,10 +257,10 @@ function initials(name: string) {
 												text-background
 											"
                     >
-                      {#if user.avatarUrl}
-                        <img src={user.avatarUrl} alt="" class="size-full object-cover">
+                      {#if user.icon?.url}
+                        <img src={user.icon.url} alt="" class="size-full object-cover">
                       {:else}
-                        {initials(user.displayName)}
+                        {initials(user.name ?? user.preferredUsername)}
                       {/if}
                     </div>
 
@@ -271,7 +272,7 @@ function initials(name: string) {
 													font-semibold
 												"
                       >
-                        {user.displayName}
+                        {user.name ?? user.preferredUsername}
                       </div>
 
                       <div
@@ -281,7 +282,7 @@ function initials(name: string) {
 													text-muted-foreground
 												"
                       >
-                        {user.handle}
+                        {`@${user.preferredUsername}@${domain}`}
                       </div>
                     </div>
                   </div>
@@ -295,7 +296,7 @@ function initials(name: string) {
                   >
                     Signed in through
                     <span class="font-medium text-foreground">
-                      {user.instance.domain}
+                      {domain}
                     </span>
                   </div>
                 </div>
@@ -365,22 +366,17 @@ function initials(name: string) {
                     Settings
                   </a>
 
-                  <a
-                    href={signOutHref}
-                    onclick={close}
-                    class="
-											flex h-10
-											items-center
-											gap-3
-											text-[13px]
-											font-medium
-											text-primary
-										"
-                  >
-                    <LogOut size={17} />
-
-                    Sign out
-                  </a>
+                  <form method="POST" action={signOutAction}>
+                    <Button.Root
+                      {...props}
+                      class={`appearance-none border-0 p-0 bg-transparent w-full flex h-10 gap-3 items-center font-medium hover:!bg-primary/10 cursor-pointer`}
+                      onclick={close}
+                      type="submit"
+                    >
+                      <LogOut class="size-4 text-primary font-medium" strokeWidth={1.8} />
+                      <span class="text-[13px] text-primary font-medium">Sign out</span>
+                    </Button.Root>
+                  </form>
                 </div>
               {:else}
                 <a

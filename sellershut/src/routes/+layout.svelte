@@ -12,5 +12,5 @@ import '../app.css';
   <link rel="icon" href={favicon}>
 </svelte:head>
 
-<SiteNav user={data.user ?? null} brandName="sellershut" />
+<SiteNav user={data.user} domain={data.domain} brandName="sellershut" />
 {@render children()}

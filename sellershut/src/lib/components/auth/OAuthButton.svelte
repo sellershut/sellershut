@@ -9,11 +9,11 @@ let {
   provider: OAuthProvider;
 } = $props();
 
-const Icon = provider.icon;
+const Icon = $derived(provider.icon);
 </script>
 
 <a
-  href={provider.href}
+  href={`/api/login?provider=${provider.id}`}
   class="
 		group
 		flex h-12

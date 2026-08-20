@@ -1,15 +1,16 @@
 <script lang="ts">
 import { Heart, LogOut, Mail, Package, Server, Settings, User } from '@lucide/svelte';
-import { DropdownMenu } from 'bits-ui';
-
-import type { NavUser } from './types';
+import { Button, DropdownMenu } from 'bits-ui';
+import type { User as UserType } from '$lib/types/user';
 
 let {
   user,
-  signOutHref,
+  domain,
+  signOutAction,
 }: {
-  user: NavUser;
-  signOutHref: string;
+  user: UserType;
+  domain: string;
+  signOutAction: string;
 } = $props();
 
 function initials(name: string) {
@@ -39,7 +40,7 @@ const itemClass = `
 <DropdownMenu.Root>
   <DropdownMenu.Trigger
     type="button"
-    aria-label={`Account menu for ${user.handle}`}
+    aria-label={`Account menu for user.handle`}
     class="
 			ml-0.5
 			flex size-8
@@ -60,11 +61,11 @@ const itemClass = `
 			focus-visible:ring-ring
 		"
   >
-    {#if user.avatarUrl}
-      <img src={user.avatarUrl} alt="" class="size-full object-cover">
+    {#if user.icon?.url}
+      <img src={user.icon.url} alt="" class="size-full object-cover">
     {:else}
       <span aria-hidden="true">
-        {initials(user.displayName)}
+        {initials(user.name ?? user.preferredUsername)}
       </span>
     {/if}
   </DropdownMenu.Trigger>
@@ -86,7 +87,7 @@ const itemClass = `
 				shadow-black/10
 				backdrop-blur-2xl
 				outline-none
-				origin-[var(--bits-dropdown-menu-content-transform-origin)]
+				origin-(--bits-dropdown-menu-content-transform-origin)
 				transition
 				duration-150
 				data-[starting-style]:scale-[0.97]
@@ -97,7 +98,7 @@ const itemClass = `
     >
       <div class="px-2.5 pb-2 pt-2">
         <div class="truncate text-[13px] font-semibold">
-          {user.displayName}
+          {user.name ?? user.preferredUsername}
         </div>
 
         <div
@@ -108,7 +109,7 @@ const itemClass = `
 						text-muted-foreground
 					"
         >
-          {user.handle}
+          {`@${user.preferredUsername}@${domain}`}
         </div>
       </div>
 
@@ -184,7 +185,7 @@ const itemClass = `
 								font-medium
 							"
             >
-              {user.instance.domain}
+              {domain}
             </div>
 
             <div
@@ -222,11 +223,16 @@ const itemClass = `
 					`}
         >
           {#snippet child({ props })}
-            <a {...props} href={signOutHref}>
-              <LogOut class="size-4" strokeWidth={1.8} />
-
-              <span>Sign out</span>
-            </a>
+            <form method="POST" action={signOutAction}>
+              <Button.Root
+                {...props}
+                class={`appearance-none border-0 p-0 bg-transparent ${itemClass} w-full hover:bg-primary/10! cursor-pointer`}
+                type="submit"
+              >
+                <LogOut class="size-4 text-primary" strokeWidth={1.8} />
+                <span class="text-[13px] text-primary">Sign out</span>
+              </Button.Root>
+            </form>
           {/snippet}
         </DropdownMenu.Item>
       </DropdownMenu.Group>

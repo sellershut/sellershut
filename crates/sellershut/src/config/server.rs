@@ -1,18 +1,53 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
+use sellershut_core::auth::OauthProvider;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
 #[derive(Deserialize, Serialize, Debug, Default)]
 #[serde(rename_all = "kebab-case", default)]
 pub struct Server {
+    #[serde(default = "domain")]
+    pub domain: String,
     pub port: Port,
     pub request: Request,
     pub cors: Cors,
+    pub oauth: OauthConfig,
+    pub url: FrontendUrl,
+    #[serde(default = "instance_name")]
+    pub instance_name: String,
+}
+
+fn instance_name() -> String {
+    env!("CARGO_PKG_NAME").to_owned()
+}
+
+fn domain() -> String {
+    format!("localhost:{}", Port::default().0)
 }
 
 #[derive(Clone, Copy, Deserialize, Serialize, Debug)]
 pub struct Port(u16);
+
+#[derive(Clone, Deserialize, Serialize, Debug)]
+pub struct FrontendUrl(Url);
+
+impl Default for FrontendUrl {
+    fn default() -> Self {
+        Self(Url::parse("http://localhost:5173").expect("frontend url"))
+    }
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug)]
+pub struct OauthConfig(pub HashMap<OauthProvider, sellershut_auth::Configuration>);
+
+impl Default for OauthConfig {
+    fn default() -> Self {
+        let mut map = HashMap::new();
+        map.insert(OauthProvider::Discord, Default::default());
+        Self(map)
+    }
+}
 
 impl Default for Port {
     fn default() -> Self {

@@ -1,0 +1,24 @@
+[package]
+name = "sellershut-auth"
+version = "0.0.0"
+edition = "2024"
+license.workspace = true
+publish = false
+
+[dependencies]
+async-trait.workspace = true
+oauth2 = "5.0.0"
+oauth2-reqwest = "0.1.0-alpha.3"
+reqwest = { workspace = true, features = ["json"] }
+sellershut-core = { workspace = true, features = ["auth", "serde", "users"] }
+sellershut-svc.workspace = true
+sellershut-users = { path = "../sellershut-users" }
+sellershut-utilities.workspace = true
+secrecy = { workspace = true, features = ["serde"] }
+serde = { workspace = true, features = ["derive"] }
+sqlx = { workspace = true, features = ["time", "uuid"] }
+thiserror.workspace = true
+time = { workspace = true, features = ["serde"] }
+url = { workspace = true, features = ["serde"] }
+utoipa.workspace = true
+uuid = { workspace = true, features = ["serde"] }

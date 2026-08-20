@@ -5,11 +5,21 @@ edition = "2024"
 license.workspace = true
 
 [dependencies]
+activitypub_federation = { workspace = true, features = ["axum"] }
 anyhow = "1.0.104"
+async-trait.workspace = true
 axum = "0.8.9"
+axum-extra = { version = "0.12.6", features = ["typed-header"] }
 clap = { version = "4.6.6", features = ["derive"] }
+sellershut-auth = { path = "../sellershut-auth" }
+sellershut-core = { workspace = true, features = ["auth", "serde", "users", "utoipa"] }
+sellershut-svc = { workspace = true, features = ["postgres"] }
+sellershut-users = { path = "../sellershut-users" }
+sellershut-utilities.workspace = true
 serde = { workspace = true, features = ["derive"] }
-tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread"] }
+serde_json.workspace = true
+sqlx.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 toml = "1.1.4"
 tower = "0.5.3"
 tower-http = { version = "0.7.0", features = ["cors", "request-id", "timeout", "trace"] }
@@ -17,7 +27,7 @@ tracing.workspace = true
 tracing-appender = "0.2.5"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 url = { workspace = true, features = ["serde"] }
-utoipa = { workspace = true, features = ["axum_extras"] }
+utoipa = { workspace = true, features = ["axum_extras", "url"] }
 utoipa-axum = "0.2.0"
 utoipa-scalar = { version = "0.3.0", features = ["axum"] }
 uuid = { workspace = true, features = ["v7"] }

@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "insert into oauth_flow (state_hash, provider, pkce_verifier, expires_at)\n            values ($1, $2, $3, $4)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bytea",
+        "Text",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "90363f0a81b38f0edb9a1aced0b7040d3faa09ed38cb415af9588091719a7e1d"
+}

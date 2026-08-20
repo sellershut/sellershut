@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            insert into pending_oauth_login (\n                token_hash,\n                provider,\n                provider_subject,\n                email,\n                expires_at\n            )\n            values ($1, $2, $3, $4, $5)\n            on conflict (provider, provider_subject)\n            do update set\n                token_hash = excluded.token_hash,\n                email = excluded.email,\n                expires_at = excluded.expires_at,\n                created_at = now()\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bytea",
+        "Text",
+        "Text",
+        {
+          "Custom": {
+            "name": "citext",
+            "kind": "Simple"
+          }
+        },
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e4b8b3e20b195289572d10089cab58d8ef50b318722110041764d4980dc6c7a7"
+}

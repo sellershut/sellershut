@@ -35,6 +35,9 @@
     "rules": {
       "a11y": {
         "noAutofocus": "off"
+      },
+      "style": {
+        "useNamingConvention": "error"
       }
     }
   }

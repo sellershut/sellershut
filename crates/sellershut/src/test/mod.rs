@@ -4,11 +4,12 @@ use super::*;
 
 use std::sync::OnceLock;
 
+use sqlx::PgPool;
 use tracing_subscriber::{EnvFilter, Registry, layer::SubscriberExt, reload};
 
 static TEST_LOG_DATA: OnceLock<LogHandle> = OnceLock::new();
 
-pub async fn test_app() -> axum::Router {
+pub async fn test_app(pool: PgPool) -> axum::Router {
     let _log_handle = TEST_LOG_DATA
         .get_or_init(|| {
             let filter = EnvFilter::new("warn");
@@ -23,6 +24,10 @@ pub async fn test_app() -> axum::Router {
         .clone();
 
     let config = Configuration::default();
+    let user_driver = UserService::new(pool.clone());
+    let state = State::new(&config, user_driver, pool).await.unwrap();
 
-    server::router::router(config).await.expect("test router")
+    server::router::router(state, config)
+        .await
+        .expect("test router")
 }

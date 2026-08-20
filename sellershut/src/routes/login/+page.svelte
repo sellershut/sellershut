@@ -2,14 +2,14 @@
 import { ShieldCheck } from '@lucide/svelte';
 import { page } from '$app/state';
 import { oauthProviders } from '$lib/auth/providers';
-import OAuthButton from '$lib/components/auth/OAuthButton.svelte';
+import OauthButton from '$lib/components/auth/OAuthButton.svelte';
 import SellershutIcon from '$lib/components/icons/SellershutIcon.svelte';
 
 const error = $derived(page.url.searchParams.get('error'));
 </script>
 
 <svelte:head>
-  <title>Sign in · Relay</title>
+  <title>Sign in · sellershut</title>
 
   <meta name="description" content="Sign in to your marketplace account.">
 </svelte:head>
@@ -25,7 +25,7 @@ const error = $derived(page.url.searchParams.get('error'));
 		sm:px-6
 	"
 >
-  <section class="w-full max-w-[400px]">
+  <section class="w-full max-w-100">
     <!-- Brand -->
     <div class="mb-9 text-center">
       <div
@@ -90,7 +90,7 @@ const error = $derived(page.url.searchParams.get('error'));
     <!-- OAuth providers -->
     <div class="flex flex-col gap-2.5">
       {#each oauthProviders as provider (provider.id)}
-        <OAuthButton {provider} />
+        <OauthButton {provider} />
       {/each}
     </div>
 
