@@ -1,0 +1,183 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            select\n                id,\n                ap_id,\n                username,\n                name,\n                inbox,\n                public_key,\n                avatar,\n                private_key as \"private_key: RedactedSecret\",\n                kind as \"kind: ActorType\",\n                last_refreshed_at,\n                created_at,\n                is_local\n            from \"user\"\n            where\n                ap_id = $1\n                and is_local\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "ap_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "ap_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "username",
+        "type_info": {
+          "Custom": {
+            "name": "citext",
+            "kind": "Simple"
+          }
+        },
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "username"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "inbox",
+        "type_info": {
+          "Custom": {
+            "name": "citext",
+            "kind": "Simple"
+          }
+        },
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "inbox"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "public_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "public_key"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "avatar",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "avatar"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "private_key: RedactedSecret",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "private_key"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "kind: ActorType",
+        "type_info": {
+          "Custom": {
+            "name": "user_kind",
+            "kind": {
+              "Enum": [
+                "Person",
+                "Service",
+                "Organization",
+                "Group",
+                "Application"
+              ]
+            }
+          }
+        },
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "last_refreshed_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "last_refreshed_at"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "is_local",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "is_local"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a780dbc8329c4ff38afa3ecdbc9ef2182a642244d595fee0aea08bb34510e38c"
+}

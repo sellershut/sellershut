@@ -52,20 +52,6 @@ jobs:
 
   clippy:
     runs-on: ubuntu-latest
-    services:
-      postgres: &database
-        image: postgres:17
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: sellershut
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d sellershut"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     permissions:
       contents: read
       security-events: write # to upload sarif results
@@ -76,6 +62,8 @@ jobs:
         with:
           toolchain: beta
           components: clippy,rustfmt
+      - name: Start stack
+        run: docker compose up -d
       - uses: Swatinem/rust-cache@v2
       - name: Install dependencies
         uses: taiki-e/install-action@v2
@@ -98,6 +86,13 @@ jobs:
           sarif_file: rust-clippy-results.sarif
           category: clippy
           wait-for-processing: true
+      - &stop-stack
+        name: Stop stack
+        if: always()
+        run: |
+          docker compose down -v
+          docker stop $(docker ps -aq) || true
+          docker rm $(docker ps -aq) || true
 
   fmt:
     runs-on: ubuntu-latest
@@ -114,12 +109,12 @@ jobs:
   os-check:
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.os }} / stable
-    services:
-      postgres: *database
     strategy:
       fail-fast: false
       matrix:
         os: [macos-latest, windows-latest]
+    env:
+      SQL_OFFLINE: true
     steps:
       - uses: actions/checkout@v7
       - name: Install stable
@@ -131,12 +126,6 @@ jobs:
         with:
           tool: |
             cargo-nextest
-      - name: Install dependencies
-        uses: taiki-e/install-action@v2
-        with:
-          tool: |
-            sqlx-cli
-      - run: cargo sqlx migrate run
       - name: cargo test --workspace
         run: cargo nextest run --no-run --workspace --locked --all-features --all-targets
       - name: cargo build
@@ -145,8 +134,6 @@ jobs:
   msrv:
     name: msrv / ${{ matrix.msrv }}
     runs-on: ubuntu-latest
-    services:
-      postgres: *database
     strategy:
       matrix:
         msrv: ["1.91.0"]
@@ -156,6 +143,8 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.msrv }}
+      - name: Start stack
+        run: docker compose up -d
       - uses: Swatinem/rust-cache@v2
       - name: Install dependencies
         uses: taiki-e/install-action@v2
@@ -170,12 +159,11 @@ jobs:
             cargo-hack
       - name: cargo hack +${{ matrix.msrv }} 
         run: cargo hack --clean-per-run --feature-powerset check
+      - *stop-stack
 
   test:
     name: test / workspace
     runs-on: ubuntu-latest
-    services:
-      postgres: *database
     needs:
       - os-check
     steps:
@@ -184,6 +172,8 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
+      - name: Start stack
+        run: docker compose up -d
       - uses: Swatinem/rust-cache@v2
       - name: Install dependencies
         uses: taiki-e/install-action@v2
@@ -192,6 +182,8 @@ jobs:
             sqlx-cli
       - run: cargo sqlx migrate run
       - *install-nextest
+      - name: Check .sqlx
+        run: cargo sqlx prepare --check --workspace
       - name: Install build dependencies
         uses: taiki-e/install-action@v2
         with:
@@ -217,6 +209,7 @@ jobs:
           files: ./target/nextest/ci/junit.xml
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
+      - *stop-stack
 
   book:
     runs-on: ubuntu-latest

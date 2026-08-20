@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        delete from auth_session\n        where expires_at <= now()\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "6533e42abcd1cf0eb24d8d09ad52ce23db3bbc201db995da0531f23bca24ff39"
+}

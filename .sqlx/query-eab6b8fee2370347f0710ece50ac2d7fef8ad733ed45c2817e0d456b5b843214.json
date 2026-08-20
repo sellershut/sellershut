@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        insert into oauth_identity (\n            provider,\n            provider_id,\n            user_id,\n            provider_email\n        )\n        values ($1, $2, $3, $4)\n        on conflict (provider, provider_id) do nothing\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Uuid",
+        {
+          "Custom": {
+            "name": "citext",
+            "kind": "Simple"
+          }
+        }
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "eab6b8fee2370347f0710ece50ac2d7fef8ad733ed45c2817e0d456b5b843214"
+}

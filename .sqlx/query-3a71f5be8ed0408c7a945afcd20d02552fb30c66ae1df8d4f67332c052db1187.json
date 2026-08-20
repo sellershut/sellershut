@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        update oauth_identity\n        set provider_email = $3,\n            last_login_at = now()\n        where provider = $1\n          and provider_id = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        {
+          "Custom": {
+            "name": "citext",
+            "kind": "Simple"
+          }
+        }
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3a71f5be8ed0408c7a945afcd20d02552fb30c66ae1df8d4f67332c052db1187"
+}

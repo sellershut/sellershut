@@ -1,0 +1,184 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        select\n            u.id,\n            u.ap_id,\n            u.username,\n            u.name,\n            u.inbox,\n            u.public_key,\n            u.avatar,\n            u.private_key as \"private_key: RedactedSecret\",\n            u.kind as \"kind: ActorType\",\n            u.last_refreshed_at,\n            u.created_at,\n            u.is_local\n        from oauth_identity as oi\n        join \"user\" as u on u.id = oi.user_id\n        where oi.provider = $1\n          and oi.provider_id = $2\n        for update of oi\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "ap_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "ap_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "username",
+        "type_info": {
+          "Custom": {
+            "name": "citext",
+            "kind": "Simple"
+          }
+        },
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "username"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "inbox",
+        "type_info": {
+          "Custom": {
+            "name": "citext",
+            "kind": "Simple"
+          }
+        },
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "inbox"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "public_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "public_key"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "avatar",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "avatar"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "private_key: RedactedSecret",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "private_key"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "kind: ActorType",
+        "type_info": {
+          "Custom": {
+            "name": "user_kind",
+            "kind": {
+              "Enum": [
+                "Person",
+                "Service",
+                "Organization",
+                "Group",
+                "Application"
+              ]
+            }
+          }
+        },
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "last_refreshed_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "last_refreshed_at"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "is_local",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "\"user\"",
+            "name": "is_local"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "c9d3a1a702f1e820986e4965a038151727d9274dc1c3d0ffbb5b988278a2ef37"
+}

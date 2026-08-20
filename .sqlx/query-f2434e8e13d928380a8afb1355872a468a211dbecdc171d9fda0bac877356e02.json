@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        select user_id\n        from oauth_identity\n        where provider = $1\n          and provider_id = $2\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "oauth_identity",
+            "name": "user_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f2434e8e13d928380a8afb1355872a468a211dbecdc171d9fda0bac877356e02"
+}

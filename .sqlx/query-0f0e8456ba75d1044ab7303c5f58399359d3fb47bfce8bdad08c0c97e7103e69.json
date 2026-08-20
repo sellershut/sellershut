@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n             delete from oauth_flow\n             where state_hash = $1\n               and provider = $2\n               and expires_at > now()\n             returning pkce_verifier\n             ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pkce_verifier",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "oauth_flow",
+            "name": "pkce_verifier"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bytea",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "0f0e8456ba75d1044ab7303c5f58399359d3fb47bfce8bdad08c0c97e7103e69"
+}
