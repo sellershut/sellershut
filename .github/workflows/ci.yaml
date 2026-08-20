@@ -83,7 +83,7 @@ jobs:
           tool: |
             clippy-sarif
             sarif-fmt
-      - uses: taiki-e/install-action@sqlx-cli
+            sqlx-cli
       - run: cargo sqlx migrate run
       - name: Run rust-clippy
         run:
@@ -131,7 +131,11 @@ jobs:
         with:
           tool: |
             cargo-nextest
-      - uses: taiki-e/install-action@sqlx-cli
+      - name: Install dependencies
+        uses: taiki-e/install-action@v2
+        with:
+          tool: |
+            sqlx-cli
       - run: cargo sqlx migrate run
       - name: cargo test --workspace
         run: cargo nextest run --no-run --workspace --locked --all-features --all-targets
@@ -153,7 +157,11 @@ jobs:
         with:
           toolchain: ${{ matrix.msrv }}
       - uses: Swatinem/rust-cache@v2
-      - uses: taiki-e/install-action@sqlx-cli
+      - name: Install dependencies
+        uses: taiki-e/install-action@v2
+        with:
+          tool: |
+            sqlx-cli
       - run: cargo sqlx migrate run
       - name: Install cargo-hack
         uses: taiki-e/install-action@v2
@@ -177,7 +185,11 @@ jobs:
         with:
           components: llvm-tools-preview
       - uses: Swatinem/rust-cache@v2
-      - uses: taiki-e/install-action@sqlx-cli
+      - name: Install dependencies
+        uses: taiki-e/install-action@v2
+        with:
+          tool: |
+            sqlx-cli
       - run: cargo sqlx migrate run
       - *install-nextest
       - name: Install build dependencies
