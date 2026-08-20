@@ -33,6 +33,11 @@ pub trait UserDriver: Send + Sync {
         data: &CreateUser,
         tx: Option<&mut PgConnection>,
     ) -> Result<User, UserError>;
+    async fn upsert_user(
+        &self,
+        data: &CreateUser,
+        tx: Option<&mut PgConnection>,
+    ) -> Result<User, UserError>;
     async fn user_from_session(&self, session_token: &str) -> Result<User, UserError>;
 }
 
@@ -164,6 +169,70 @@ impl UserDriver for UserService {
         };
 
         Ok(user)
+    }
+
+    async fn upsert_user(
+        &self,
+        data: &CreateUser,
+        tx: Option<&mut PgConnection>,
+    ) -> Result<User, UserError> {
+        let user = sqlx::query_as!(
+            User,
+            r#"
+            insert into "user"
+            (
+                id,
+                ap_id,
+                username,
+                name,
+                inbox,
+                public_key,
+                avatar,
+                private_key,
+                kind,
+                is_local
+            )
+            values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            on conflict (ap_id) do update set
+                username = excluded.username,
+                name = excluded.name,
+                inbox = excluded.inbox,
+                public_key = excluded.public_key,
+                avatar = excluded.avatar,
+                private_key = excluded.private_key,
+                kind = excluded.kind,
+                is_local = excluded.is_local
+            returning
+                id,
+                ap_id,
+                username,
+                name,
+                inbox,
+                public_key,
+                avatar,
+                private_key as "private_key: RedactedSecret",
+                kind as "kind: ActorType",
+                last_refreshed_at,
+                created_at,
+                is_local
+        "#,
+            Uuid::now_v7(),
+            data.ap_id.as_str(),
+            data.username,
+            data.name,
+            data.inbox.to_string(),
+            data.public_key,
+            data.avatar.as_ref().map(|v| v.as_str()),
+            data.private_key as _,
+            data.kind as _,
+            data.is_local,
+        );
+        let result = match tx {
+            Some(a) => user.fetch_one(a).await,
+            None => user.fetch_one(&self.database).await,
+        }?;
+
+        Ok(result)
     }
 
     async fn user_from_session(&self, session_token: &str) -> Result<User, UserError> {

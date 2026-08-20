@@ -3,6 +3,7 @@ name = "sellershut-utilities"
 version = "0.0.0"
 edition = "2024"
 license.workspace = true
+publish = false
 
 [dependencies]
 base64.workspace = true

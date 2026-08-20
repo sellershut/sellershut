@@ -1,8 +1,9 @@
 [package]
 name = "sellershut-users"
-version = "0.1.0"
+version = "0.0.0"
 edition = "2024"
 license.workspace = true
+publish = false
 
 [dependencies]
 async-trait.workspace = true

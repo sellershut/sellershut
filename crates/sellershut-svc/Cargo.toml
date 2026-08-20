@@ -3,6 +3,7 @@ name = "sellershut-svc"
 version = "0.0.0"
 edition = "2024"
 license.workspace = true
+publish = false
 
 [dependencies]
 sellershut-core = { workspace = true, features = ["serde"] }

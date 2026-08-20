@@ -5,6 +5,7 @@ use activitypub_federation::{
     traits::{Actor, Object},
 };
 use sellershut_core::user::ActorType;
+use sellershut_users::CreateUser;
 use serde::{Deserialize, Serialize};
 use url::Url;
 use utoipa::{
@@ -105,7 +106,19 @@ impl Object for User {
     #[doc = " should write the received object to database. Note that there is no distinction between"]
     #[doc = " create and update, so an `upsert` operation should be used."]
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
-        todo!()
+        let req = CreateUser {
+            kind: json.kind,
+            username: json.preferred_username,
+            ap_id: json.id.into(),
+            name: json.name,
+            inbox: json.inbox,
+            public_key: json.public_key.0.public_key_pem,
+            private_key: None,
+            is_local: false,
+            avatar: None,
+        };
+        let user = data.user.upsert_user(&req, None).await?;
+        Ok(user.into())
     }
 }
 

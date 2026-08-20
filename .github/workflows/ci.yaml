@@ -11,6 +11,9 @@ concurrency:
 
 name: ci
 
+env:
+  DATABASE_URL: postgres://postgres:postgres@localhost:5432/sellershut
+
 jobs:
   biome:
     runs-on: ubuntu-latest
@@ -21,11 +24,7 @@ jobs:
       matrix:
         node-version: [24]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install pnpm and Node.js
         uses: pnpm/setup@v2
         with:
@@ -53,6 +52,20 @@ jobs:
 
   clippy:
     runs-on: ubuntu-latest
+    services:
+      postgres: &database
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sellershut
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sellershut"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     permissions:
       contents: read
       security-events: write # to upload sarif results
@@ -64,7 +77,19 @@ jobs:
           toolchain: beta
           components: clippy,rustfmt
       - uses: Swatinem/rust-cache@v2
-      - run: cargo install clippy-sarif sarif-fmt
+      - name: Install dependencies
+        uses: taiki-e/install-action@v2
+        with:
+          tool: |
+            clippy-sarif
+            sarif-fmt
+      - &migrations
+        name: Run migrations
+        uses: taiki-e/install-action@v2
+        with:
+          tool: |
+            sqlx-cli
+        run: cargo sqlx migrate run
       - name: Run rust-clippy
         run:
           cargo clippy
@@ -84,8 +109,6 @@ jobs:
     name: stable / fmt
     steps:
       - uses: actions/checkout@v7
-        with:
-          submodules: true
       - name: Install stable
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -96,69 +119,80 @@ jobs:
   os-check:
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.os }} / stable
+    services:
+      postgres: *database
     strategy:
       fail-fast: false
       matrix:
         os: [macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v7
-        with:
-          submodules: true
       - name: Install stable
         uses: dtolnay/rust-toolchain@stable
-      - name: Install cargo-nextest
-        uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-nextest
       - uses: Swatinem/rust-cache@v2
+      - &install-nextest
+        - name: Install nextest
+          uses: taiki-e/install-action@v2
+          with:
+            tool: |
+              cargo-nextest
+      - *migrations
       - name: cargo test --workspace
         run: cargo nextest run --no-run --workspace --locked --all-features --all-targets
       - name: cargo build
         run: cargo build --workspace --locked --all-features --all-targets
 
   msrv:
+    name: msrv / ${{ matrix.msrv }}
     runs-on: ubuntu-latest
+    services:
+      postgres: *database
     strategy:
       matrix:
         msrv: ["1.91.0"]
-    name: msrv / ${{ matrix.msrv }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          submodules: true
       - name: Install ${{ matrix.msrv }}
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.msrv }}
-      - name: cargo install cargo-hack
-        uses: taiki-e/install-action@cargo-hack
+      - uses: Swatinem/rust-cache@v2
+      - *migrations
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: |
+            cargo-hack
       - name: cargo hack +${{ matrix.msrv }} 
         run: cargo hack --clean-per-run --feature-powerset check
 
   test:
+    name: test / workspace
     runs-on: ubuntu-latest
+    services:
+      postgres: *database
     needs:
       - os-check
-    name: test / workspace
     steps:
       - uses: actions/checkout@v7
       - name: Install stable
         uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
-      - uses: taiki-e/install-action@cargo-llvm-cov
-      - name: Install cargo-nextest
+      - uses: Swatinem/rust-cache@v2
+      - *migrations
+      - *install-nextest
+      - name: Install build dependencies
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-nextest
-      - uses: Swatinem/rust-cache@v2
+          tool: cargo-llvm-cov
       - name: Create junit.xml (nextest)
         run: |
           mkdir -p .config
           echo '[profile.ci.junit]' > .config/nextest.toml
           echo 'path = "junit.xml"' >> .config/nextest.toml
       - name: cargo llvm-cov
-        run: cargo llvm-cov nextest --profile ci --workspace --locked --all-features --lcov --output-path lcov.info
+        run: cargo llvm-cov nextest --profile ci --workspace --locked --all-features --lcov --output-path lcov.info -- --include-ignored
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v5
         with:
@@ -173,3 +207,19 @@ jobs:
           files: ./target/nextest/ci/junit.xml
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
+
+  book:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs/book
+    steps:
+      - uses: actions/checkout@v7
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: |
+            mdbook
+            mdbook-mermaid
+      - run: mdbook build
+      - run: mdbook test

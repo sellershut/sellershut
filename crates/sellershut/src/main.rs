@@ -4,7 +4,10 @@ mod server;
 #[cfg(test)]
 mod test;
 
-use std::{net::{Ipv6Addr, SocketAddr}, sync::Arc};
+use std::{
+    net::{Ipv6Addr, SocketAddr},
+    sync::Arc,
+};
 
 use anyhow::Result;
 use clap::Parser;

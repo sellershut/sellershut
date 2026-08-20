@@ -6,6 +6,7 @@ use crate::server::state::AppState;
 
 /// Use this to store your federation blocklist, or a database connection needed to retrieve it.
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct MyUrlVerifier(AppState);
 
 impl From<AppState> for MyUrlVerifier {
