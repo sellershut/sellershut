@@ -4,6 +4,7 @@ use sellershut_core::{
     RedactedSecret,
     user::{ActorType, User},
 };
+use sellershut_svc::cache::Cache;
 use sellershut_utilities::auth::hash_token;
 use sqlx::PgConnection;
 use url::Url;
@@ -43,6 +44,7 @@ pub trait UserDriver: Send + Sync {
 
 pub struct UserService {
     database: sqlx::PgPool,
+    cache: sellershut_svc::cache::Cache,
 }
 
 #[async_trait::async_trait]
@@ -295,7 +297,10 @@ impl UserDriver for UserService {
 }
 
 impl UserService {
-    pub fn new(pool: sqlx::PgPool) -> Self {
-        Self { database: pool }
+    pub fn new(pool: sqlx::PgPool, cache: Cache) -> Self {
+        Self {
+            database: pool,
+            cache,
+        }
     }
 }

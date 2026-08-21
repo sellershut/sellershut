@@ -6,8 +6,10 @@ license.workspace = true
 publish = false
 
 [dependencies]
+redis = { workspace = true, optional = true }
 sellershut-core = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive"] }
+thiserror.workspace = true
 sqlx = { workspace = true, optional = true }
 url = { workspace = true, features = ["serde"] }
 
@@ -18,3 +20,4 @@ tokio = { workspace = true, features = ["macros"] }
 [features]
 default = []
 postgres = ["dep:sqlx", "sqlx/migrate"]
+cache = ["dep:redis", "redis/connection-manager", "redis/cluster-async", "redis/tokio-comp", "redis/sentinel"]
