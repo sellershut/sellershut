@@ -13,7 +13,7 @@ const Icon = $derived(provider.icon);
 </script>
 
 <a
-  href={`/api/login?provider=${provider.id}`}
+  href={`/login?provider=${provider.id}`}
   class="
 		group
 		flex h-12

@@ -49,6 +49,7 @@ impl Modify for SecurityAddon {
 }
 
 pub async fn router(state: AppState, config: Configuration) -> anyhow::Result<Router> {
+    dbg!(&config.server.domain);
     let federation_config = FederationConfig::builder()
         .domain(config.server.domain)
         .url_verifier(Box::new(MyUrlVerifier::from(state.clone())))
@@ -63,6 +64,7 @@ pub async fn router(state: AppState, config: Configuration) -> anyhow::Result<Ro
 
     let stubs = OpenApiRouter::with_openapi(doc)
         .routes(utoipa_axum::routes!(routes::health))
+        .routes(utoipa_axum::routes!(routes::webfinger))
         .nest("/auth", auth::router())
         .nest("/users", users::router());
 

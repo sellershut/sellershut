@@ -17,7 +17,7 @@ let {
   brandHref?: string;
 } = $props();
 
-let signOutAction = '/api/logout';
+let signOutAction = '/logout';
 let activeMenu = $state<MenuKey | null>(null);
 let scrolled = $state(false);
 

@@ -1,5 +1,6 @@
 import { error, redirect } from '@sveltejs/kit';
 import { BACKEND_URL } from '$env/static/private';
+import { toOauthCookieName } from '$lib/oauth';
 import type { RequestHandler } from './$types';
 
 type Session =
@@ -13,8 +14,7 @@ type Session =
     };
 
 export const GET: RequestHandler = async ({ cookies, url, fetch, params }) => {
-  const provider = params.provider;
-  const cookieName = `oauth_state_${provider}`;
+  const { provider, cookieName } = toOauthCookieName(params.provider);
 
   const providerError = url.searchParams.get('error');
   const expectedState = cookies.get(cookieName);
@@ -23,7 +23,7 @@ export const GET: RequestHandler = async ({ cookies, url, fetch, params }) => {
   const state = url.searchParams.get('state');
 
   if (providerError) {
-    cookies.delete(`oauth_state_${provider}`, {
+    cookies.delete(cookieName, {
       path: '/',
     });
 
@@ -34,7 +34,7 @@ export const GET: RequestHandler = async ({ cookies, url, fetch, params }) => {
     error(400, 'Invalid OAuth state');
   }
 
-  cookies.delete(`oauth_state_${provider}`, {
+  cookies.delete(cookieName, {
     path: '/',
   });
 

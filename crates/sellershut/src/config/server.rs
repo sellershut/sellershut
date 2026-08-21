@@ -4,7 +4,7 @@ use sellershut_core::auth::OauthProvider;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-#[derive(Deserialize, Serialize, Debug, Default)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "kebab-case", default)]
 pub struct Server {
     #[serde(default = "domain")]
@@ -16,6 +16,20 @@ pub struct Server {
     pub url: FrontendUrl,
     #[serde(default = "instance_name")]
     pub instance_name: String,
+}
+
+impl Default for Server {
+    fn default() -> Self {
+        Self {
+            domain: domain(),
+            port: Default::default(),
+            request: Default::default(),
+            cors: Default::default(),
+            oauth: Default::default(),
+            url: Default::default(),
+            instance_name: instance_name(),
+        }
+    }
 }
 
 fn instance_name() -> String {
