@@ -49,7 +49,6 @@ impl Modify for SecurityAddon {
 }
 
 pub async fn router(state: AppState, config: Configuration) -> anyhow::Result<Router> {
-    dbg!(&config.server.domain);
     let federation_config = FederationConfig::builder()
         .domain(config.server.domain)
         .url_verifier(Box::new(MyUrlVerifier::from(state.clone())))

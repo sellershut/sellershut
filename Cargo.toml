@@ -9,7 +9,9 @@ license = "AGPL-3.0-only"
 async-trait = "0.1.92"
 activitypub_federation =  { version = "0.7.0-beta.11", default-features = false }
 base64 = "0.23.1"
+futures-util = "0.3.34"
 rand = "0.10.2"
+redis = "1.6.0"
 reqwest = "0.13.4"
 secrecy = "0.10.3"
 sellershut-core = { path = "crates/sellershut-core", version = "0.0.0" }

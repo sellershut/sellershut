@@ -60,7 +60,7 @@ pub async fn complete_onboarding(
 
     let ap_id = utilities::users_url(port, domain, &request.username)?;
     let inbox = utilities::inbox_url(port, domain, &request.username)?;
-    tracing::debug!(id =?ap_id, inbox=?inbox,"creating user");
+    tracing::debug!(id =%ap_id, inbox=%inbox,"creating user");
 
     let keypair = generate_actor_keypair()?;
 

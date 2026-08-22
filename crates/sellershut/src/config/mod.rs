@@ -12,6 +12,7 @@ pub struct Configuration {
     pub server: server::Server,
     pub log: log::Log,
     pub database: sellershut_svc::database::Config,
+    pub cache: sellershut_svc::cache::Config,
 }
 
 pub fn load(cli: Option<&PathBuf>) -> Configuration {

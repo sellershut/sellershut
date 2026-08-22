@@ -1,6 +1,19 @@
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Url(url::Url);
+
+impl From<url::Url> for Url {
+    fn from(value: url::Url) -> Self {
+        Self(value)
+    }
+}
+
+impl From<&url::Url> for Url {
+    fn from(value: &url::Url) -> Self {
+        Self(value.clone())
+    }
+}
+
 impl Url {
     pub fn inner(&self) -> url::Url {
         self.0.clone()
@@ -55,6 +68,12 @@ struct InvalidUrl;
 impl fmt::Display for InvalidUrl {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "invalid url")
+    }
+}
+
+impl fmt::Display for Url {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 

@@ -17,8 +17,22 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-    networks:
+    networks: &network
       - sellershut
+
+  valkey:
+    image: docker.io/valkey/valkey:9.1.1-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    networks: *network
+
 
 volumes:
   postgres_data:

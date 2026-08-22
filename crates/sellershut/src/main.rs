@@ -11,7 +11,9 @@ use std::{
 
 use anyhow::Result;
 use clap::Parser;
+use futures_util::TryFutureExt;
 use sellershut_auth::OauthDriver;
+use sellershut_svc::cache::Cache;
 use sellershut_users::UserService;
 use tokio::net::TcpListener;
 use tracing::info;
@@ -36,8 +38,12 @@ async fn main() -> Result<()> {
 
     let addr = SocketAddr::from((Ipv6Addr::UNSPECIFIED, config.server.port.into()));
 
-    let database = config.database.connect().await?;
-    let user = UserService::new(database.clone());
+    let (database, cache) = futures_util::try_join!(
+        config.database.connect().map_err(anyhow::Error::from),
+        Cache::connect(&config.cache).map_err(anyhow::Error::from),
+    )?;
+
+    let user = UserService::new(database.clone(), cache);
 
     let state = State::new(&config, user, database.clone()).await?;
 
