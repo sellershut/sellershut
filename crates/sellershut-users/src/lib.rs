@@ -1,9 +1,8 @@
 pub mod error;
+pub(crate) mod helpers;
 
-use sellershut_core::{
-    RedactedSecret,
-    user::{ActorType, User},
-};
+use helpers::database::DatabaseActor;
+use sellershut_core::{RedactedSecret, user::User};
 use sellershut_svc::cache::Cache;
 use sellershut_utilities::{auth::hash_token, cache_key::CacheKey};
 use sqlx::PgConnection;
@@ -15,15 +14,23 @@ use uuid::Uuid;
 use crate::error::UserError;
 
 pub struct CreateUser {
-    pub kind: ActorType,
-    pub username: String,
     pub ap_id: Url,
+    pub preferred_username: String,
     pub name: Option<String>,
+    pub summary: Option<String>,
     pub inbox: Url,
+    pub outbox: Url,
+
+    pub followers: Option<Url>,
+    pub following: Option<Url>,
+
+    pub likes: Option<Url>,
+
+    pub kind: String,
     pub public_key: String,
     pub private_key: Option<RedactedSecret>,
     pub is_local: bool,
-    pub avatar: Option<Url>,
+    pub icon: Option<Url>,
 }
 
 #[async_trait::async_trait]
@@ -63,30 +70,18 @@ impl UserDriver for UserService {
         debug!(username, "loading local user from database");
 
         let result = sqlx::query_as!(
-            User,
+            DatabaseActor,
             r#"
-            select
-                id,
-                ap_id,
-                username,
-                name,
-                inbox,
-                public_key,
-                private_key as "private_key: RedactedSecret",
-                kind as "kind: ActorType",
-                last_refreshed_at,
-                created_at,
-                avatar,
-                is_local
-            from "user"
+            select * from actor
             where
-                username = $1
+                preferred_username = $1
                 and is_local
         "#,
             username
         )
         .fetch_optional(&self.database)
-        .await?;
+        .await?
+        .map(User::from);
 
         if let Some(user) = &result {
             trace!(
@@ -106,22 +101,9 @@ impl UserDriver for UserService {
     async fn get_system_user(&self, domain: &str) -> Result<Option<User>, UserError> {
         trace!(domain, "getting system user");
         let result = sqlx::query_as!(
-            User,
+            DatabaseActor,
             r#"
-            select
-                id,
-                ap_id,
-                username,
-                name,
-                inbox,
-                public_key,
-                avatar,
-                private_key as "private_key: RedactedSecret",
-                kind as "kind: ActorType",
-                last_refreshed_at,
-                created_at,
-                is_local
-            from "user"
+            select * from actor
             where
                 ap_id = $1
                 and is_local
@@ -129,7 +111,8 @@ impl UserDriver for UserService {
             domain
         )
         .fetch_optional(&self.database)
-        .await?;
+        .await?
+        .map(User::from);
 
         trace!(found = result.is_some(), "system user lookup completed");
 
@@ -142,7 +125,7 @@ impl UserDriver for UserService {
         tx: Option<&mut PgConnection>,
     ) -> Result<User, UserError> {
         trace!(
-            username = %data.username,
+            username = %data.preferred_username,
             ap_id = %data.ap_id,
             local = data.is_local,
             "creating user"
@@ -151,65 +134,60 @@ impl UserDriver for UserService {
         let external_transaction = tx.is_some();
 
         let query = sqlx::query_as!(
-            User,
+            DatabaseActor,
             r#"
-            insert into "user"
+            insert into actor
             (
                 id,
                 ap_id,
-                username,
+                preferred_username,
                 name,
+                summary,
                 inbox,
-                public_key,
-                avatar,
-                private_key,
+                outbox,
+                following,
+                followers,
+                likes,
+                icon,
                 kind,
                 is_local
             )
-            values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
             on conflict do nothing
-            returning
-                id,
-                ap_id,
-                username,
-                name,
-                inbox,
-                public_key,
-                avatar,
-                private_key as "private_key: RedactedSecret",
-                kind as "kind: ActorType",
-                last_refreshed_at,
-                created_at,
-                is_local
+            returning *
             "#,
             Uuid::now_v7(),
             data.ap_id.as_str(),
-            data.username,
+            data.preferred_username,
             data.name,
+            data.summary,
             data.inbox.to_string(),
-            data.public_key,
-            data.avatar.as_ref().map(|v| v.as_str()),
-            data.private_key as _,
-            data.kind as _,
+            data.outbox.to_string(),
+            data.followers.as_ref().map(|v| v.as_str()),
+            data.following.as_ref().map(|v| v.as_str()),
+            data.likes.as_ref().map(|v| v.as_str()),
+            data.icon.as_ref().map(|v| v.as_str()),
+            data.kind,
             data.is_local,
         );
 
         let result = match tx {
             Some(connection) => query.fetch_optional(connection).await,
             None => query.fetch_optional(&self.database).await,
-        }?;
+        }?
+        .map(User::from);
 
         let user = if let Some(user) = result {
             if user.is_local {
                 info!(
                     user_id = %user.id,
-                    username = %user.username,
+                    username = %user.preferred_username,
                     "local user created"
                 );
             } else {
                 debug!(
                     user_id = %user.id,
-                    ap_id = ?user.ap_id,
+                    ap_id = %user.ap_id,
                     "remote user created"
                 );
             }
@@ -219,7 +197,7 @@ impl UserDriver for UserService {
                 .await;
 
             if user.is_local {
-                self.invalidate_cache_key(CacheKey::LocalUserByUsername(&user.username))
+                self.invalidate_cache_key(CacheKey::LocalUserByUsername(&user.preferred_username))
                     .await;
             }
 
@@ -235,11 +213,11 @@ impl UserDriver for UserService {
             user
         } else {
             debug!(
-                username = %data.username,
+                username = %data.preferred_username,
                 "user insert conflicted"
             );
 
-            self.get_user(&data.username)
+            self.get_user(&data.preferred_username)
                 .await?
                 .ok_or(UserError::UsernameTaken)?
         };
@@ -253,7 +231,7 @@ impl UserDriver for UserService {
         mut tx: Option<&mut PgConnection>,
     ) -> Result<User, UserError> {
         trace!(
-            username = %data.username,
+            username = %data.preferred_username,
             ap_id = %data.ap_id,
             "upserting user"
         );
@@ -264,9 +242,9 @@ impl UserDriver for UserService {
             let query = sqlx::query!(
                 r#"
             select
-                username,
+                preferred_username,
                 is_local
-            from "user"
+            from actor
             where ap_id = $1
             "#,
                 data.ap_id.as_str()
@@ -280,54 +258,51 @@ impl UserDriver for UserService {
         };
 
         let query = sqlx::query_as!(
-            User,
+            DatabaseActor,
             r#"
-        insert into "user"
-        (
-            id,
-            ap_id,
-            username,
-            name,
-            inbox,
-            public_key,
-            avatar,
-            private_key,
-            kind,
-            is_local
-        )
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        on conflict (ap_id) do update set
-            username = excluded.username,
-            name = excluded.name,
-            inbox = excluded.inbox,
-            public_key = excluded.public_key,
-            avatar = excluded.avatar,
-            private_key = excluded.private_key,
-            kind = excluded.kind,
-            is_local = excluded.is_local
-        returning
-            id,
-            ap_id,
-            username,
-            name,
-            inbox,
-            public_key,
-            avatar,
-            private_key as "private_key: RedactedSecret",
-            kind as "kind: ActorType",
-            last_refreshed_at,
-            created_at,
-            is_local
-        "#,
+            insert into actor
+            (
+                id,
+                ap_id,
+                preferred_username,
+                name,
+                summary,
+                inbox,
+                outbox,
+                following,
+                followers,
+                likes,
+                icon,
+                kind,
+                is_local
+            )
+            values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            on conflict (ap_id) do update set
+                preferred_username = excluded.preferred_username,
+                    name = excluded.name,
+                    summary = excluded.summary,
+                    inbox = excluded.inbox,
+                    outbox = excluded.outbox,
+                    following = excluded.following,
+                    followers = excluded.followers,
+                    likes = excluded.likes,
+                    icon = excluded.icon,
+                    kind = excluded.kind,
+                    is_local = excluded.is_local
+            returning *
+            "#,
             Uuid::now_v7(),
             data.ap_id.as_str(),
-            data.username,
+            data.preferred_username,
             data.name,
+            data.summary,
             data.inbox.to_string(),
-            data.public_key,
-            data.avatar.as_ref().map(|v| v.as_str()),
-            data.private_key as _,
-            data.kind as _,
+            data.outbox.to_string(),
+            data.followers.as_ref().map(|v| v.as_str()),
+            data.following.as_ref().map(|v| v.as_str()),
+            data.likes.as_ref().map(|v| v.as_str()),
+            data.icon.as_ref().map(|v| v.as_str()),
+            data.kind,
             data.is_local,
         );
 
@@ -336,6 +311,7 @@ impl UserDriver for UserService {
 
             None => query.fetch_one(&self.database).await?,
         };
+        let user = User::from(user);
 
         debug!(
             user_id = %user.id,
@@ -350,13 +326,13 @@ impl UserDriver for UserService {
         if let Some(previous) = previous
             && previous.is_local
         {
-            self.invalidate_cache_key(CacheKey::LocalUserByUsername(&previous.username))
+            self.invalidate_cache_key(CacheKey::LocalUserByUsername(&previous.preferred_username))
                 .await;
         }
 
         // Also remove the new username key in case it already existed.
         if user.is_local {
-            self.invalidate_cache_key(CacheKey::LocalUserByUsername(&user.username))
+            self.invalidate_cache_key(CacheKey::LocalUserByUsername(&user.preferred_username))
                 .await;
         }
 
@@ -377,23 +353,11 @@ impl UserDriver for UserService {
         trace!("resolving user from session");
 
         let user = sqlx::query_as!(
-            User,
+            DatabaseActor,
             r#"
-            SELECT 
-                u.id,
-                u.ap_id,
-                u.username,
-                u.name,
-                u.inbox,
-                u.public_key,
-                u.avatar,
-                u.private_key as "private_key: RedactedSecret",
-                u.kind as "kind: ActorType",
-                u.last_refreshed_at,
-                u.created_at,
-                u.is_local
+            SELECT  u.*
             FROM auth_session AS s
-            JOIN "user" AS u ON u.id = s.user_id
+            JOIN actor AS u ON u.id = s.user_id
             WHERE s.token_hash = $1
               AND s.expires_at > now()
             "#,
@@ -401,6 +365,8 @@ impl UserDriver for UserService {
         )
         .fetch_one(&self.database)
         .await?;
+
+        let user = User::from(user);
 
         trace!(
             user_id = %user.id,
@@ -428,29 +394,18 @@ impl UserDriver for UserService {
         );
 
         let result = sqlx::query_as!(
-            User,
+            DatabaseActor,
             r#"
-            select
-                id,
-                ap_id,
-                username,
-                name,
-                inbox,
-                public_key,
-                avatar,
-                private_key as "private_key: RedactedSecret",
-                kind as "kind: ActorType",
-                last_refreshed_at,
-                created_at,
-                is_local
-            from "user"
+            select *
+            from actor
             where
                 ap_id = $1
         "#,
             ap_id.as_str()
         )
         .fetch_optional(&self.database)
-        .await?;
+        .await?
+        .map(User::from);
 
         if let Some(user) = &result {
             trace!(
@@ -556,7 +511,7 @@ impl UserService {
 
         // cache them by username if ttey are local
         if user.is_local {
-            let username_key = CacheKey::LocalUserByUsername(&user.username);
+            let username_key = CacheKey::LocalUserByUsername(&user.preferred_username);
             self.cache_user_key(username_key, &value).await;
         }
     }

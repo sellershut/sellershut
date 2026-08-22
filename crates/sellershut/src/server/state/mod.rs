@@ -57,7 +57,7 @@ where
         let data = CreateUser {
             kind: ActorType::Service,
             ap_id: id,
-            username: config.server.instance_name.clone(),
+            preferred_username: config.server.instance_name.clone(),
             name: None,
             inbox,
             avatar: None,

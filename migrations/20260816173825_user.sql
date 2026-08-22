@@ -12,7 +12,7 @@ create table actor (
     following text, -- optional but required for local
     followers text, -- optional but required for local
 
-    liked text, -- optional but required for local
+    likes text, -- optional but required for local
     icon text,
     kind text not null,
 
@@ -20,7 +20,13 @@ create table actor (
 
     last_refreshed_at timestamptz not null default now(),
     created_at timestamptz not null default now(),
-    updated_at timestamptz not null default now()
+    updated_at timestamptz not null default now(),
+
+    constraint local_actor_requires_followers_and_likes
+    check (
+        is_local = false
+        or (followers is not null and likes is not null and following is not null)
+    )
 );
 
 create index idx_user_local_true on actor (is_local) where is_local = true;

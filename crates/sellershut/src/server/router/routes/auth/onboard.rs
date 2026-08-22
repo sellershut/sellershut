@@ -67,7 +67,7 @@ pub async fn complete_onboarding(
     let user_data = CreateUser {
         kind: ActorType::Person,
         ap_id,
-        username: request.username,
+        preferred_username: request.username,
         name: None,
         inbox,
         avatar: None,

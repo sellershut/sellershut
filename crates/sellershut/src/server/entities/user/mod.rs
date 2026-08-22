@@ -108,7 +108,7 @@ impl Object for User {
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
         let req = CreateUser {
             kind: json.kind,
-            username: json.preferred_username,
+            preferred_username: json.preferred_username,
             ap_id: json.id.into(),
             name: json.name,
             inbox: json.inbox,
@@ -183,7 +183,7 @@ impl TryFrom<User> for Person {
     type Error = url::ParseError;
 
     fn try_from(value: User) -> Result<Self, Self::Error> {
-        let preferred_username = value.data.username.clone();
+        let preferred_username = value.data.preferred_username.clone();
         let icon = if let Some(avatar) = value.data.avatar.as_ref() {
             let url = Url::parse(avatar)?;
 

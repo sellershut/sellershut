@@ -1,7 +1,7 @@
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::{custom_url::Url};
+use crate::custom_url::Url;
 
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -34,7 +34,7 @@ pub struct User {
 pub struct ActorKey {
     id: Uuid,
     actor_id: Url,
-    public_key_pem: String
+    public_key_pem: String,
 }
 //
 // #[cfg(feature = "serde")]

@@ -353,7 +353,7 @@ impl<T: UserDriver> OauthDriver for AuthService<T> {
         onboarding_token: &str,
         data: &CreateUser,
     ) -> Result<AuthenticatedSession, AuthError> {
-        if !validate_username(&data.username) {
+        if !validate_username(&data.preferred_username) {
             return Err(AuthError::InvalidUsername(String::from(
                 "3 to 15 characters long",
             )));
