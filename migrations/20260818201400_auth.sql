@@ -1,5 +1,3 @@
-create extension if not exists citext;
-
 create table oauth_flow (
     state_hash bytea primary key,
     provider text not null,
@@ -29,7 +27,7 @@ create table oauth_identity (
     provider text not null,
     provider_id text not null,
     user_id uuid not null references actor(id) on delete cascade,
-    provider_email citext not null,
+    provider_email text not null,
     created_at timestamptz not null default now(),
     last_login_at timestamptz not null default now(),
     primary key (provider, provider_id)
