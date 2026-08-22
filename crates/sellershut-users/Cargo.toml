@@ -9,10 +9,12 @@ publish = false
 async-trait.workspace = true
 sellershut-core = { workspace = true, features = ["serde", "users"] }
 sellershut-svc = { workspace = true, features = ["cache"] }
-sellershut-utilities.workspace = true
+sellershut-utilities = { workspace = true, features = ["cache-key"] }
 serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
 sqlx = { workspace = true, features = ["time", "uuid"] }
 thiserror.workspace = true
 time = { workspace = true, features = ["serde"] }
+tracing.workspace = true
 url = { workspace = true, features = ["serde"] }
 uuid = { workspace = true, features = ["serde", "v7"] }

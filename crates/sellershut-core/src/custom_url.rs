@@ -58,6 +58,12 @@ impl fmt::Display for InvalidUrl {
     }
 }
 
+impl fmt::Display for Url {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 impl std::error::Error for InvalidUrl {}
 
 impl From<String> for Url {

@@ -5,7 +5,9 @@ use redis::{
     sentinel::{SentinelClient, SentinelServerType},
 };
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 use thiserror::Error;
+use tracing::{debug, info, trace};
 
 #[derive(Debug, Error)]
 pub enum CacheError {
@@ -67,6 +69,8 @@ pub struct Cache {
 
 impl Cache {
     pub async fn connect(config: &Config) -> Result<Self, CacheError> {
+        trace!("initializing cache connection");
+
         let connection = match config.mode {
             Mode::Standalone => {
                 let cfg = config.standalone.as_ref().ok_or_else(|| {
@@ -75,8 +79,9 @@ impl Cache {
                     )
                 })?;
 
-                let client = redis::Client::open(cfg.url.as_str())?;
+                debug!("connecting to standalone redis");
 
+                let client = redis::Client::open(cfg.url.as_str())?;
                 let connection = client.get_multiplexed_async_connection().await?;
 
                 Connection::Standalone(connection)
@@ -94,6 +99,12 @@ impl Cache {
                         "at least one Sentinel node is required".to_string(),
                     ));
                 }
+
+                debug!(
+                    sentinel_count = cfg.sentinels.len(),
+                    service_name = %cfg.service_name,
+                    "connecting to redis sentinel"
+                );
 
                 let nodes = cfg.sentinels.iter().map(String::as_str).collect();
 
@@ -122,13 +133,16 @@ impl Cache {
                     ));
                 }
 
-                let client = ClusterClient::new(cfg.nodes.clone())?;
+                debug!(node_count = cfg.nodes.len(), "connecting to redis cluster");
 
+                let client = ClusterClient::new(cfg.nodes.clone())?;
                 let connection = client.get_async_connection().await?;
 
                 Connection::Cluster(connection)
             }
         };
+
+        info!("cache connection established");
 
         Ok(Self { connection })
     }
@@ -138,7 +152,10 @@ impl Cache {
         key: impl redis::ToSingleRedisArg + Send + Sync,
         value: impl redis::ToSingleRedisArg + Send + Sync,
     ) -> Result<(), CacheError> {
+        trace!("executing cache SET");
+
         let mut connection = self.connection.clone();
+
         match connection {
             Connection::Standalone(ref mut connection)
             | Connection::Sentinel(ref mut connection) => {
@@ -153,6 +170,36 @@ impl Cache {
         Ok(())
     }
 
+    pub async fn set_ex(
+        &self,
+        key: impl redis::ToSingleRedisArg + Send + Sync,
+        value: impl redis::ToSingleRedisArg + Send + Sync,
+        ttl: Duration,
+    ) -> Result<(), CacheError> {
+        let ttl_seconds = ttl.as_secs().max(1);
+
+        trace!(ttl_seconds, "executing cache SET with expiration");
+
+        let mut connection = self.connection.clone();
+
+        match connection {
+            Connection::Standalone(ref mut connection)
+            | Connection::Sentinel(ref mut connection) => {
+                connection
+                    .set_ex::<_, _, ()>(key, value, ttl_seconds)
+                    .await?;
+            }
+
+            Connection::Cluster(ref mut connection) => {
+                connection
+                    .set_ex::<_, _, ()>(key, value, ttl_seconds)
+                    .await?;
+            }
+        }
+
+        Ok(())
+    }
+
     pub async fn get<T>(
         &self,
         key: impl redis::ToSingleRedisArg + Send + Sync,
@@ -160,7 +207,10 @@ impl Cache {
     where
         T: redis::FromRedisValue,
     {
+        trace!("executing cache GET");
+
         let mut connection = self.connection.clone();
+
         let value = match connection {
             Connection::Standalone(ref mut connection)
             | Connection::Sentinel(ref mut connection) => connection.get(key).await?,
@@ -175,7 +225,10 @@ impl Cache {
         &self,
         key: impl redis::ToSingleRedisArg + Send + Sync,
     ) -> Result<(), CacheError> {
+        trace!("executing cache DEL");
+
         let mut connection = self.connection.clone();
+
         match connection {
             Connection::Standalone(ref mut connection)
             | Connection::Sentinel(ref mut connection) => {
@@ -191,7 +244,10 @@ impl Cache {
     }
 
     pub async fn ping(&self) -> Result<(), CacheError> {
+        trace!("pinging cache");
+
         let mut connection = self.connection.clone();
+
         match connection {
             Connection::Standalone(ref mut connection)
             | Connection::Sentinel(ref mut connection) => {
@@ -202,6 +258,8 @@ impl Cache {
                 redis::cmd("PING").query_async::<String>(connection).await?;
             }
         }
+
+        trace!("cache ping successful");
 
         Ok(())
     }

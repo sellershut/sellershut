@@ -9,8 +9,9 @@ publish = false
 redis = { workspace = true, optional = true }
 sellershut-core = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive"] }
-thiserror.workspace = true
 sqlx = { workspace = true, optional = true }
+thiserror.workspace = true
+tracing.workspace = true
 url = { workspace = true, features = ["serde"] }
 
 [dev-dependencies]
