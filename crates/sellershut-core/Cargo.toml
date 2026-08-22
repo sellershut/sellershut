@@ -20,6 +20,7 @@ serde = ["dep:serde", "serde/derive", "time/serde", "secrecy/serde", "uuid/serde
 utoipa = ["dep:utoipa"]
 auth = []
 users = []
+categories = []
 
 [dev-dependencies]
 serde_json.workspace = true

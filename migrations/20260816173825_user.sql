@@ -19,7 +19,7 @@ create table "user" (
     avatar text,
     kind user_kind not null default 'Person',
     last_refreshed_at timestamptz not null default now(),
-    is_local boolean not null,
+    is_local boolean not null default false,
     created_at timestamptz not null default now(),
     -- private_key is NULL if and only if local is FALSE
     constraint check_local_private_key 

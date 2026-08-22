@@ -2371,6 +2371,7 @@ dependencies = [
  "clap",
  "futures-util",
  "sellershut-auth",
+ "sellershut-categories",
  "sellershut-core",
  "sellershut-svc",
  "sellershut-users",
@@ -2411,6 +2412,24 @@ dependencies = [
  "time",
  "url",
  "utoipa",
+ "uuid",
+]
+
+[[package]]
+name = "sellershut-categories"
+version = "0.0.0"
+dependencies = [
+ "async-trait",
+ "sellershut-core",
+ "sellershut-svc",
+ "sellershut-utilities",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 2.0.20",
+ "time",
+ "tracing",
+ "url",
  "uuid",
 ]
 

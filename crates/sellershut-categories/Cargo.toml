@@ -1,0 +1,19 @@
+[package]
+name = "sellershut-categories"
+version = "0.0.0"
+edition = "2024"
+license.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+sellershut-core = { workspace = true, features = ["serde", "categories"] }
+sellershut-svc = { workspace = true, features = ["cache"] }
+sellershut-utilities = { workspace = true, features = ["cache-key"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+sqlx = { workspace = true, features = ["time", "uuid"] }
+thiserror.workspace = true
+time = { workspace = true, features = ["serde"] }
+tracing.workspace = true
+url = { workspace = true, features = ["serde"] }
+uuid = { workspace = true, features = ["serde", "v7"] }
