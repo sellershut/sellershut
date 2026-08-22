@@ -4,7 +4,6 @@ use activitypub_federation::{
     protocol::verification::verify_domains_match,
     traits::{Actor, Object},
 };
-use sellershut_core::user::ActorType;
 use sellershut_users::CreateUser;
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -25,7 +24,7 @@ pub struct User {
 #[serde(rename_all = "camelCase")]
 pub struct Person {
     #[serde(rename = "type")]
-    kind: ActorType,
+    kind: String,
     preferred_username: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
@@ -115,7 +114,7 @@ impl Object for User {
             public_key: json.public_key.0.public_key_pem,
             private_key: None,
             is_local: false,
-            avatar: None,
+            icon: None,
         };
         let user = data.user.upsert_user(&req, None).await?;
         Ok(user.into())

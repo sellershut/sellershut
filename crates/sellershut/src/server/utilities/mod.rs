@@ -9,8 +9,13 @@ pub fn base_url(port: u16, domain: &str) -> Result<Url, url::ParseError> {
     }
 }
 
-pub fn inbox_url(port: u16, domain: &str, username: &str) -> Result<Url, url::ParseError> {
-    base_url(port, domain)?.join(&format!("users/{username}/inbox"))
+pub fn user_endpoint(
+    port: u16,
+    domain: &str,
+    username: &str,
+    endpoint: &str,
+) -> Result<Url, url::ParseError> {
+    base_url(port, domain)?.join(&format!("users/{username}/{endpoint}"))
 }
 
 pub fn users_url(port: u16, domain: &str, username: &str) -> anyhow::Result<Url> {
@@ -34,9 +39,21 @@ mod tests {
     }
 
     #[test]
+    fn check_outbox_url() {
+        assert_eq!(
+            user_endpoint(8080, "example.com", "alice", "outbox")
+                .unwrap()
+                .as_str(),
+            "http://localhost:8080/users/alice/outbox"
+        );
+    }
+
+    #[test]
     fn check_inbox_url() {
         assert_eq!(
-            inbox_url(8080, "example.com", "alice").unwrap().as_str(),
+            user_endpoint(8080, "example.com", "alice", "inbox")
+                .unwrap()
+                .as_str(),
             "http://localhost:8080/users/alice/inbox"
         );
     }

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use sellershut_auth::{AuthService, OauthDriver};
-use sellershut_core::{RedactedSecret, user::ActorType};
+use sellershut_core::RedactedSecret;
 use sellershut_users::{CreateUser, UserDriver};
 use sqlx::PgPool;
 
@@ -49,21 +49,31 @@ where
         //create system user
         let keypair = activitypub_federation::http_signatures::generate_actor_keypair()?;
         let id = server::utilities::base_url(config.server.port.into(), &config.server.domain)?;
-        let inbox = server::utilities::inbox_url(
-            config.server.port.into(),
-            &config.server.domain,
-            &config.server.instance_name,
-        )?;
+        let port = config.server.port.into();
+        let domain = &config.server.domain;
+        let username = &config.server.instance_name;
+        let inbox = server::utilities::user_endpoint(port, domain, username, "inbox")?;
+
+        let outbox = server::utilities::user_endpoint(port, domain, username, "outbox")?;
+        let followers = server::utilities::user_endpoint(port, domain, username, "following")?;
+        let following = server::utilities::user_endpoint(port, domain, username, "followers")?;
+        let likes = server::utilities::user_endpoint(port, domain, username, "likes")?;
+
         let data = CreateUser {
-            kind: ActorType::Service,
+            kind: String::from("Service"),
             ap_id: id,
             preferred_username: config.server.instance_name.clone(),
             name: None,
             inbox,
-            avatar: None,
+            icon: None,
             public_key: keypair.public_key,
             private_key: Some(RedactedSecret::from(keypair.private_key)),
             is_local: true,
+            summary: None,
+            outbox,
+            followers: Some(followers),
+            following: Some(following),
+            likes: Some(likes),
         };
         user.create_user(&data, None).await?
     }
