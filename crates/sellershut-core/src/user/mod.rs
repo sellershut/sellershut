@@ -15,10 +15,26 @@ pub struct User {
     pub inbox: Url,
     pub public_key: String,
     pub kind: ActorType,
+    #[serde(serialize_with = "serialize_redacted_secret")]
     pub private_key: Option<RedactedSecret>,
     pub created_at: OffsetDateTime,
     pub last_refreshed_at: OffsetDateTime,
     pub is_local: bool,
+}
+
+use serde::Serializer;
+
+fn serialize_redacted_secret<S>(
+    s: &Option<RedactedSecret>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    match s {
+        Some(v) => serializer.serialize_str(&v.expose()),
+        None => serializer.serialize_none(),
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Type)]

@@ -1,4 +1,5 @@
 use redis::{RedisWrite, ToRedisArgs, ToSingleRedisArg};
+use sellershut_core::Url;
 use std::fmt;
 
 const CACHE_NAMESPACE: &str = "app:v1";
@@ -6,7 +7,7 @@ const CACHE_NAMESPACE: &str = "app:v1";
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub enum CacheKey<'a> {
     LocalUserByUsername(&'a str),
-    UserByApId(&'a str),
+    UserByApId(&'a Url),
 }
 
 impl CacheKey<'_> {

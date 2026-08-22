@@ -25,7 +25,7 @@ pub async fn test_app(pool: PgPool) -> axum::Router {
 
     let config = Configuration::default();
     let cache = Cache::connect(&config.cache).await.unwrap();
-    let user_driver = UserService::new(pool.clone(),cache);
+    let user_driver = UserService::new(pool.clone(), cache);
     let state = State::new(&config, user_driver, pool).await.unwrap();
 
     server::router::router(state, config)

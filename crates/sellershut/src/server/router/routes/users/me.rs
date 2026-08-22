@@ -48,12 +48,12 @@ pub async fn me(
                 Ok(FederationJson(context).into_response())
             }
             Err(e) => {
-                tracing::error!(session =?token,error=?e, "user decode failed");
+                tracing::error!(error=?e, "user decode failed");
                 Err(StatusCode::INTERNAL_SERVER_ERROR)
             }
         },
         Err(e) => {
-            debug!(session =?bearer,err=?e, "unauthorised session");
+            debug!(err=?e, "unauthorised session");
             Err(StatusCode::UNAUTHORIZED)
         }
     }

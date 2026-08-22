@@ -37,8 +37,10 @@ async fn main() -> Result<()> {
 
     let addr = SocketAddr::from((Ipv6Addr::UNSPECIFIED, config.server.port.into()));
 
-    let database = config.database.connect().await?;
-    let cache = Cache::connect(&config.cache).await?;
+    let (database, cache) = tokio::join!(config.database.connect(), Cache::connect(&config.cache));
+    let database = database?;
+    let cache = cache?;
+
     let user = UserService::new(database.clone(), cache);
 
     let state = State::new(&config, user, database.clone()).await?;

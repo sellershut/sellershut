@@ -215,8 +215,7 @@ impl UserDriver for UserService {
             }
 
             // Removing an entry before commit is safe:
-            let k = user.ap_id.inner();
-            self.invalidate_cache_key(CacheKey::UserByApId(k.as_str()))
+            self.invalidate_cache_key(CacheKey::UserByApId(&user.ap_id))
                 .await;
 
             if user.is_local {
@@ -340,13 +339,11 @@ impl UserDriver for UserService {
 
         debug!(
             user_id = %user.id,
-            ap_id = %user.ap_id.inner(),
+            ap_id = %user.ap_id,
             "user upserted"
         );
 
-        // Canonical AP id entry.
-        let k = user.ap_id.inner();
-        self.invalidate_cache_key(CacheKey::UserByApId(k.as_str()))
+        self.invalidate_cache_key(CacheKey::UserByApId(&user.ap_id))
             .await;
 
         // Remove the previous local username if it existed.
@@ -419,7 +416,7 @@ impl UserDriver for UserService {
             "getting user by ActivityPub id"
         );
 
-        let cache_key = CacheKey::UserByApId(ap_id.as_str());
+        let cache_key = CacheKey::UserByApId(&ap_id.into());
 
         if let Some(user) = self.get_cached_user(cache_key).await {
             return Ok(Some(user));
@@ -490,37 +487,32 @@ impl UserService {
             "checking user cache"
         );
 
-        let cached = match self.cache.get::<String>(key).await {
+        let cached = match self.cache.get::<Vec<u8>>(key).await {
             Ok(Some(value)) => value,
-
             Ok(None) => {
                 debug!(
                     cache_key = %key,
                     "user cache miss"
                 );
-
                 return None;
             }
-
             Err(error) => {
                 debug!(
                     cache_key = %key,
                     error = %error,
                     "cache read failed; falling back to database"
                 );
-
                 return None;
             }
         };
 
-        match serde_json::from_str::<User>(&cached) {
+        match serde_json::from_slice::<User>(&cached) {
             Ok(user) => {
                 trace!(
                     cache_key = %key,
                     user_id = %user.id,
                     "user cache hit"
                 );
-
                 Some(user)
             }
 
@@ -545,9 +537,8 @@ impl UserService {
     }
 
     async fn cache_user(&self, user: &User) {
-        let value = match serde_json::to_string(user) {
+        let value = match serde_json::to_vec(user) {
             Ok(value) => value,
-
             Err(error) => {
                 debug!(
                     user_id = %user.id,
@@ -559,19 +550,18 @@ impl UserService {
             }
         };
 
-        let k = user.ap_id.inner();
-        let ap_id_key = CacheKey::UserByApId(k.as_str());
+        let ap_id_key = CacheKey::UserByApId(&user.ap_id);
 
         self.cache_user_key(ap_id_key, &value).await;
 
+        // cache them by username if ttey are local
         if user.is_local {
             let username_key = CacheKey::LocalUserByUsername(&user.username);
-
             self.cache_user_key(username_key, &value).await;
         }
     }
 
-    async fn cache_user_key(&self, key: CacheKey<'_>, value: &str) {
+    async fn cache_user_key(&self, key: CacheKey<'_>, value: &[u8]) {
         trace!(
             cache_key = %key,
             "populating user cache"
