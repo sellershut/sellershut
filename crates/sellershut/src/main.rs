@@ -13,6 +13,7 @@ use anyhow::Result;
 use clap::Parser;
 use futures_util::TryFutureExt;
 use sellershut_auth::OauthDriver;
+use sellershut_categories::CategoryService;
 use sellershut_svc::cache::Cache;
 use sellershut_users::UserService;
 use tokio::net::TcpListener;
@@ -45,12 +46,13 @@ async fn main() -> Result<()> {
 
     let user = UserService::new(
         database.clone(),
-        cache,
+        cache.clone(),
         config.vault.url.as_str(),
         &config.vault.token,
     )?;
 
-    let state = State::new(&config, user, database.clone()).await?;
+    let categories = CategoryService::new(database.clone(), cache);
+    let state = State::new(&config, user, categories, database.clone()).await?;
 
     let app = server::router::router(Arc::clone(&state), config).await?;
 

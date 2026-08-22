@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use sellershut_auth::{AuthService, OauthDriver};
+use sellershut_categories::CategoryDriver;
 use sellershut_core::RedactedSecret;
 use sellershut_users::{CreateUser, UserDriver};
 use sqlx::PgPool;
@@ -14,6 +15,7 @@ use crate::{
 pub struct State {
     pub auth: Arc<dyn OauthDriver>,
     pub user: Arc<dyn UserDriver>,
+    pub category: Arc<dyn CategoryDriver>,
     pub system_user: Arc<User>,
     pub port: u16,
 }
@@ -21,19 +23,21 @@ pub struct State {
 pub type AppState = Arc<State>;
 
 impl State {
-    pub async fn new<U: UserDriver + 'static>(
+    pub async fn new<U: UserDriver + 'static, C: CategoryDriver + 'static>(
         config: &Configuration,
         user_driver: U,
+        category_driver: C,
         database: PgPool,
     ) -> Result<AppState, anyhow::Error> {
         let system_user = get_system_user(&user_driver, config).await?;
         let user = Arc::new(user_driver);
-
+        let category = Arc::new(category_driver);
         let auth = AuthService::new(database, config.server.oauth.0.clone(), Arc::clone(&user))?;
 
         Ok(Arc::new(Self {
             auth: Arc::new(auth),
             user,
+            category,
             port: config.server.port.into(),
             system_user: Arc::new(system_user),
         }))

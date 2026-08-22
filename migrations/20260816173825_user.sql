@@ -31,3 +31,18 @@ create table actor (
 
 create index idx_user_local_true on actor (is_local) where is_local = true;
 create unique index idx_user_local_username on actor(lower(preferred_username)) where is_local = true;
+
+create or replace function update_updated_at_column()
+returns trigger
+language plpgsql
+as $$
+begin
+    new.updated_at = now();
+    return new;
+end;
+$$;
+
+create trigger update_actor_updated_at
+    before update on actor
+    for each row
+    execute function update_updated_at_column();

@@ -32,7 +32,10 @@ pub async fn test_app(pool: PgPool) -> axum::Router {
         &config.vault.token,
     )
     .unwrap();
-    let state = State::new(&config, user_driver, pool).await.unwrap();
+    let category_driver = CategoryService::new(pool.clone(), cache);
+    let state = State::new(&config, user_driver, category_driver, pool)
+        .await
+        .unwrap();
 
     server::router::router(state, config)
         .await

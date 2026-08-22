@@ -3,6 +3,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 
+pub mod activities;
 pub mod entities;
 pub mod router;
 pub mod state;

@@ -10,6 +10,7 @@ secrecy.workspace = true
 serde = { workspace = true, optional = true }
 sqlx.workspace = true
 time.workspace = true
+ulid.workspace = true
 url.workspace = true
 utoipa = { workspace = true, optional = true }
 uuid.workspace = true
