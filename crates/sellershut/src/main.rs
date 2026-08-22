@@ -11,6 +11,7 @@ use std::{
 
 use anyhow::Result;
 use clap::Parser;
+use futures_util::TryFutureExt;
 use sellershut_auth::OauthDriver;
 use sellershut_svc::cache::Cache;
 use sellershut_users::UserService;
@@ -37,9 +38,10 @@ async fn main() -> Result<()> {
 
     let addr = SocketAddr::from((Ipv6Addr::UNSPECIFIED, config.server.port.into()));
 
-    let (database, cache) = tokio::join!(config.database.connect(), Cache::connect(&config.cache));
-    let database = database?;
-    let cache = cache?;
+    let (database, cache) = futures_util::try_join!(
+        config.database.connect().map_err(anyhow::Error::from),
+        Cache::connect(&config.cache).map_err(anyhow::Error::from),
+    )?;
 
     let user = UserService::new(database.clone(), cache);
 

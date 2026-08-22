@@ -2369,6 +2369,7 @@ dependencies = [
  "axum",
  "axum-extra",
  "clap",
+ "futures-util",
  "sellershut-auth",
  "sellershut-core",
  "sellershut-svc",
