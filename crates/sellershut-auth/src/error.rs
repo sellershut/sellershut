@@ -1,3 +1,4 @@
+use sellershut_users::error::UserError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -28,4 +29,6 @@ pub enum AuthError {
     Database(#[from] sqlx::Error),
     #[error("OAuth provider HTTP request failed")]
     Http(#[from] reqwest::Error),
+    #[error("database error")]
+    User(#[from] UserError),
 }

@@ -2,7 +2,7 @@ pub mod error;
 pub(crate) mod helpers;
 
 use helpers::database::DatabaseActor;
-use sellershut_core::{RedactedSecret, user::User};
+use sellershut_core::{RedactedSecret, auth::OauthProvider, user::User};
 use sellershut_svc::cache::Cache;
 use sellershut_utilities::{auth::hash_token, cache_key::CacheKey};
 use sqlx::PgConnection;
@@ -49,6 +49,19 @@ pub trait UserDriver: Send + Sync {
         tx: Option<&mut PgConnection>,
     ) -> Result<User, UserError>;
     async fn user_from_session(&self, session_token: &str) -> Result<User, UserError>;
+
+    async fn find_user_by_email(
+        &self,
+        email: &str,
+        connection: Option<&mut sqlx::PgConnection>,
+    ) -> Result<Option<User>, UserError>;
+
+    async fn find_user_by_identity(
+        &self,
+        connection: Option<&mut sqlx::PgConnection>,
+        provider: OauthProvider,
+        provider_subject: &str,
+    ) -> Result<Option<User>, UserError>;
 }
 
 pub struct UserService {
@@ -58,6 +71,62 @@ pub struct UserService {
 
 #[async_trait::async_trait]
 impl UserDriver for UserService {
+    async fn find_user_by_identity(
+        &self,
+        connection: Option<&mut sqlx::PgConnection>,
+        provider: OauthProvider,
+        provider_subject: &str,
+    ) -> Result<Option<User>, UserError> {
+        let q = sqlx::query_as!(
+            DatabaseActor,
+            r#"
+            select
+                u.*
+            from oauth_identity as oi
+            join actor as u on u.id = oi.user_id
+            where oi.provider = $1
+              and oi.provider_id = $2
+            for update of oi
+            "#,
+            provider.to_string(),
+            provider_subject
+        );
+
+        let user = match connection {
+            Some(conn) => q.fetch_optional(conn).await,
+            None => q.fetch_optional(&self.database).await,
+        }?
+        .map(User::from);
+
+        Ok(user)
+    }
+
+    async fn find_user_by_email(
+        &self,
+        email: &str,
+        connection: Option<&mut sqlx::PgConnection>,
+    ) -> Result<Option<User>, UserError> {
+        let q = sqlx::query_as!(
+            DatabaseActor,
+            r#"
+                select u.* from actor as u
+                join "oauth_identity" as oi on u.id = oi.user_id
+                where
+                    oi.provider_email = $1
+                    and u.is_local
+                for update
+            "#,
+            email
+        );
+
+        let user = match connection {
+            Some(conn) => q.fetch_optional(conn).await,
+            None => q.fetch_optional(&self.database).await,
+        }?
+        .map(User::from);
+
+        Ok(user)
+    }
     async fn get_user(&self, username: &str) -> Result<Option<User>, UserError> {
         trace!(username, "getting local user");
 
@@ -355,11 +424,11 @@ impl UserDriver for UserService {
         let user = sqlx::query_as!(
             DatabaseActor,
             r#"
-            SELECT  u.*
-            FROM auth_session AS s
-            JOIN actor AS u ON u.id = s.user_id
-            WHERE s.token_hash = $1
-              AND s.expires_at > now()
+            select u.*
+            from auth_session as s
+            join actor as u on u.id = s.user_id
+            where s.token_hash = $1
+              and s.expires_at > now()
             "#,
             hash_token(session_token)
         )

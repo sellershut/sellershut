@@ -17,11 +17,7 @@ use oauth2::{
     AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointNotSet, EndpointSet,
     PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse, TokenUrl,
 };
-use sellershut_core::{
-    RedactedSecret,
-    auth::OauthProvider,
-    user::{ActorType, User},
-};
+use sellershut_core::{RedactedSecret, auth::OauthProvider, user::User};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -188,14 +184,22 @@ impl<T: UserDriver> AuthService<T> {
         let email = email.trim().to_lowercase();
 
         let mut tx = self.database.begin().await?;
-        if let Some(user) = find_user_by_identity(tx.as_mut(), provider, &id).await? {
+        if let Some(user) = self
+            .users
+            .find_user_by_identity(Some(tx.as_mut()), provider, &id)
+            .await?
+        {
             touch_identity(tx.as_mut(), provider, &id, &email).await?;
             let session = self.create_session(tx.as_mut(), user).await?;
             tx.commit().await?;
             return Ok(LoginOutcome::Authenticated(Box::new(session)));
         }
 
-        if let Some(user) = find_user_by_email(tx.as_mut(), &email).await? {
+        if let Some(user) = self
+            .users
+            .find_user_by_email(&email, Some(tx.as_mut()))
+            .await?
+        {
             ensure_identity(tx.as_mut(), provider, &id, user.id, &email).await?;
             let session = self.create_session(tx.as_mut(), user).await?;
             tx.commit().await?;
@@ -385,8 +389,10 @@ impl<T: UserDriver> OauthDriver for AuthService<T> {
         // Another request may have linked or created this account after the callback but before
         // onboarding. Re-check both the provider identity and normalized email inside this
         // transaction before inserting a new user.
-        if let Some(user) =
-            find_user_by_identity(tx.as_mut(), provider, &pending.provider_subject).await?
+        if let Some(user) = self
+            .users
+            .find_user_by_identity(Some(tx.as_mut()), provider, &pending.provider_subject)
+            .await?
         {
             touch_identity(
                 tx.as_mut(),
@@ -400,7 +406,11 @@ impl<T: UserDriver> OauthDriver for AuthService<T> {
             return Ok(session);
         }
 
-        if let Some(user) = find_user_by_email(tx.as_mut(), &pending.email).await? {
+        if let Some(user) = self
+            .users
+            .find_user_by_email(&pending.email, Some(tx.as_mut()))
+            .await?
+        {
             ensure_identity(
                 tx.as_mut(),
                 provider,
@@ -515,73 +525,6 @@ async fn touch_identity(
     .await?;
 
     Ok(())
-}
-
-async fn find_user_by_email(
-    connection: &mut sqlx::PgConnection,
-    email: &str,
-) -> Result<Option<User>, AuthError> {
-    Ok(sqlx::query_as!(
-        User,
-        r#"
-        select
-            u.id,
-            u.ap_id,
-            u.username,
-            u.name,
-            u.inbox,
-            u.public_key,
-            u.avatar,
-            u.private_key as "private_key: RedactedSecret",
-            u.kind as "kind: ActorType",
-            u.last_refreshed_at,
-            u.created_at,
-            u.is_local
-            from "user" as u
-            join "oauth_identity" as oi on u.id = oi.user_id
-            where
-                oi.provider_email = $1
-                and u.is_local
-        for update
-        "#,
-        email
-    )
-    .fetch_optional(connection)
-    .await?)
-}
-
-async fn find_user_by_identity(
-    connection: &mut sqlx::PgConnection,
-    provider: OauthProvider,
-    provider_subject: &str,
-) -> Result<Option<User>, AuthError> {
-    Ok(sqlx::query_as!(
-        User,
-        r#"
-        select
-            u.id,
-            u.ap_id,
-            u.username,
-            u.name,
-            u.inbox,
-            u.public_key,
-            u.avatar,
-            u.private_key as "private_key: RedactedSecret",
-            u.kind as "kind: ActorType",
-            u.last_refreshed_at,
-            u.created_at,
-            u.is_local
-        from oauth_identity as oi
-        join "user" as u on u.id = oi.user_id
-        where oi.provider = $1
-          and oi.provider_id = $2
-        for update of oi
-        "#,
-        provider.to_string(),
-        provider_subject
-    )
-    .fetch_optional(connection)
-    .await?)
 }
 
 async fn ensure_identity(
