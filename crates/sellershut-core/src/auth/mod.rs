@@ -23,10 +23,10 @@ pub struct PrivateKey {
 }
 
 #[cfg(feature = "serde")]
-mod s {
+pub mod s {
     use crate::RedactedSecret;
     use serde::Serializer;
-    pub(super) fn serialize_redacted_secret<S>(
+    pub fn serialize_redacted_secret<S>(
         s: &RedactedSecret,
         serializer: S,
     ) -> Result<S::Ok, S::Error>

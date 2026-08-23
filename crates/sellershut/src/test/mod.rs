@@ -28,7 +28,7 @@ pub async fn test_app(pool: PgPool) -> axum::Router {
     let user_driver = UserService::new(
         pool.clone(),
         cache,
-        "http://localhost:8222",
+        config.vault.url.as_str(),
         &config.vault.token,
     )
     .unwrap();

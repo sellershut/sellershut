@@ -11,9 +11,6 @@ concurrency:
 
 name: ci
 
-env:
-  DATABASE_URL: postgres://postgres:password@localhost:5432/sellershut
-
 jobs:
   biome:
     runs-on: ubuntu-latest
@@ -56,14 +53,23 @@ jobs:
       contents: read
       security-events: write # to upload sarif results
     name: beta / clippy
+    services:
+      postgres: &database
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: password
+          POSTGRES_DATABASE: sellershut
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: beta
           components: clippy,rustfmt
-      - name: Start stack
-        run: docker compose up -d
       - uses: Swatinem/rust-cache@v2
       - name: Install dependencies
         uses: taiki-e/install-action@v2
@@ -86,13 +92,6 @@ jobs:
           sarif_file: rust-clippy-results.sarif
           category: clippy
           wait-for-processing: true
-      - &stop-stack
-        name: Stop stack
-        if: always()
-        run: |
-          docker compose down -v
-          docker stop $(docker ps -aq) || true
-          docker rm $(docker ps -aq) || true
 
   fmt:
     runs-on: ubuntu-latest
@@ -134,6 +133,8 @@ jobs:
   msrv:
     name: msrv / ${{ matrix.msrv }}
     runs-on: ubuntu-latest
+    services:
+      postgres: *database
     strategy:
       matrix:
         msrv: ["1.94.0"]
@@ -143,8 +144,6 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.msrv }}
-      - name: Start stack
-        run: docker compose up -d
       - uses: Swatinem/rust-cache@v2
       - name: Install dependencies
         uses: taiki-e/install-action@v2
@@ -159,11 +158,25 @@ jobs:
             cargo-hack
       - name: cargo hack +${{ matrix.msrv }} 
         run: cargo hack --clean-per-run --feature-powerset check
-      - *stop-stack
 
   test:
     name: test / workspace
     runs-on: ubuntu-latest
+    services:
+      postgres: *database
+      valkey:
+        image: valkey/valkey:latest
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      openbao:
+        image: openbao/openbao:latest
+        env:
+          VAULT_DEV_ROOT_TOKEN_ID: "devtoken"
+          VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+        options: --cap-add=IPC_LOCK
     needs:
       - os-check
     steps:
@@ -172,8 +185,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
-      - name: Start stack
-        run: docker compose up -d
       - uses: Swatinem/rust-cache@v2
       - name: Install dependencies
         uses: taiki-e/install-action@v2
@@ -209,7 +220,6 @@ jobs:
           files: ./target/nextest/ci/junit.xml
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
-      - *stop-stack
 
   book:
     runs-on: ubuntu-latest

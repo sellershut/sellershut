@@ -1,14 +1,24 @@
 use std::ops::Deref;
 
-use sellershut_core::RedactedSecret;
+use sellershut_core::{RedactedSecret, auth::s::serialize_redacted_secret};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-#[derive(Deserialize, Serialize, Debug, Default)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "kebab-case", default)]
 pub struct Vault {
     pub url: VaultUrl,
+    #[serde(serialize_with = "serialize_redacted_secret")]
     pub token: RedactedSecret,
+}
+
+impl Default for Vault {
+    fn default() -> Self {
+        Self {
+            url: Default::default(),
+            token: String::from("devtoken").into(),
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug)]
