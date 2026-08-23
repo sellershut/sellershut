@@ -3,7 +3,7 @@ use activitypub_federation::{
 };
 use axum::{Json, response::IntoResponse};
 use sellershut_auth::AuthenticatedSession;
-use sellershut_core::{RedactedSecret, auth::OauthProvider, user::ActorType};
+use sellershut_core::{RedactedSecret, auth::OauthProvider};
 use sellershut_users::CreateUser;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -59,21 +59,30 @@ pub async fn complete_onboarding(
     let port = state.port;
 
     let ap_id = utilities::users_url(port, domain, &request.username)?;
-    let inbox = utilities::inbox_url(port, domain, &request.username)?;
+    let inbox = utilities::user_endpoint(port, domain, &request.username, "inbox")?;
+    let outbox = utilities::user_endpoint(port, domain, &request.username, "outbox")?;
+    let followers = utilities::user_endpoint(port, domain, &request.username, "following")?;
+    let following = utilities::user_endpoint(port, domain, &request.username, "followers")?;
+    let likes = utilities::user_endpoint(port, domain, &request.username, "likes")?;
     tracing::debug!(id =%ap_id, inbox=%inbox,"creating user");
 
     let keypair = generate_actor_keypair()?;
 
     let user_data = CreateUser {
-        kind: ActorType::Person,
         ap_id,
-        username: request.username,
+        preferred_username: request.username,
         name: None,
+        summary: None,
         inbox,
-        avatar: None,
+        outbox,
+        followers: Some(followers),
+        following: Some(following),
+        likes: Some(likes),
+        kind: String::from("Person"),
         public_key: keypair.public_key,
         private_key: Some(RedactedSecret::from(keypair.private_key)),
         is_local: true,
+        icon: None,
     };
 
     let AuthenticatedSession { token, user } = state
@@ -81,7 +90,7 @@ pub async fn complete_onboarding(
         .complete_onboarding(&request.onboarding_token, &user_data)
         .await?;
 
-    let user: User = user.into();
+    let user = User::from_database(user, &*state.user).await?;
 
     Ok(Json(SessionResponse {
         session_token: token,

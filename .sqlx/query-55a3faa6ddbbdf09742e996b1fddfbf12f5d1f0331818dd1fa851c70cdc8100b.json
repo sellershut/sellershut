@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            select\n                preferred_username,\n                is_local\n            from actor\n            where ap_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "preferred_username",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "actor",
+            "name": "preferred_username"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "is_local",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "actor",
+            "name": "is_local"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "55a3faa6ddbbdf09742e996b1fddfbf12f5d1f0331818dd1fa851c70cdc8100b"
+}

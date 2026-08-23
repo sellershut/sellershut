@@ -56,14 +56,25 @@ jobs:
       contents: read
       security-events: write # to upload sarif results
     name: beta / clippy
+    services:
+      postgres: &database
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: sellershut
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: beta
           components: clippy,rustfmt
-      - name: Start stack
-        run: docker compose up -d
       - uses: Swatinem/rust-cache@v2
       - name: Install dependencies
         uses: taiki-e/install-action@v2
@@ -86,13 +97,6 @@ jobs:
           sarif_file: rust-clippy-results.sarif
           category: clippy
           wait-for-processing: true
-      - &stop-stack
-        name: Stop stack
-        if: always()
-        run: |
-          docker compose down -v
-          docker stop $(docker ps -aq) || true
-          docker rm $(docker ps -aq) || true
 
   fmt:
     runs-on: ubuntu-latest
@@ -134,6 +138,8 @@ jobs:
   msrv:
     name: msrv / ${{ matrix.msrv }}
     runs-on: ubuntu-latest
+    services:
+      postgres: *database
     strategy:
       matrix:
         msrv: ["1.94.0"]
@@ -143,8 +149,6 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.msrv }}
-      - name: Start stack
-        run: docker compose up -d
       - uses: Swatinem/rust-cache@v2
       - name: Install dependencies
         uses: taiki-e/install-action@v2
@@ -159,21 +163,41 @@ jobs:
             cargo-hack
       - name: cargo hack +${{ matrix.msrv }} 
         run: cargo hack --clean-per-run --feature-powerset check
-      - *stop-stack
 
   test:
     name: test / workspace
     runs-on: ubuntu-latest
+    services:
+      postgres: *database
+      valkey:
+        image: valkey/valkey:latest
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
     needs:
       - os-check
+    env:
+      VAULT_TOKEN: devtoken
+      VAULT_ADDR: http://localhost:8200
     steps:
       - uses: actions/checkout@v7
+      - name: Start OpenBao
+        run: |
+          docker run -d \
+            --name openbao \
+            --cap-add=IPC_LOCK \
+            -p 8200:8200 \
+            openbao/openbao:latest \
+            server -dev -dev-root-token-id=$VAULT_TOKEN \
+            -dev-listen-address=0.0.0.0:8200
       - name: Install stable
         uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
-      - name: Start stack
-        run: docker compose up -d
       - uses: Swatinem/rust-cache@v2
       - name: Install dependencies
         uses: taiki-e/install-action@v2
@@ -193,6 +217,21 @@ jobs:
           mkdir -p .config
           echo '[profile.ci.junit]' > .config/nextest.toml
           echo 'path = "junit.xml"' >> .config/nextest.toml
+      - name: Wait for OpenBao
+        run: |
+          until curl -sf \
+            -H "X-Vault-Token: $VAULT_TOKEN" \
+            "$VAULT_ADDR/v1/sys/health"; do
+            sleep 1
+          done
+      - name: Configure OpenBao
+        run: |
+          curl --fail \
+            --request POST \
+            --header "X-Vault-Token: $VAULT_TOKEN" \
+            --header "Content-Type: application/json" \
+            --data '{"type":"kv-v2"}' \
+            "$VAULT_ADDR/v1/sys/mounts/kv"
       - name: cargo llvm-cov
         run: cargo llvm-cov nextest --profile ci --workspace --locked --all-features --lcov --output-path lcov.info -- --include-ignored
       - name: Upload to codecov.io
@@ -202,14 +241,17 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: ${{ github.repository }}
           flags: backend
-      - uses: codecov/test-results-action@v1
+      - uses: codecov/codecov-action@v5
         if: ${{ !cancelled() }}
         with:
           fail_ci_if_error: true
           files: ./target/nextest/ci/junit.xml
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
-      - *stop-stack
+          report_type: test_results
+      - name: Stop OpenBao
+        if: always()
+        run: docker rm -f openbao
 
   book:
     runs-on: ubuntu-latest

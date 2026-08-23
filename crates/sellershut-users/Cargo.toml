@@ -7,7 +7,7 @@ publish = false
 
 [dependencies]
 async-trait.workspace = true
-sellershut-core = { workspace = true, features = ["serde", "users"] }
+sellershut-core = { workspace = true, features = ["serde", "users", "auth"] }
 sellershut-svc = { workspace = true, features = ["cache"] }
 sellershut-utilities = { workspace = true, features = ["cache-key"] }
 serde = { workspace = true, features = ["derive"] }
@@ -18,3 +18,4 @@ time = { workspace = true, features = ["serde"] }
 tracing.workspace = true
 url = { workspace = true, features = ["serde"] }
 uuid = { workspace = true, features = ["serde", "v7"] }
+vaultrs = "0.8.0"

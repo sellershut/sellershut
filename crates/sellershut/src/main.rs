@@ -43,7 +43,12 @@ async fn main() -> Result<()> {
         Cache::connect(&config.cache).map_err(anyhow::Error::from),
     )?;
 
-    let user = UserService::new(database.clone(), cache);
+    let user = UserService::new(
+        database.clone(),
+        cache,
+        config.vault.url.as_str(),
+        &config.vault.token,
+    )?;
 
     let state = State::new(&config, user, database.clone()).await?;
 

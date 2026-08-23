@@ -28,12 +28,7 @@
       {
         "ordinal": 2,
         "name": "email",
-        "type_info": {
-          "Custom": {
-            "name": "citext",
-            "kind": "Simple"
-          }
-        },
+        "type_info": "Text",
         "origin": {
           "Table": {
             "table": "pending_oauth_login",
