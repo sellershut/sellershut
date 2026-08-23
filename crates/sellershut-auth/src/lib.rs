@@ -424,11 +424,7 @@ impl<T: UserDriver> OauthDriver for AuthService<T> {
             return Ok(session);
         }
 
-        let user = self
-            .users
-            .create_user(data, Some(tx.as_mut()))
-            .await
-            .unwrap();
+        let user = self.users.create_user(data, Some(tx.as_mut())).await?;
 
         ensure_identity(
             tx.as_mut(),

@@ -30,10 +30,20 @@ pub struct Person {
     preferred_username: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    summary: Option<String>,
     #[schema(value_type = String)]
     id: ObjectId<User>,
     inbox: Url,
+    outbox: Url,
     public_key: PublicKey,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    followers: Option<Url>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    following: Option<Url>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "liked")]
+    likes: Option<Url>,
     #[serde(skip_serializing_if = "Option::is_none")]
     icon: Option<UserIcon>,
 }
@@ -115,12 +125,12 @@ impl Object for User {
             ap_id: json.id.into(),
             preferred_username: json.preferred_username,
             name: json.name,
-            summary: todo!(),
+            summary: json.summary,
             inbox: json.inbox,
-            outbox: todo!(),
-            followers: todo!(),
-            following: todo!(),
-            likes: todo!(),
+            outbox: json.outbox,
+            followers: json.followers,
+            following: json.following,
+            likes: json.likes,
             kind: json.kind,
             public_key: json.public_key.0.public_key_pem,
             private_key: None,
@@ -235,6 +245,11 @@ impl TryFrom<User> for Person {
             public_key: PublicKey(value.public_key()),
             name: value.data.name,
             icon,
+            summary: value.data.summary,
+            outbox: value.data.outbox.into(),
+            followers: value.data.followers.map(Into::into),
+            following: value.data.following.map(Into::into),
+            likes: value.data.likes.map(Into::into),
         })
     }
 }

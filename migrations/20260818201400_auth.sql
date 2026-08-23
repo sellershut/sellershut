@@ -45,9 +45,9 @@ create table auth_session (
 );
 
 create table actor_key (
-    id uuid primary key,
     actor_id uuid not null references actor(id) on delete cascade,
-    public_key text not null
+    public_key text not null,
+    primary key (actor_id)
 );
 
 create index auth_sessions_user_id_idx on auth_session(user_id);

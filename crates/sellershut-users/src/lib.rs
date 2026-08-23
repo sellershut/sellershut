@@ -51,7 +51,7 @@ pub trait UserDriver: Send + Sync {
     async fn upsert_user(
         &self,
         data: &CreateUser,
-        tx: Option<&mut PgConnection>,
+        mut tx: Option<&mut PgConnection>,
     ) -> Result<User, UserError>;
     async fn user_from_session(&self, session_token: &str) -> Result<User, UserError>;
 
@@ -91,7 +91,7 @@ impl UserDriver for UserService {
     ) -> Result<(), UserError> {
         vaultrs::kv2::set(
             &self.vault,
-            "secret",
+            "kv",
             &key_path(user_id),
             &PrivateKey {
                 private_key: private_key.clone(),
@@ -102,8 +102,7 @@ impl UserDriver for UserService {
     }
 
     async fn get_private_key(&self, user_id: &Uuid) -> Result<RedactedSecret, UserError> {
-        let key: PrivateKey = vaultrs::kv2::read(&self.vault, "secret", &key_path(user_id)).await?;
-        println!("{}", key.private_key.expose());
+        let key: PrivateKey = vaultrs::kv2::read(&self.vault, "kv", &key_path(user_id)).await?;
 
         Ok(key.private_key)
     }
@@ -232,7 +231,7 @@ impl UserDriver for UserService {
     async fn create_user(
         &self,
         data: &CreateUser,
-        tx: Option<&mut PgConnection>,
+        mut tx: Option<&mut PgConnection>,
     ) -> Result<User, UserError> {
         trace!(
             username = %data.preferred_username,
@@ -242,108 +241,15 @@ impl UserDriver for UserService {
         );
 
         let external_transaction = tx.is_some();
-
-        let query = sqlx::query_as!(
-            DatabaseActor,
-            r#"
-            with inserted_actor as (
-            insert into actor (
-                id,
-                ap_id,
-                preferred_username,
-                name,
-                summary,
-                inbox,
-                outbox,
-                following,
-                followers,
-                likes,
-                icon,
-                kind,
-                is_local
-            )
-            values (
-                $1, $2, $3, $4, $5, $6, $7,
-                $8, $9, $10, $11, $12, $13
-            )
-            on conflict do nothing
-            returning *
-            )
-            select
-                a.*,
-                k.public_key
-            from inserted_actor a
-            join actor_key k
-                on k.actor_id = a.id;
-            "#,
-            Uuid::now_v7(),
-            data.ap_id.as_str(),
-            data.preferred_username,
-            data.name,
-            data.summary,
-            data.inbox.to_string(),
-            data.outbox.to_string(),
-            data.followers.as_ref().map(|v| v.as_str()),
-            data.following.as_ref().map(|v| v.as_str()),
-            data.likes.as_ref().map(|v| v.as_str()),
-            data.icon.as_ref().map(|v| v.as_str()),
-            data.kind,
-            data.is_local,
-        );
-
-        let result = match tx {
-            Some(connection) => query.fetch_optional(connection).await,
-            None => query.fetch_optional(&self.database).await,
-        }?
-        .map(User::from);
-
-        let user = if let Some(user) = result {
-            if user.is_local {
-                // should be available if local
-                let pk = data.private_key.as_ref().expect("private key");
-                self.store_private_key(&user.id, pk).await?;
-                info!(
-                    user_id = %user.id,
-                    username = %user.preferred_username,
-                    "local user created"
-                );
-            } else {
-                debug!(
-                    user_id = %user.id,
-                    ap_id = %user.ap_id,
-                    "remote user created"
-                );
+        let user = match tx.as_mut() {
+            Some(tx) => insert_inner(tx, data, &self, external_transaction).await,
+            None => {
+                let mut tx = self.database.begin().await?;
+                let user = insert_inner(&mut tx, data, &self, external_transaction).await?;
+                tx.commit().await?;
+                Ok(user)
             }
-
-            // Removing an entry before commit is safe:
-            self.invalidate_cache_key(CacheKey::UserByApId(&user.ap_id))
-                .await;
-
-            if user.is_local {
-                self.invalidate_cache_key(CacheKey::LocalUserByUsername(&user.preferred_username))
-                    .await;
-            }
-
-            if !external_transaction {
-                self.cache_user(&user).await;
-            } else {
-                trace!(
-                    user_id = %user.id,
-                    "not populating cache before external transaction commits"
-                );
-            }
-
-            user
-        } else {
-            debug!(
-                username = %data.preferred_username,
-                "user insert conflicted"
-            );
-
-            self.get_user(&data.preferred_username)
-                .await?
-                .ok_or(UserError::UsernameTaken)?
-        };
+        }?;
 
         Ok(user)
     }
@@ -359,128 +265,31 @@ impl UserDriver for UserService {
             "upserting user"
         );
 
-        let external_transaction = tx.is_some();
-
-        let previous = {
-            let query = sqlx::query!(
-                r#"
+        let previous = sqlx::query!(
+            r#"
             select
                 preferred_username,
                 is_local
             from actor
             where ap_id = $1
             "#,
-                data.ap_id.as_str()
-            );
+            data.ap_id.as_str()
+        )
+        .fetch_optional(&self.database)
+        .await?
+        .map(|v| (v.preferred_username, v.is_local));
 
-            match tx.as_deref_mut() {
-                Some(connection) => query.fetch_optional(connection).await?,
+        let external_transaction = tx.is_some();
 
-                None => query.fetch_optional(&self.database).await?,
+        let user = match tx.as_mut() {
+            Some(tx) => upsert_inner(tx, data, &self, external_transaction, previous).await,
+            None => {
+                let mut tx = self.database.begin().await?;
+                let user = upsert_inner(&mut tx, data, &self, external_transaction, previous).await;
+                tx.commit().await?;
+                user
             }
-        };
-
-        let query = sqlx::query_as!(
-            DatabaseActor,
-            r#"
-            with upserted as (
-            insert into actor (
-                id,
-                ap_id,
-                preferred_username,
-                name,
-                summary,
-                inbox,
-                outbox,
-                following,
-                followers,
-                likes,
-                icon,
-                kind,
-                is_local
-            )
-            values (
-                $1, $2, $3, $4, $5, $6, $7,
-                $8, $9, $10, $11, $12, $13
-            )
-            on conflict (ap_id) do update set
-                preferred_username = excluded.preferred_username,
-                name = excluded.name,
-                summary = excluded.summary,
-                inbox = excluded.inbox,
-                outbox = excluded.outbox,
-                following = excluded.following,
-                followers = excluded.followers,
-                likes = excluded.likes,
-                icon = excluded.icon,
-                kind = excluded.kind,
-                is_local = excluded.is_local
-            returning *
-            )
-            select
-                u.*,
-                k.public_key
-            from upserted u
-            join actor_key k
-                on k.actor_id = u.id;
-                "#,
-            Uuid::now_v7(),
-            data.ap_id.as_str(),
-            data.preferred_username,
-            data.name,
-            data.summary,
-            data.inbox.to_string(),
-            data.outbox.to_string(),
-            data.followers.as_ref().map(|v| v.as_str()),
-            data.following.as_ref().map(|v| v.as_str()),
-            data.likes.as_ref().map(|v| v.as_str()),
-            data.icon.as_ref().map(|v| v.as_str()),
-            data.kind,
-            data.is_local,
-        );
-
-        let user = match tx {
-            Some(connection) => query.fetch_one(connection).await?,
-
-            None => query.fetch_one(&self.database).await?,
-        };
-        let user = User::from(user);
-
-        debug!(
-            user_id = %user.id,
-            ap_id = %user.ap_id,
-            "user upserted"
-        );
-
-        self.invalidate_cache_key(CacheKey::UserByApId(&user.ap_id))
-            .await;
-
-        // Remove the previous local username if it existed.
-        if let Some(previous) = previous
-            && previous.is_local
-        {
-            self.invalidate_cache_key(CacheKey::LocalUserByUsername(&previous.preferred_username))
-                .await;
-        }
-
-        // Also remove the new username key in case it already existed.
-        if user.is_local {
-            // should be available if local
-            let pk = data.private_key.as_ref().expect("private key");
-            self.store_private_key(&user.id, pk).await?;
-            self.invalidate_cache_key(CacheKey::LocalUserByUsername(&user.preferred_username))
-                .await;
-        }
-
-        // Safe only when the operation has already committed.
-        if !external_transaction {
-            self.cache_user(&user).await;
-        } else {
-            trace!(
-                user_id = %user.id,
-                "not populating cache before external transaction commits"
-            );
-        }
+        }?;
 
         Ok(user)
     }
@@ -562,6 +371,130 @@ impl UserDriver for UserService {
 
         Ok(result)
     }
+}
+
+async fn upsert_inner(
+    transaction: &mut PgConnection,
+    data: &CreateUser,
+    service: &UserService,
+    external_transaction: bool,
+    previous: Option<(String, bool)>,
+) -> Result<User, UserError> {
+    let query = sqlx::query_as!(
+        DatabaseActor,
+        r#"
+            with upserted as (
+                insert into actor (
+                    id,
+                    ap_id,
+                    preferred_username,
+                    name,
+                    summary,
+                    inbox,
+                    outbox,
+                    following,
+                    followers,
+                    likes,
+                    icon,
+                    kind,
+                    is_local
+                )
+                values (
+                    $1, $2, $3, $4, $5, $6, $7,
+                    $8, $9, $10, $11, $12, $13
+                )
+                on conflict (ap_id) do update set
+                    preferred_username = excluded.preferred_username,
+                    name = excluded.name,
+                    summary = excluded.summary,
+                    inbox = excluded.inbox,
+                    outbox = excluded.outbox,
+                    following = excluded.following,
+                    followers = excluded.followers,
+                    likes = excluded.likes,
+                    icon = excluded.icon,
+                    kind = excluded.kind,
+                    is_local = excluded.is_local
+                returning *
+            ),
+            upserted_key as (
+                insert into actor_key (actor_id, public_key)
+                values ($1, $14)
+                on conflict(actor_id) do update set
+                    public_key = excluded.public_key
+                returning public_key, actor_id
+            ) 
+            select
+                u.*,
+                k.public_key
+            from upserted u
+            join upserted_key k
+                on k.actor_id = u.id;
+                "#,
+        Uuid::now_v7(),
+        data.ap_id.as_str(),
+        data.preferred_username,
+        data.name,
+        data.summary,
+        data.inbox.to_string(),
+        data.outbox.to_string(),
+        data.followers.as_ref().map(|v| v.as_str()),
+        data.following.as_ref().map(|v| v.as_str()),
+        data.likes.as_ref().map(|v| v.as_str()),
+        data.icon.as_ref().map(|v| v.as_str()),
+        data.kind,
+        data.is_local,
+        data.public_key
+    )
+    .fetch_one(&mut *transaction)
+    .await?;
+
+    let user = User::from(query);
+
+    if let Some(private_key) = &data.private_key {
+        service.store_private_key(&user.id, private_key).await?;
+    }
+
+    debug!(
+        user_id = %user.id,
+        ap_id = %user.ap_id,
+        "user upserted"
+    );
+
+    service
+        .invalidate_cache_key(CacheKey::UserByApId(&user.ap_id))
+        .await;
+
+    // Remove the previous local username if it existed.
+    if let Some(previous) = previous
+        && previous.1
+    {
+        service
+            .invalidate_cache_key(CacheKey::LocalUserByUsername(&previous.0))
+            .await;
+    }
+
+    // Also remove the new username key in case it already existed.
+    if user.is_local {
+        // should be available if local
+        let pk = data.private_key.as_ref().expect("private key");
+        service.store_private_key(&user.id, pk).await?;
+        service
+            .invalidate_cache_key(CacheKey::LocalUserByUsername(&user.preferred_username))
+            .await;
+    }
+
+    // Safe only when the operation has already committed.
+    if !external_transaction {
+        service.cache_user(&user).await;
+    } else {
+        trace!(
+            user_id = %user.id,
+            "not populating cache before external transaction commits"
+        );
+    }
+
+    Ok(user)
 }
 
 const USER_CACHE_TTL: Duration = Duration::from_secs(5 * 60);
@@ -700,5 +633,123 @@ impl UserService {
 }
 
 fn key_path(user_id: &Uuid) -> String {
-    format!("users/{}/private-key", user_id.to_string())
+    format!("users/{}/private-key", user_id)
+}
+
+async fn insert_inner(
+    transaction: &mut PgConnection,
+    data: &CreateUser,
+    service: &UserService,
+    external_transaction: bool,
+) -> Result<User, UserError> {
+    let query = sqlx::query_as!(
+        DatabaseActor,
+        r#"
+            with inserted_actor as (
+                insert into actor (
+                    id,
+                    ap_id,
+                    preferred_username,
+                    name,
+                    summary,
+                    inbox,
+                    outbox,
+                    following,
+                    followers,
+                    likes,
+                    icon,
+                    kind,
+                    is_local
+                )
+                values (
+                    $1, $2, $3, $4, $5, $6, $7,
+                    $8, $9, $10, $11, $12, $13
+                )
+                on conflict do nothing
+                returning *
+            ),
+            inserted_keys as (
+                insert into actor_key (actor_id, public_key)
+                values ($1, $14)
+                returning public_key, actor_id
+            )
+            select
+                a.*,
+                k.public_key
+            from inserted_actor a
+            join inserted_keys k
+                on k.actor_id = a.id;
+            "#,
+        Uuid::now_v7(),
+        data.ap_id.as_str(),
+        data.preferred_username,
+        data.name,
+        data.summary,
+        data.inbox.to_string(),
+        data.outbox.to_string(),
+        data.followers.as_ref().map(|v| v.as_str()),
+        data.following.as_ref().map(|v| v.as_str()),
+        data.likes.as_ref().map(|v| v.as_str()),
+        data.icon.as_ref().map(|v| v.as_str()),
+        data.kind,
+        data.is_local,
+        data.public_key
+    )
+    .fetch_optional(&mut *transaction)
+    .await?
+    .map(User::from);
+
+    let user = if let Some(user) = query {
+        if let Some(private_key) = &data.private_key {
+            service.store_private_key(&user.id, private_key).await?;
+        }
+
+        if user.is_local {
+            info!(
+                user_id = %user.id,
+                username = %user.preferred_username,
+                "local user created"
+            );
+        } else {
+            debug!(
+                user_id = %user.id,
+                ap_id = %user.ap_id,
+                "remote user created"
+            );
+        }
+
+        // Removing an entry before commit is safe:
+        service
+            .invalidate_cache_key(CacheKey::UserByApId(&user.ap_id))
+            .await;
+
+        if user.is_local {
+            service
+                .invalidate_cache_key(CacheKey::LocalUserByUsername(&user.preferred_username))
+                .await;
+        }
+
+        if !external_transaction {
+            service.cache_user(&user).await;
+        } else {
+            trace!(
+                user_id = %user.id,
+                "not populating cache before external transaction commits"
+            );
+        }
+
+        user
+    } else {
+        debug!(
+            username = %data.preferred_username,
+            "user insert conflicted"
+        );
+
+        service
+            .get_user(&data.preferred_username)
+            .await?
+            .ok_or(UserError::UsernameTaken)?
+    };
+
+    Ok(user)
 }

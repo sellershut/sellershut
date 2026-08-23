@@ -43,7 +43,12 @@ pub async fn me(
 
     match state.user.user_from_session(token).await {
         Ok(result) => {
-            let user = User::from_database(result, &*state.user).await.unwrap();
+            let user = User::from_database(result, &*state.user)
+                .await
+                .map_err(|e| {
+                    tracing::error!(e=?e, "onboarding");
+                    StatusCode::INTERNAL_SERVER_ERROR
+                })?;
             match user.into_json(&state).await {
                 Ok(u) => {
                     let context = WithContext::new_default(u);
