@@ -1,12 +1,14 @@
 import { error, fail, redirect } from '@sveltejs/kit';
+import { z } from 'zod';
 import { BACKEND_URL } from '$env/static/private';
-
-const USERNAME_REGEX = /^[a-z0-9_]{3,30}$/;
+import { profileSchema } from '$lib/types/schemas/profile';
 
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = ({ locals }) => {
-  if (locals.user) {
+export const load: PageServerLoad = ({ locals, cookies }) => {
+  const onboardingToken = cookies.get('auth_onboarding');
+
+  if (locals.user || !onboardingToken) {
     redirect(303, '/');
   }
 };
@@ -14,6 +16,13 @@ export const load: PageServerLoad = ({ locals }) => {
 type OnboardingResponse = {
   sessionToken: string;
 };
+
+const avatarSchema = z
+  .instanceof(File)
+  .refine((file) => file.size <= 5 * 1024 * 1024, 'Image must be smaller than 5 MB')
+  .refine((file) => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type), 'Image must be a JPG, PNG, or WebP');
+
+export type Profile = z.infer<typeof profileSchema>;
 
 export const actions = {
   default: async ({ request, cookies, fetch }) => {
@@ -24,18 +33,60 @@ export const actions = {
     }
 
     const form = await request.formData();
-    const username = form.get('username');
 
-    if (typeof username !== 'string') {
-      error(400, 'Username required');
+    const username = form.get('username')?.toString() ?? '';
+    const displayName = form.get('display_name')?.toString() ?? '';
+    const description = form.get('description')?.toString() ?? '';
+
+    const picture = form.get('picture');
+    const result = profileSchema.safeParse({
+      username,
+      displayName: displayName || undefined,
+      description: description || undefined,
+    });
+
+    let avatarResult: z.ZodSafeParseResult<File> | undefined;
+
+    if (picture instanceof File && picture.size > 0) {
+      avatarResult = avatarSchema.safeParse(picture);
     }
 
-    if (!USERNAME_REGEX.test(username)) {
+    if (!result.success || avatarResult?.success === false) {
+      const errors: Record<string, string[]> = {};
+      if (!result.success) {
+        for (const issue of result.error.issues) {
+          const field = issue.path[0];
+
+          if (typeof field !== 'string') {
+            continue;
+          }
+
+          errors[field] ??= [];
+          errors[field].push(issue.message);
+        }
+      }
+
+      if (avatarResult?.success === false) {
+        errors.picture = avatarResult.error.issues.map((issue) => issue.message);
+      }
+
       return fail(400, {
-        username,
-        error: 'Username must be 3–30 characters and contain only lowercase letters, numbers, and underscores.',
+        errors,
+        values: {
+          username,
+          displayName: displayName,
+          description,
+        },
       });
     }
+
+    const {
+      username: validatedUsername,
+      displayName: validatedDisplayName,
+      description: validatedDescription,
+    } = result.data;
+
+    const _profilePicture = picture instanceof File && picture.size > 0 ? picture : null;
 
     const response = await fetch(`${BACKEND_URL}/auth/onboard`, {
       method: 'POST',
@@ -44,7 +95,9 @@ export const actions = {
       },
       body: JSON.stringify({
         onboardingToken,
-        username,
+        username: validatedUsername,
+        displayName: validatedDisplayName,
+        description: validatedDescription,
       }),
     });
 
