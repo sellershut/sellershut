@@ -8,6 +8,12 @@ impl From<url::Url> for Url {
     }
 }
 
+impl From<Url> for url::Url {
+    fn from(value: Url) -> Self {
+        value.0
+    }
+}
+
 impl From<&url::Url> for Url {
     fn from(value: &url::Url) -> Self {
         Self(value.clone())

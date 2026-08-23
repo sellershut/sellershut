@@ -33,9 +33,21 @@ services:
     restart: unless-stopped
     networks: *network
 
+  openbao:
+    image: docker.io/openbao/openbao:2.6.2
+    ports:
+      - "8200:8200"
+    environment:
+      - VAULT_ADDR=http://0.0.0.0:8200
+    volumes:
+      - ./contrib/compose/openbao:/openbao/config
+      - openbao_data:/openbao/file
+    command: server -config=/openbao/config/openbao.hcl
+    restart: unless-stopped
 
 volumes:
   postgres_data:
+  openbao_data:
 
 networks:
   sellershut:

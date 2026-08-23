@@ -1,5 +1,7 @@
 use std::{fmt::Display, str::FromStr};
 
+use crate::RedactedSecret;
+
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "kebab-case"))]
@@ -10,6 +12,30 @@ pub enum OauthProvider {
     Discord,
     /// Google
     Google,
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct PrivateKey {
+    #[cfg_attr(
+        feature = "serde",
+        serde(serialize_with = "s::serialize_redacted_secret")
+    )]
+    pub private_key: RedactedSecret,
+}
+
+#[cfg(feature = "serde")]
+pub mod s {
+    use crate::RedactedSecret;
+    use serde::Serializer;
+    pub fn serialize_redacted_secret<S>(
+        s: &RedactedSecret,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&s.expose())
+    }
 }
 
 impl OauthProvider {

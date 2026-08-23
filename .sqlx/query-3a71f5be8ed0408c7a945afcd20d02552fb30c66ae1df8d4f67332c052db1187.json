@@ -7,12 +7,7 @@
       "Left": [
         "Text",
         "Text",
-        {
-          "Custom": {
-            "name": "citext",
-            "kind": "Simple"
-          }
-        }
+        "Text"
       ]
     },
     "nullable": []

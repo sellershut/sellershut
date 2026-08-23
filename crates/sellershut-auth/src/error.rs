@@ -1,3 +1,4 @@
+use sellershut_users::error::UserError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -16,8 +17,6 @@ pub enum AuthError {
     InvalidOnboardingToken,
     #[error("invalid username: {0}")]
     InvalidUsername(String),
-    #[error("username is already taken")]
-    UsernameTaken,
     #[error("invalid or expired session")]
     InvalidSession,
     #[error("OAuth identity is already linked to another user")]
@@ -28,4 +27,6 @@ pub enum AuthError {
     Database(#[from] sqlx::Error),
     #[error("OAuth provider HTTP request failed")]
     Http(#[from] reqwest::Error),
+    #[error("user error")]
+    User(#[from] UserError),
 }
