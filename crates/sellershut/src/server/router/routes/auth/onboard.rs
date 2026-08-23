@@ -16,7 +16,7 @@ use crate::server::{
     utilities,
 };
 
-#[derive(Deserialize,Debug, ToSchema)]
+#[derive(Deserialize, Debug, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct OnboardingRequest {
     onboarding_token: String,
