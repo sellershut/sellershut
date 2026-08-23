@@ -22,3 +22,4 @@ time = { workspace = true, features = ["serde"] }
 url = { workspace = true, features = ["serde"] }
 utoipa.workspace = true
 uuid = { workspace = true, features = ["serde"] }
+vaultrs = "0.8.0"

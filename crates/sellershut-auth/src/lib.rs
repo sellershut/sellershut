@@ -11,13 +11,18 @@ use std::{collections::HashMap, str::FromStr, sync::Arc};
 use time::{Duration, OffsetDateTime};
 use utoipa::ToSchema;
 use uuid::Uuid;
+use vaultrs::client::VaultClient;
 
 use async_trait::async_trait;
 use oauth2::{
     AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointNotSet, EndpointSet,
     PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse, TokenUrl,
 };
-use sellershut_core::{RedactedSecret, auth::OauthProvider, user::User};
+use sellershut_core::{
+    RedactedSecret,
+    auth::{OauthProvider, PrivateKey},
+    user::User,
+};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -99,6 +104,15 @@ pub struct HouseKeepResult {
 pub trait OauthDriver: Send + Sync {
     fn providers(&self) -> Vec<OauthProvider>;
     async fn start_oauth(&self, provider: OauthProvider) -> Result<AuthorizationStart, AuthError>;
+    async fn store_private_key(
+        &self,
+        user_id: &str,
+        private_key: &RedactedSecret,
+    ) -> Result<(), AuthError>;
+    async fn get_private_key(
+        &self,
+        user_id: &str,
+    ) -> Result<RedactedSecret, AuthError>;
     async fn complete_onboarding(
         &self,
         onboarding_token: &str,
@@ -123,6 +137,7 @@ pub struct AuthService<T: UserDriver> {
     onboarding_ttl: Duration,
     session_ttl: Duration,
     users: Arc<T>,
+    vault: VaultClient,
 }
 
 impl<T: UserDriver> AuthService<T> {
@@ -130,7 +145,16 @@ impl<T: UserDriver> AuthService<T> {
         pool: sqlx::PgPool,
         config: HashMap<OauthProvider, Configuration>,
         users: Arc<T>,
+        vault_addr: &str,
+        vault_token: &RedactedSecret,
     ) -> Result<Self, AuthError> {
+        use vaultrs::client::{VaultClient, VaultClientSettingsBuilder};
+        let vault = VaultClient::new(
+            VaultClientSettingsBuilder::default()
+                .address(vault_addr)
+                .token(vault_token.expose())
+                .build()?,
+        )?;
         let mut providers = HashMap::with_capacity(config.len());
 
         for (k, v) in config.into_iter() {
@@ -166,6 +190,7 @@ impl<T: UserDriver> AuthService<T> {
             session_ttl: Duration::seconds(SESSION_MAX_AGE_SECONDS),
             reqwest_client: http,
             users,
+            vault,
         })
     }
 
@@ -270,6 +295,34 @@ impl<T: UserDriver> AuthService<T> {
 
 #[async_trait]
 impl<T: UserDriver> OauthDriver for AuthService<T> {
+    async fn store_private_key(
+        &self,
+        user_id: &str,
+        private_key: &RedactedSecret,
+    ) -> Result<(), AuthError> {
+        vaultrs::kv2::set(
+            &self.vault,
+            "secret",
+            &key_path(user_id),
+            &PrivateKey {
+                private_key: private_key.clone(),
+            },
+        )
+        .await?;
+        Ok(())
+    }
+
+    async fn get_private_key(&self, user_id: &str) -> Result<RedactedSecret, AuthError> {
+        let key: PrivateKey = vaultrs::kv2::read(
+            &self.vault,
+            "secret",
+            &key_path(user_id)
+        )
+        .await?;
+
+        Ok(key.private_key)
+    }
+
     fn providers(&self) -> Vec<OauthProvider> {
         [OauthProvider::Google, OauthProvider::Discord]
             .into_iter()
@@ -571,4 +624,9 @@ async fn ensure_identity(
     }
 
     touch_identity(connection, provider, provider_subject, provider_email).await
+}
+
+fn key_path(user_id: &str)->String {
+
+            format!("users/{user_id}/private-key")
 }
