@@ -16,7 +16,10 @@ pub enum OauthProvider {
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PrivateKey {
-    #[cfg_attr(feature = "serde", serde(serialize_with = "s::serialize_redacted_secret"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(serialize_with = "s::serialize_redacted_secret")
+    )]
     pub private_key: RedactedSecret,
 }
 
