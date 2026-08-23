@@ -248,7 +248,7 @@ jobs:
           files: ./target/nextest/ci/junit.xml
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
-          report-type: test_results
+          report_type: test_results
       - name: Stop OpenBao
         if: always()
         run: docker rm -f openbao
