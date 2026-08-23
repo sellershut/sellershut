@@ -1,6 +1,5 @@
 use sellershut_users::error::UserError;
 use thiserror::Error;
-use vaultrs::{client::VaultClientSettingsBuilderError, error::ClientError};
 
 #[derive(Debug, Error)]
 pub enum AuthError {
@@ -18,8 +17,6 @@ pub enum AuthError {
     InvalidOnboardingToken,
     #[error("invalid username: {0}")]
     InvalidUsername(String),
-    #[error("username is already taken")]
-    UsernameTaken,
     #[error("invalid or expired session")]
     InvalidSession,
     #[error("OAuth identity is already linked to another user")]
@@ -32,8 +29,4 @@ pub enum AuthError {
     Http(#[from] reqwest::Error),
     #[error("user error")]
     User(#[from] UserError),
-    #[error("database error")]
-    VaultClient(#[from] ClientError),
-    #[error("database error")]
-    VaultClientBuilder(#[from] VaultClientSettingsBuilderError),
 }

@@ -28,6 +28,8 @@ pub struct User {
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
     pub last_refreshed_at: OffsetDateTime,
+
+    pub public_key: String,
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]

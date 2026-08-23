@@ -2446,7 +2446,6 @@ dependencies = [
  "url",
  "utoipa",
  "uuid",
- "vaultrs",
 ]
 
 [[package]]
@@ -2494,6 +2493,7 @@ dependencies = [
  "tracing",
  "url",
  "uuid",
+ "vaultrs",
 ]
 
 [[package]]

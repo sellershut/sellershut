@@ -42,16 +42,19 @@ pub async fn me(
     let token = bearer.token();
 
     match state.user.user_from_session(token).await {
-        Ok(result) => match User::from(result).into_json(&state).await {
-            Ok(u) => {
-                let context = WithContext::new_default(u);
-                Ok(FederationJson(context).into_response())
+        Ok(result) => {
+            let user = User::from_database(result, &*state.user).await.unwrap();
+            match user.into_json(&state).await {
+                Ok(u) => {
+                    let context = WithContext::new_default(u);
+                    Ok(FederationJson(context).into_response())
+                }
+                Err(e) => {
+                    tracing::error!(error=?e, "user decode failed");
+                    Err(StatusCode::INTERNAL_SERVER_ERROR)
+                }
             }
-            Err(e) => {
-                tracing::error!(error=?e, "user decode failed");
-                Err(StatusCode::INTERNAL_SERVER_ERROR)
-            }
-        },
+        }
         Err(e) => {
             debug!(err=?e, "unauthorised session");
             Err(StatusCode::UNAUTHORIZED)

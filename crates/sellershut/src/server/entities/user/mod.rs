@@ -4,7 +4,8 @@ use activitypub_federation::{
     protocol::verification::verify_domains_match,
     traits::{Actor, Object},
 };
-use sellershut_users::CreateUser;
+use sellershut_core::RedactedSecret;
+use sellershut_users::{CreateUser, UserDriver};
 use serde::{Deserialize, Serialize};
 use url::Url;
 use utoipa::{
@@ -18,6 +19,7 @@ use crate::server::{AppError, state::AppState};
 pub struct User {
     data: sellershut_core::user::User,
     id: ObjectId<User>,
+    pub private_key: Option<RedactedSecret>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema)]
@@ -71,8 +73,12 @@ impl Object for User {
         object_id: Url,
         data: &Data<Self::DataType>,
     ) -> Result<Option<Self>, Self::Error> {
-        let user = data.user.get_user_by_id(&object_id).await?.map(User::from);
-        Ok(user)
+        if let Some(user) = data.user.get_user_by_id(&object_id).await? {
+            let user = User::from_database(user, &*data.user).await?;
+            Ok(Some(user))
+        } else {
+            Ok(None)
+        }
     }
 
     #[doc = " Convert database type to Activitypub type."]
@@ -106,18 +112,24 @@ impl Object for User {
     #[doc = " create and update, so an `upsert` operation should be used."]
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
         let req = CreateUser {
-            kind: json.kind,
-            preferred_username: json.preferred_username,
             ap_id: json.id.into(),
+            preferred_username: json.preferred_username,
             name: json.name,
+            summary: todo!(),
             inbox: json.inbox,
+            outbox: todo!(),
+            followers: todo!(),
+            following: todo!(),
+            likes: todo!(),
+            kind: json.kind,
             public_key: json.public_key.0.public_key_pem,
             private_key: None,
             is_local: false,
             icon: None,
         };
         let user = data.user.upsert_user(&req, None).await?;
-        Ok(user.into())
+        let user = User::from_database(user, &*data.user).await?;
+        Ok(user)
     }
 }
 
@@ -127,7 +139,7 @@ impl Actor for User {
     }
 
     fn private_key_pem(&self) -> Option<String> {
-        self.data.private_key.clone().map(|f| f.expose())
+        self.private_key.clone().map(|f| f.expose())
     }
 
     fn inbox(&self) -> url::Url {
@@ -171,10 +183,27 @@ impl PartialSchema for PublicKey {
     }
 }
 
-impl From<sellershut_core::user::User> for User {
-    fn from(value: sellershut_core::user::User) -> Self {
+impl User {
+    pub async fn from_database<U>(
+        value: sellershut_core::user::User,
+        state: &U,
+    ) -> anyhow::Result<Self>
+    where
+        U: UserDriver + ?Sized,
+    {
         let id = value.ap_id.inner().into();
-        Self { data: value, id }
+
+        let pk = if value.is_local {
+            Some(state.get_private_key(&value.id).await?)
+        } else {
+            None
+        };
+
+        Ok(Self {
+            data: value,
+            id,
+            private_key: pk,
+        })
     }
 }
 
@@ -183,7 +212,7 @@ impl TryFrom<User> for Person {
 
     fn try_from(value: User) -> Result<Self, Self::Error> {
         let preferred_username = value.data.preferred_username.clone();
-        let icon = if let Some(avatar) = value.data.avatar.as_ref() {
+        let icon = if let Some(avatar) = value.data.icon.as_ref() {
             let url = Url::parse(avatar)?;
 
             Some(UserIcon {
@@ -197,8 +226,9 @@ impl TryFrom<User> for Person {
             None
         };
 
+        let kind = value.data.kind.to_owned();
         Ok(Self {
-            kind: value.data.kind,
+            kind,
             preferred_username,
             id: value.id.clone(),
             inbox: value.data.inbox.inner(),

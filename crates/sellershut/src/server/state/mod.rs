@@ -28,6 +28,7 @@ impl State {
     ) -> Result<AppState, anyhow::Error> {
         let system_user = get_system_user(&user_driver, config).await?;
         let user = Arc::new(user_driver);
+
         let auth = AuthService::new(database, config.server.oauth.0.clone(), Arc::clone(&user))?;
 
         Ok(Arc::new(Self {
@@ -76,8 +77,9 @@ where
             likes: Some(likes),
         };
         user.create_user(&data, None).await?
-    }
-    .into();
+    };
+
+    let system_user = User::from_database(system_user, user).await?;
 
     Ok(system_user)
 }

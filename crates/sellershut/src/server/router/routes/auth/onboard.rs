@@ -90,7 +90,7 @@ pub async fn complete_onboarding(
         .complete_onboarding(&request.onboarding_token, &user_data)
         .await?;
 
-    let user: User = user.into();
+    let user = User::from_database(user, &*state.user).await?;
 
     Ok(Json(SessionResponse {
         session_token: token,

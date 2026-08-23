@@ -19,6 +19,7 @@ pub struct DatabaseActor {
     pub last_refreshed_at: OffsetDateTime,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
+    pub public_key: String,
 }
 
 impl From<DatabaseActor> for User {
@@ -40,6 +41,7 @@ impl From<DatabaseActor> for User {
             created_at: value.created_at,
             updated_at: value.updated_at,
             last_refreshed_at: value.last_refreshed_at,
+            public_key: value.public_key,
         }
     }
 }

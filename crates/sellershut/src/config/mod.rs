@@ -1,6 +1,7 @@
 pub mod cli;
 pub mod log;
 pub mod server;
+pub mod vault;
 
 use std::path::PathBuf;
 
@@ -13,6 +14,7 @@ pub struct Configuration {
     pub log: log::Log,
     pub database: sellershut_svc::database::Config,
     pub cache: sellershut_svc::cache::Config,
+    pub vault: vault::Vault,
 }
 
 pub fn load(cli: Option<&PathBuf>) -> Configuration {

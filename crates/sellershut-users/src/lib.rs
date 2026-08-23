@@ -2,7 +2,11 @@ pub mod error;
 pub(crate) mod helpers;
 
 use helpers::database::DatabaseActor;
-use sellershut_core::{RedactedSecret, auth::OauthProvider, user::User};
+use sellershut_core::{
+    RedactedSecret,
+    auth::{OauthProvider, PrivateKey},
+    user::User,
+};
 use sellershut_svc::cache::Cache;
 use sellershut_utilities::{auth::hash_token, cache_key::CacheKey};
 use sqlx::PgConnection;
@@ -10,6 +14,7 @@ use std::time::Duration;
 use tracing::{debug, info, trace};
 use url::Url;
 use uuid::Uuid;
+use vaultrs::client::VaultClient;
 
 use crate::error::UserError;
 
@@ -62,15 +67,47 @@ pub trait UserDriver: Send + Sync {
         provider: OauthProvider,
         provider_subject: &str,
     ) -> Result<Option<User>, UserError>;
+
+    async fn store_private_key(
+        &self,
+        user_id: &Uuid,
+        private_key: &RedactedSecret,
+    ) -> Result<(), UserError>;
+    async fn get_private_key(&self, user_id: &Uuid) -> Result<RedactedSecret, UserError>;
 }
 
 pub struct UserService {
     database: sqlx::PgPool,
     cache: sellershut_svc::cache::Cache,
+    vault: VaultClient,
 }
 
 #[async_trait::async_trait]
 impl UserDriver for UserService {
+    async fn store_private_key(
+        &self,
+        user_id: &Uuid,
+        private_key: &RedactedSecret,
+    ) -> Result<(), UserError> {
+        vaultrs::kv2::set(
+            &self.vault,
+            "secret",
+            &key_path(user_id),
+            &PrivateKey {
+                private_key: private_key.clone(),
+            },
+        )
+        .await?;
+        Ok(())
+    }
+
+    async fn get_private_key(&self, user_id: &Uuid) -> Result<RedactedSecret, UserError> {
+        let key: PrivateKey = vaultrs::kv2::read(&self.vault, "secret", &key_path(user_id)).await?;
+        println!("{}", key.private_key.expose());
+
+        Ok(key.private_key)
+    }
+
     async fn find_user_by_identity(
         &self,
         connection: Option<&mut sqlx::PgConnection>,
@@ -81,9 +118,10 @@ impl UserDriver for UserService {
             DatabaseActor,
             r#"
             select
-                u.*
+                u.*, k.public_key
             from oauth_identity as oi
             join actor as u on u.id = oi.user_id
+            join actor_key as k on k.actor_id = oi.user_id
             where oi.provider = $1
               and oi.provider_id = $2
             for update of oi
@@ -109,8 +147,9 @@ impl UserDriver for UserService {
         let q = sqlx::query_as!(
             DatabaseActor,
             r#"
-                select u.* from actor as u
+                select u.*, k.public_key from actor as u
                 join "oauth_identity" as oi on u.id = oi.user_id
+                join actor_key as k on k.actor_id = oi.user_id
                 where
                     oi.provider_email = $1
                     and u.is_local
@@ -141,10 +180,11 @@ impl UserDriver for UserService {
         let result = sqlx::query_as!(
             DatabaseActor,
             r#"
-            select * from actor
+            select u.*, k.public_key from actor as u
+            join actor_key as k on k.actor_id = u.id
             where
-                preferred_username = $1
-                and is_local
+                u.preferred_username = $1
+                and u.is_local
         "#,
             username
         )
@@ -172,10 +212,11 @@ impl UserDriver for UserService {
         let result = sqlx::query_as!(
             DatabaseActor,
             r#"
-            select * from actor
+            select u.*, k.public_key from actor as u
+            join actor_key as k on k.actor_id = u.id
             where
-                ap_id = $1
-                and is_local
+                u.ap_id = $1
+                and u.is_local
         "#,
             domain
         )
@@ -205,8 +246,8 @@ impl UserDriver for UserService {
         let query = sqlx::query_as!(
             DatabaseActor,
             r#"
-            insert into actor
-            (
+            with inserted_actor as (
+            insert into actor (
                 id,
                 ap_id,
                 preferred_username,
@@ -221,9 +262,19 @@ impl UserDriver for UserService {
                 kind,
                 is_local
             )
-            values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            values (
+                $1, $2, $3, $4, $5, $6, $7,
+                $8, $9, $10, $11, $12, $13
+            )
             on conflict do nothing
             returning *
+            )
+            select
+                a.*,
+                k.public_key
+            from inserted_actor a
+            join actor_key k
+                on k.actor_id = a.id;
             "#,
             Uuid::now_v7(),
             data.ap_id.as_str(),
@@ -248,6 +299,9 @@ impl UserDriver for UserService {
 
         let user = if let Some(user) = result {
             if user.is_local {
+                // should be available if local
+                let pk = data.private_key.as_ref().expect("private key");
+                self.store_private_key(&user.id, pk).await?;
                 info!(
                     user_id = %user.id,
                     username = %user.preferred_username,
@@ -329,8 +383,8 @@ impl UserDriver for UserService {
         let query = sqlx::query_as!(
             DatabaseActor,
             r#"
-            insert into actor
-            (
+            with upserted as (
+            insert into actor (
                 id,
                 ap_id,
                 preferred_username,
@@ -345,21 +399,31 @@ impl UserDriver for UserService {
                 kind,
                 is_local
             )
-            values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            values (
+                $1, $2, $3, $4, $5, $6, $7,
+                $8, $9, $10, $11, $12, $13
+            )
             on conflict (ap_id) do update set
                 preferred_username = excluded.preferred_username,
-                    name = excluded.name,
-                    summary = excluded.summary,
-                    inbox = excluded.inbox,
-                    outbox = excluded.outbox,
-                    following = excluded.following,
-                    followers = excluded.followers,
-                    likes = excluded.likes,
-                    icon = excluded.icon,
-                    kind = excluded.kind,
-                    is_local = excluded.is_local
+                name = excluded.name,
+                summary = excluded.summary,
+                inbox = excluded.inbox,
+                outbox = excluded.outbox,
+                following = excluded.following,
+                followers = excluded.followers,
+                likes = excluded.likes,
+                icon = excluded.icon,
+                kind = excluded.kind,
+                is_local = excluded.is_local
             returning *
-            "#,
+            )
+            select
+                u.*,
+                k.public_key
+            from upserted u
+            join actor_key k
+                on k.actor_id = u.id;
+                "#,
             Uuid::now_v7(),
             data.ap_id.as_str(),
             data.preferred_username,
@@ -401,6 +465,9 @@ impl UserDriver for UserService {
 
         // Also remove the new username key in case it already existed.
         if user.is_local {
+            // should be available if local
+            let pk = data.private_key.as_ref().expect("private key");
+            self.store_private_key(&user.id, pk).await?;
             self.invalidate_cache_key(CacheKey::LocalUserByUsername(&user.preferred_username))
                 .await;
         }
@@ -424,9 +491,10 @@ impl UserDriver for UserService {
         let user = sqlx::query_as!(
             DatabaseActor,
             r#"
-            select u.*
+            select u.*,k.public_key
             from auth_session as s
             join actor as u on u.id = s.user_id
+            join actor_key as k on k.actor_id = s.user_id
             where s.token_hash = $1
               and s.expires_at > now()
             "#,
@@ -465,8 +533,9 @@ impl UserDriver for UserService {
         let result = sqlx::query_as!(
             DatabaseActor,
             r#"
-            select *
-            from actor
+            select u.*, k.public_key
+            from actor as u
+            join actor_key as k on k.actor_id = u.id
             where
                 ap_id = $1
         "#,
@@ -498,11 +567,25 @@ impl UserDriver for UserService {
 const USER_CACHE_TTL: Duration = Duration::from_secs(5 * 60);
 
 impl UserService {
-    pub fn new(pool: sqlx::PgPool, cache: Cache) -> Self {
-        Self {
+    pub fn new(
+        pool: sqlx::PgPool,
+        cache: Cache,
+        vault_addr: &str,
+        vault_token: &RedactedSecret,
+    ) -> Result<Self, UserError> {
+        use vaultrs::client::{VaultClient, VaultClientSettingsBuilder};
+        let vault = VaultClient::new(
+            VaultClientSettingsBuilder::default()
+                .address(vault_addr)
+                .token(vault_token.expose())
+                .build()?,
+        )?;
+
+        Ok(Self {
             database: pool,
             cache,
-        }
+            vault,
+        })
     }
 
     async fn get_cached_user(&self, key: CacheKey<'_>) -> Option<User> {
@@ -614,4 +697,8 @@ impl UserService {
             );
         }
     }
+}
+
+fn key_path(user_id: &Uuid) -> String {
+    format!("users/{}/private-key", user_id.to_string())
 }
