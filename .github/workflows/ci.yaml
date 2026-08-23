@@ -178,18 +178,22 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
-      openbao:
-        image: openbao/openbao:latest
-        env:
-          VAULT_DEV_ROOT_TOKEN_ID: "devtoken"
-          VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
-        options: --cap-add=IPC_LOCK
-        ports:
-          - 8200:8200
     needs:
       - os-check
+    env:
+      VAULT_TOKEN: devtoken
+      VAULT_ADDR: http://localhost:8200
     steps:
       - uses: actions/checkout@v7
+      - name: Start OpenBao
+        run: |
+          docker run -d \
+            --name openbao \
+            --cap-add=IPC_LOCK \
+            -p 8200:8200 \
+            openbao/openbao:latest \
+            server -dev -dev-root-token-id=$VAULT_TOKEN \
+            -dev-listen-address=0.0.0.0:8200
       - name: Install stable
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -213,6 +217,21 @@ jobs:
           mkdir -p .config
           echo '[profile.ci.junit]' > .config/nextest.toml
           echo 'path = "junit.xml"' >> .config/nextest.toml
+      - name: Wait for OpenBao
+        run: |
+          until curl -sf \
+            -H "X-Vault-Token: $VAULT_TOKEN" \
+            "$VAULT_ADDR/v1/sys/health"; do
+            sleep 1
+          done
+      - name: Configure OpenBao
+        run: |
+          curl --fail \
+            --request POST \
+            --header "X-Vault-Token: $VAULT_TOKEN" \
+            --header "Content-Type: application/json" \
+            --data '{"type":"kv-v2"}' \
+            "$VAULT_ADDR/v1/sys/mounts/kv"
       - name: cargo llvm-cov
         run: cargo llvm-cov nextest --profile ci --workspace --locked --all-features --lcov --output-path lcov.info -- --include-ignored
       - name: Upload to codecov.io
@@ -229,6 +248,9 @@ jobs:
           files: ./target/nextest/ci/junit.xml
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
+      - name: Stop OpenBao
+        if: always()
+        run: docker rm -f openbao
 
   book:
     runs-on: ubuntu-latest

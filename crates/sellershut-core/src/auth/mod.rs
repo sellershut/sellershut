@@ -1,7 +1,5 @@
 use std::{fmt::Display, str::FromStr};
 
-use serde::{Deserialize, Serialize};
-
 use crate::RedactedSecret;
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
@@ -16,9 +14,9 @@ pub enum OauthProvider {
     Google,
 }
 
-#[derive(Deserialize, Serialize)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PrivateKey {
-    #[serde(serialize_with = "s::serialize_redacted_secret")]
+    #[cfg_attr(feature = "serde", serde(serialize_with = "s::serialize_redacted_secret"))]
     pub private_key: RedactedSecret,
 }
 
