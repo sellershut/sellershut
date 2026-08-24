@@ -1,6 +1,6 @@
-use activitypub_federation::{
-    axum::json::FederationJson, config::Data, protocol::context::WithContext, traits::Object,
-};
+use activitypub_federation::
+    config::Data 
+;
 use axum::{extract::Path, http::StatusCode, response::IntoResponse};
 use axum_extra::{
     TypedHeader,
@@ -9,7 +9,7 @@ use axum_extra::{
 use tracing::debug;
 
 use crate::server::{
-    entities::user::{Person, User},
+    entities::user::Person,
     router::routes::users::USERS_TAG,
     state::AppState,
 };
@@ -31,6 +31,7 @@ use crate::server::{
             )
          ),
         (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden"),
         (status = 500, description = "Internal server error")
     ),
     params(
@@ -39,34 +40,21 @@ use crate::server::{
     tag = USERS_TAG,
 )]
 pub async fn post(
-    Path(_username): Path<String>,
+    Path(username): Path<String>,
     TypedHeader(Authorization(bearer)): TypedHeader<Authorization<Bearer>>,
     state: Data<AppState>,
 ) -> Result<impl IntoResponse, StatusCode> {
     let token = bearer.token();
 
-    match state.user.user_from_session(token).await {
-        Ok(result) => {
-            let user = User::from_database(result, &*state.user)
-                .await
-                .map_err(|e| {
-                    tracing::error!(e=?e, "onboarding");
-                    StatusCode::INTERNAL_SERVER_ERROR
-                })?;
-            match user.into_json(&state).await {
-                Ok(u) => {
-                    let context = WithContext::new_default(u);
-                    Ok(FederationJson(context).into_response())
-                }
-                Err(e) => {
-                    tracing::error!(error=?e, "user decode failed");
-                    Err(StatusCode::INTERNAL_SERVER_ERROR)
-                }
-            }
-        }
-        Err(e) => {
-            debug!(err=?e, "unauthorised session");
-            Err(StatusCode::UNAUTHORIZED)
-        }
+    let user =  state.user.user_from_session(token).await.map_err(|_e| {
+        debug!(username=username, "user not found from session");
+        StatusCode::UNAUTHORIZED
+    })?;
+
+    if user.preferred_username.ne(&username) {
+      return  Err(StatusCode::FORBIDDEN);
     }
+
+
+    Ok(())
 }

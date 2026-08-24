@@ -21,23 +21,18 @@ use crate::server::{
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateCategoryScheme {
-    /// Actor which owns and created the scheme.
     pub(crate) actor: ObjectId<User>,
-    /// Audience of the activity.
     #[serde(deserialize_with = "deserialize_one_or_many")]
     pub(crate) to: Vec<Url>,
-    /// Usually the catalog actor's followers.
     #[serde(
         default,
         deserialize_with = "deserialize_one_or_many",
         skip_serializing_if = "Vec::is_empty"
     )]
     pub(crate) cc: Vec<Url>,
-    /// The complete embedded scheme object.
     pub(crate) object: FederatedCategoryScheme,
     #[serde(rename = "type")]
     pub(crate) kind: CreateType,
-    /// ID of this Create activity, not the scheme ID.
     pub(crate) id: Url,
 }
 
