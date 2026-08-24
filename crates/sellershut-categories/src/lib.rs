@@ -29,11 +29,9 @@ pub struct CategoryService {
 pub struct UpsertCategoryScheme<'a> {
     pub ap_id: &'a Url,
     pub name: &'a str,
-    pub owner_ap_id: Option<&'a str>,
+    pub owner_ap_id: &'a str,
     pub top_concepts_ap_id: Option<&'a str>,
     pub is_local: bool,
-    pub ap_published_at: Option<&'a OffsetDateTime>,
-    pub ap_updated_at: Option<&'a OffsetDateTime>,
 }
 
 #[derive(Debug)]
@@ -41,11 +39,9 @@ pub(crate) struct CategorySchemeRow {
     id: Uuid,
     ap_id: String,
     name: String,
-    owner_ap_id: Option<String>,
+    owner_ap_id: String,
     top_concepts_ap_id: Option<String>,
     is_local: bool,
-    ap_published_at: Option<OffsetDateTime>,
-    ap_updated_at: Option<OffsetDateTime>,
     last_refreshed_at: Option<OffsetDateTime>,
     created_at: OffsetDateTime,
     updated_at: OffsetDateTime,
@@ -60,11 +56,7 @@ impl TryFrom<CategorySchemeRow> for CategoryScheme {
 
             ap_id: Url::parse(&row.ap_id)?.into(),
             name: row.name,
-            owner_ap_id: row
-                .owner_ap_id
-                .map(|value| Url::parse(&value).map(Into::into))
-                .transpose()?,
-
+            owner_ap_id: Url::parse(&row.owner_ap_id)?.into(),
             top_concepts_ap_id: row
                 .top_concepts_ap_id
                 .map(|value| Url::parse(&value).map(Into::into))
@@ -72,8 +64,6 @@ impl TryFrom<CategorySchemeRow> for CategoryScheme {
 
             is_local: row.is_local,
 
-            ap_published_at: row.ap_published_at,
-            ap_updated_at: row.ap_updated_at,
             last_refreshed_at: row.last_refreshed_at,
 
             created_at: row.created_at,
@@ -132,8 +122,6 @@ impl CategoryDriver for CategoryService {
                     owner_ap_id,
                     top_concepts_ap_id,
                     is_local,
-                    ap_published_at,
-                    ap_updated_at,
                     last_refreshed_at
                 )
                 values (
@@ -143,49 +131,14 @@ impl CategoryDriver for CategoryService {
                     $4,
                     $5,
                     $6,
-                    $7,
-                    $8,
                     now()
                 )
                 on conflict (ap_id) do update
                 set
-                    name = case
-                        when existing.ap_updated_at is null
-                          or excluded.ap_updated_at >= existing.ap_updated_at
-                        then excluded.name
-                        else existing.name
-                    end,
-
-                    owner_ap_id = case
-                        when existing.ap_updated_at is null
-                          or excluded.ap_updated_at >= existing.ap_updated_at
-                        then excluded.owner_ap_id
-                        else existing.owner_ap_id
-                    end,
-
-                    top_concepts_ap_id = case
-                        when existing.ap_updated_at is null
-                          or excluded.ap_updated_at >= existing.ap_updated_at
-                        then excluded.top_concepts_ap_id
-                        else existing.top_concepts_ap_id
-                    end,
-
-                    ap_published_at = case
-                        when existing.ap_updated_at is null
-                          or excluded.ap_updated_at >= existing.ap_updated_at
-                        then excluded.ap_published_at
-                        else existing.ap_published_at
-                    end,
-
-                    ap_updated_at = case
-                        when existing.ap_updated_at is null
-                          or excluded.ap_updated_at >= existing.ap_updated_at
-                        then excluded.ap_updated_at
-                        else existing.ap_updated_at
-                    end,
-
+                    name = excluded.name,
+                    owner_ap_id = excluded.ap_id,
+                    top_concepts_ap_id = excluded.top_concepts_ap_id,
                     last_refreshed_at = now()
-
                 where existing.is_local = false
 
                 returning *
@@ -211,13 +164,11 @@ impl CategoryDriver for CategoryService {
                 ap_id as "ap_id!: _",
                 name as "name!",
 
-                owner_ap_id as "owner_ap_id?: _",
+                owner_ap_id as "owner_ap_id!: _",
                 top_concepts_ap_id as "top_concepts_ap_id?: _",
 
                 is_local as "is_local!",
 
-                ap_published_at as "ap_published_at?",
-                ap_updated_at as "ap_updated_at?",
                 last_refreshed_at as "last_refreshed_at?",
 
                 created_at as "created_at!",
@@ -231,8 +182,6 @@ impl CategoryDriver for CategoryService {
             data.owner_ap_id,
             data.top_concepts_ap_id,
             data.is_local,
-            data.ap_published_at,
-            data.ap_updated_at,
         )
         .fetch_one(&self.database)
         .await?;

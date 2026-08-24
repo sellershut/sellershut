@@ -22,7 +22,7 @@ pub struct CategoryScheme {
     id: ObjectId<CategoryScheme>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FederatedCategoryScheme {
     #[serde(rename = "@context")]
@@ -91,6 +91,8 @@ impl Object for CategoryScheme {
 
     async fn into_json(self, data: &Data<Self::DataType>) -> Result<Self::Kind, Self::Error> {
         let top_concepts = append_path(self.id.inner(), "top-concepts");
+        let owner = self.data.owner_ap_id.clone().inner();
+        let owner = ObjectId::parse(owner.as_str())?;
 
         Ok(FederatedCategoryScheme {
             context: category_scheme_context(data.domain())?,
@@ -98,7 +100,7 @@ impl Object for CategoryScheme {
             kind: vec!["Object".to_owned(), "skos:ConceptScheme".to_owned()],
             name: self.data.name.to_string(),
             top_concepts: Some(top_concepts),
-            attributed_to: self.data.owner_ap_id.map(Into::into),
+            attributed_to: owner,
             published: self.data.created_at,
             updated: self.data.updated_at,
         })
@@ -107,7 +109,7 @@ impl Object for CategoryScheme {
     async fn verify(
         json: &Self::Kind,
         expected_domain: &Url,
-        _data: &Data<Self::DataType>,
+        data: &Data<Self::DataType>,
     ) -> Result<(), Self::Error> {
         verify_domains_match(json.id.inner(), expected_domain)?;
 
@@ -129,15 +131,8 @@ impl Object for CategoryScheme {
             ));
         }
 
-        if let Some(owner_ap_id) = &json.attributed_to {
-            // This is an application-specific ownership rule:
-            // require the owner actor to be hosted on the same domain
-            // as the scheme.
-            //
-            // Remove this check if you deliberately support an actor
-            // on one domain owning a scheme on another domain.
-            verify_domains_match(&owner_ap_id, json.id.inner())?;
-        }
+        let user = json.attributed_to.dereference(data).await?;
+        verify_domains_match(user.id(), json.id.inner())?;
 
         Ok(())
     }
@@ -150,13 +145,12 @@ impl Object for CategoryScheme {
             name,
             top_concepts,
             attributed_to,
-            published,
-            updated,
+            ..
         } = json;
 
         let ap_id = id.inner();
         let top_concepts_ap_id = top_concepts.as_ref().map(Url::as_str);
-        let owner_ap_id = attributed_to.as_ref().map(Url::as_str);
+        let owner_ap_id = attributed_to.inner().as_str();
 
         let c = UpsertCategoryScheme {
             ap_id,
@@ -164,8 +158,6 @@ impl Object for CategoryScheme {
             owner_ap_id,
             top_concepts_ap_id,
             is_local: false,
-            ap_published_at: Some(&published),
-            ap_updated_at: Some(&updated),
         };
         let scheme = data.category.upsert_scheme(&c).await?;
 

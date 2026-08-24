@@ -1,6 +1,9 @@
 use activitypub_federation::{
-    config::Data, fetch::object_id::ObjectId, kinds::activity::CreateType,
-    protocol::helpers::deserialize_one_or_many, traits::{Activity, Object},
+    config::Data,
+    fetch::object_id::ObjectId,
+    kinds::activity::CreateType,
+    protocol::helpers::deserialize_one_or_many,
+    traits::{Activity, Object},
 };
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -8,7 +11,10 @@ use url::Url;
 
 use crate::server::{
     AppError,
-    entities::{category::scheme::{CategoryScheme, FederatedCategoryScheme}, user::User},
+    entities::{
+        category::scheme::{CategoryScheme, FederatedCategoryScheme},
+        user::User,
+    },
     state::AppState,
 };
 
@@ -37,12 +43,14 @@ pub struct CreateCategoryScheme {
 
 impl CreateCategoryScheme {
     pub fn new(object: FederatedCategoryScheme, id: Url) -> Self {
+        let value = object.clone();
         Self {
-            actor: object.attributed_to,
+            actor: value.attributed_to,
             to: vec![activitypub_federation::kinds::public()],
             object,
             kind: CreateType::Create,
             id,
+            cc: vec![],
         }
     }
 }
