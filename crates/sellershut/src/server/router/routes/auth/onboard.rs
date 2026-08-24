@@ -16,11 +16,13 @@ use crate::server::{
     utilities,
 };
 
-#[derive(Deserialize, ToSchema)]
+#[derive(Deserialize,Debug, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct OnboardingRequest {
     onboarding_token: String,
     username: String,
+    display_name: Option<String>,
+    description: Option<String>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -71,8 +73,8 @@ pub async fn complete_onboarding(
     let user_data = CreateUser {
         ap_id,
         preferred_username: request.username,
-        name: None,
-        summary: None,
+        name: request.display_name,
+        summary: request.description,
         inbox,
         outbox,
         followers: Some(followers),
