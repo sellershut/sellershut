@@ -5,10 +5,11 @@ use sellershut_categories::CategoryDriver;
 use sellershut_core::RedactedSecret;
 use sellershut_users::{CreateUser, UserDriver};
 use sqlx::PgPool;
+use url::Url;
 
 use crate::{
     config::Configuration,
-    server::{self, entities::user::User},
+    server::{entities::user::User, utilities::ActivityPubIds},
 };
 
 #[derive(Clone)]
@@ -53,16 +54,23 @@ where
     } else {
         //create system user
         let keypair = activitypub_federation::http_signatures::generate_actor_keypair()?;
-        let id = server::utilities::base_url(config.server.port.into(), &config.server.domain)?;
-        let port = config.server.port.into();
-        let domain = &config.server.domain;
-        let username = &config.server.instance_name;
-        let inbox = server::utilities::user_endpoint(port, domain, username, "inbox")?;
+        let apid = ActivityPubIds::new(config.server.port.into(), &config.server.domain, "")?;
 
-        let outbox = server::utilities::user_endpoint(port, domain, username, "outbox")?;
-        let followers = server::utilities::user_endpoint(port, domain, username, "following")?;
-        let following = server::utilities::user_endpoint(port, domain, username, "followers")?;
-        let likes = server::utilities::user_endpoint(port, domain, username, "likes")?;
+        let port = config.server.port.into();
+        let base_url = |port: u16, domain: &str| -> Result<Url, url::ParseError> {
+            if cfg!(debug_assertions) {
+                Url::parse(&format!("http://localhost:{port}/"))
+            } else {
+                Url::parse(&format!("https://{domain}/"))
+            }
+        };
+
+        let id = base_url(port, &config.server.domain)?;
+        let inbox = apid.inbox()?;
+        let outbox = apid.outbox()?;
+        let followers = apid.followers()?;
+        let following = apid.following()?;
+        let likes = apid.likes()?;
 
         let data = CreateUser {
             kind: String::from("Service"),

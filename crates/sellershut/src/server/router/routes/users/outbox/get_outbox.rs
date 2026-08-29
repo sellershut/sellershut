@@ -10,7 +10,7 @@ use tracing::debug;
 
 use crate::server::{
     entities::user::{Person, User},
-    router::routes::users::USERS_TAG,
+    router::routes::users::outbox::OUTBOX_TAG,
     state::AppState,
 };
 /// Return the user's outbox collection
@@ -36,7 +36,7 @@ use crate::server::{
     params(
             ("username" = String, Path, description = "username", example = "rando69")
     ),
-    tag = USERS_TAG,
+    tag = OUTBOX_TAG,
 )]
 pub async fn get(
     Path(_username): Path<String>,

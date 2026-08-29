@@ -4,10 +4,10 @@ use activitypub_federation::{
 };
 use sellershut_categories::UpsertCategoryScheme;
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+use serde_json::Value;
 use time::OffsetDateTime;
 use url::Url;
-use uuid::Uuid;
+use utoipa::ToSchema;
 
 use crate::server::{AppError, entities::user::User, state::AppState};
 
@@ -22,17 +22,19 @@ pub struct CategoryScheme {
     id: ObjectId<CategoryScheme>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct FederatedCategoryScheme {
     #[serde(rename = "@context")]
     pub context: Value,
+    #[schema(value_type = String)]
     pub id: ObjectId<CategoryScheme>,
     #[serde(rename = "type")]
     pub kind: Vec<String>,
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_concepts: Option<Url>,
+    #[schema(value_type = String)]
     pub attributed_to: ObjectId<User>,
     pub published: OffsetDateTime,
     pub updated: OffsetDateTime,

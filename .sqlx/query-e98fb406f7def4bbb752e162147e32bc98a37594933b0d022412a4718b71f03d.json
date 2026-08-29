@@ -1,0 +1,84 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            with upserted as (\n                insert into category_scheme as existing (\n                    id,\n                    ap_id,\n                    name,\n                    owner_ap_id,\n                    top_concepts_ap_id,\n                    is_local,\n                    last_refreshed_at\n                )\n                values (\n                    $1,\n                    $2,\n                    $3,\n                    $4,\n                    $5,\n                    $6,\n                    now()\n                )\n                on conflict (ap_id) do update\n                set\n                    name = excluded.name,\n                    owner_ap_id = excluded.ap_id,\n                    top_concepts_ap_id = excluded.top_concepts_ap_id,\n                    last_refreshed_at = now()\n                where existing.is_local = false\n\n                returning *\n            ),\n\n            candidate as (\n                select *\n                from upserted\n\n                union all\n\n                select *\n                from category_scheme\n                where ap_id = $2\n                  and not exists (\n                      select 1\n                      from upserted\n                  )\n            )\n\n            select\n                id as \"id!\",\n                ap_id as \"ap_id!: _\",\n                name as \"name!\",\n\n                owner_ap_id as \"owner_ap_id!: _\",\n                top_concepts_ap_id as \"top_concepts_ap_id?: _\",\n\n                is_local as \"is_local!\",\n\n                last_refreshed_at as \"last_refreshed_at?\",\n\n                created_at as \"created_at!\",\n                updated_at as \"updated_at!\"\n            from candidate\n            limit 1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "ap_id!: _",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "name!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "owner_ap_id!: _",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "top_concepts_ap_id?: _",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "is_local!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "last_refreshed_at?",
+        "type_info": "Timestamptz",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at!",
+        "type_info": "Timestamptz",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "updated_at!",
+        "type_info": "Timestamptz",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "e98fb406f7def4bbb752e162147e32bc98a37594933b0d022412a4718b71f03d"
+}

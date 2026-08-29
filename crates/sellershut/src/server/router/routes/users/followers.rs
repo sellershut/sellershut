@@ -10,7 +10,6 @@ use tracing::debug;
 
 use crate::server::{
     entities::user::{Person, User},
-    router::routes::users::USERS_TAG,
     state::AppState,
 };
 /// Return the users following this user
@@ -36,7 +35,7 @@ use crate::server::{
     params(
             ("username" = String, Path, description = "username", example = "rando69")
     ),
-    tag = USERS_TAG,
+    tag = "Followers",
 )]
 pub async fn followers(
     Path(_username): Path<String>,

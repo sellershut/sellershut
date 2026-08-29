@@ -10,7 +10,7 @@ use tracing::debug;
 
 use crate::server::{
     entities::user::{Person, User},
-    router::routes::users::USERS_TAG,
+    router::routes::users::inbox::INBOX_TAG,
     state::AppState,
 };
 /// Receive an activity from another server
@@ -36,7 +36,7 @@ use crate::server::{
     params(
             ("username" = String, Path, description = "username", example = "rando69")
     ),
-    tag = USERS_TAG,
+    tag = INBOX_TAG,
 )]
 pub async fn post(
     TypedHeader(Authorization(bearer)): TypedHeader<Authorization<Bearer>>,

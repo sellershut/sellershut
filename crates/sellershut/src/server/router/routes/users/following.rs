@@ -10,7 +10,6 @@ use tracing::debug;
 
 use crate::server::{
     entities::user::{Person, User},
-    router::routes::users::USERS_TAG,
     state::AppState,
 };
 /// Return the users this user follows
@@ -36,7 +35,7 @@ use crate::server::{
     params(
             ("username" = String, Path, description = "username", example = "rando69")
     ),
-    tag = USERS_TAG,
+    tag = "Following",
 )]
 pub async fn following(
     TypedHeader(Authorization(bearer)): TypedHeader<Authorization<Bearer>>,

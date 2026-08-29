@@ -1,0 +1,124 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                 select\n                 *\n                 from category_scheme\n                 where ap_id = $1\n                 ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "category_scheme",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "ap_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "category_scheme",
+            "name": "ap_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "category_scheme",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "owner_ap_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "category_scheme",
+            "name": "owner_ap_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "top_concepts_ap_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "category_scheme",
+            "name": "top_concepts_ap_id"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "is_local",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "category_scheme",
+            "name": "is_local"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "last_refreshed_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "category_scheme",
+            "name": "last_refreshed_at"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "category_scheme",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "updated_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "category_scheme",
+            "name": "updated_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "9201d652843974131d24c83d2a7df2163c36e7250a934b8b6e0cf577ecd924f9"
+}

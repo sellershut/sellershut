@@ -13,7 +13,7 @@ use crate::server::{
     entities::user::{Person, User},
     router::routes::auth::AUTH_TAG,
     state::AppState,
-    utilities,
+    utilities::ActivityPubIds,
 };
 
 #[derive(Deserialize, Debug, ToSchema)]
@@ -60,12 +60,14 @@ pub async fn complete_onboarding(
     let domain = state.domain();
     let port = state.port;
 
-    let ap_id = utilities::users_url(port, domain, &request.username)?;
-    let inbox = utilities::user_endpoint(port, domain, &request.username, "inbox")?;
-    let outbox = utilities::user_endpoint(port, domain, &request.username, "outbox")?;
-    let followers = utilities::user_endpoint(port, domain, &request.username, "following")?;
-    let following = utilities::user_endpoint(port, domain, &request.username, "followers")?;
-    let likes = utilities::user_endpoint(port, domain, &request.username, "likes")?;
+    let apid = ActivityPubIds::new(port, domain, &request.username)?;
+
+    let ap_id = apid.users()?;
+    let inbox = apid.inbox()?;
+    let outbox = apid.outbox()?;
+    let followers = apid.followers()?;
+    let following = apid.following()?;
+    let likes = apid.likes()?;
     tracing::debug!(id =%ap_id, inbox=%inbox,"creating user");
 
     let keypair = generate_actor_keypair()?;
