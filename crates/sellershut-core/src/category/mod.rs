@@ -18,7 +18,9 @@ pub struct Category {
     pub image_url: Option<String>,
     pub parent_id: Option<CategoryId>,
     pub is_local: bool,
+    #[cfg_attr(feature = "serde", serde(with = "time::serde::rfc3339"))]
     pub created_at: OffsetDateTime,
+    #[cfg_attr(feature = "serde", serde(with = "time::serde::rfc3339"))]
     pub updated_at: OffsetDateTime,
 }
 

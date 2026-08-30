@@ -54,7 +54,11 @@ where
     } else {
         //create system user
         let keypair = activitypub_federation::http_signatures::generate_actor_keypair()?;
-        let apid = ActivityPubIds::new(config.server.port.into(), &config.server.domain, "")?;
+        let apid = ActivityPubIds::new(
+            config.server.port.into(),
+            &config.server.domain,
+            &config.server.instance_name,
+        )?;
 
         let port = config.server.port.into();
         let base_url = |port: u16, domain: &str| -> Result<Url, url::ParseError> {

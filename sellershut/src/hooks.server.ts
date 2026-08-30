@@ -12,6 +12,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   event.locals.user = undefined;
 
   if (session) {
+      console.log(session);
     const response = await event.fetch(`${BACKEND_URL}/users/me`, {
       headers: {
         authorization: `Bearer ${session}`,

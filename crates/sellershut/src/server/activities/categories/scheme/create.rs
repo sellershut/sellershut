@@ -1,11 +1,13 @@
 use activitypub_federation::{
+    activity_sending::SendActivityTask,
     config::Data,
     fetch::object_id::ObjectId,
     kinds::activity::CreateType,
-    protocol::helpers::deserialize_one_or_many,
-    traits::{Activity, Object},
+    protocol::{context::WithContext, helpers::deserialize_one_or_many},
+    traits::{Activity, Actor, Object},
 };
 use async_trait::async_trait;
+use sellershut_categories::UpsertCategoryScheme;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -16,14 +18,15 @@ use crate::server::{
         user::User,
     },
     state::AppState,
+    utilities::ActivityPubIds,
 };
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateCategoryScheme {
     pub(crate) actor: ObjectId<User>,
-    #[serde(deserialize_with = "deserialize_one_or_many")]
-    pub(crate) to: Vec<Url>,
+    //   #[serde(deserialize_with = "deserialize_one_or_many")]
+    //   pub(crate) to: Vec<Url>,
     #[serde(
         default,
         deserialize_with = "deserialize_one_or_many",
@@ -41,12 +44,33 @@ impl CreateCategoryScheme {
         let value = object.clone();
         Self {
             actor: value.attributed_to,
-            to: vec![activitypub_federation::kinds::public()],
+            //            to: vec![activitypub_federation::kinds::public()],
             object,
             kind: CreateType::Create,
             id,
             cc: vec![],
         }
+    }
+
+    pub async fn send(
+        json: FederatedCategoryScheme,
+        inbox: Url,
+        data: &Data<AppState>,
+    ) -> Result<(), AppError> {
+        let user = json.attributed_to.dereference(data).await?;
+
+        let inbox = user.shared_inbox_or_inbox();
+
+        let id = ActivityPubIds::new(data.port, data.domain(), user.name())?;
+
+        let create = CreateCategoryScheme::new(json, id.activity()?);
+        let create_with_context = WithContext::new_default(create);
+        let sends =
+            SendActivityTask::prepare(&create_with_context, &user, vec![inbox], data).await?;
+        for send in sends {
+            send.sign_and_send(data).await?;
+        }
+        Ok(())
     }
 }
 
@@ -74,7 +98,7 @@ impl Activity for CreateCategoryScheme {
     #[doc = " This needs to be a separate method, because it might be used for activities"]
     #[doc = " like `Undo/Follow`, which shouldn\'t perform any database write for the inner `Follow`."]
     async fn verify(&self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
-        CategoryScheme::verify(&self.object, &self.id, data).await?;
+        //CategoryScheme::verify(&self.object, &self.id, data).await?;
         Ok(())
     }
 

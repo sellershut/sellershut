@@ -8,7 +8,7 @@ use axum::{Router, http::StatusCode};
 use tower_http::timeout::TimeoutLayer;
 use utoipa::{
     Modify, OpenApi,
-    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
+    openapi::security::{ApiKey, ApiKeyValue, HttpAuthScheme, HttpBuilder, SecurityScheme},
 };
 use utoipa_axum::router::OpenApiRouter;
 
@@ -41,8 +41,8 @@ impl Modify for SecurityAddon {
     fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
         if let Some(components) = openapi.components.as_mut() {
             components.add_security_scheme(
-                "api_key",
-                SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new("Authorization"))),
+                "bearer_auth",
+                SecurityScheme::Http(HttpBuilder::new().scheme(HttpAuthScheme::Bearer).build()),
             );
         }
     }

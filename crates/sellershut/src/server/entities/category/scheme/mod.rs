@@ -1,7 +1,11 @@
 use activitypub_federation::{
-    config::Data, error::Error as FederationError, fetch::object_id::ObjectId,
-    protocol::verification::verify_domains_match, traits::Object,
+    config::Data,
+    error::Error as FederationError,
+    fetch::object_id::ObjectId,
+    protocol::verification::verify_domains_match,
+    traits::{Activity, Object},
 };
+use async_trait::async_trait;
 use sellershut_categories::UpsertCategoryScheme;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -9,7 +13,10 @@ use time::OffsetDateTime;
 use url::Url;
 use utoipa::ToSchema;
 
-use crate::server::{AppError, entities::user::User, state::AppState};
+use crate::server::{
+    AppError, activities::categories::scheme::create::CreateCategoryScheme, entities::user::User,
+    state::AppState, utilities::ActivityPubIds,
+};
 
 type CoreCategoryScheme = sellershut_core::category::CategoryScheme;
 
@@ -26,7 +33,7 @@ pub struct CategoryScheme {
 #[serde(rename_all = "camelCase")]
 pub struct FederatedCategoryScheme {
     #[serde(rename = "@context")]
-    pub context: Value,
+    pub context: Option<Value>,
     #[schema(value_type = String)]
     pub id: ObjectId<CategoryScheme>,
     #[serde(rename = "type")]
@@ -36,7 +43,9 @@ pub struct FederatedCategoryScheme {
     pub top_concepts: Option<Url>,
     #[schema(value_type = String)]
     pub attributed_to: ObjectId<User>,
+    #[serde(with = "time::serde::rfc3339")]
     pub published: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
     pub updated: OffsetDateTime,
 }
 
@@ -97,7 +106,7 @@ impl Object for CategoryScheme {
         let owner = ObjectId::parse(owner.as_str())?;
 
         Ok(FederatedCategoryScheme {
-            context: category_scheme_context(data.domain())?,
+            context: Some(category_scheme_context(data.domain())?),
             id: self.id,
             kind: vec!["Object".to_owned(), "skos:ConceptScheme".to_owned()],
             name: self.data.name.to_string(),
@@ -113,6 +122,7 @@ impl Object for CategoryScheme {
         expected_domain: &Url,
         data: &Data<Self::DataType>,
     ) -> Result<(), Self::Error> {
+        dbg!(&json.id.inner().as_str(), expected_domain.as_str());
         verify_domains_match(json.id.inner(), expected_domain)?;
 
         if !is_concept_scheme(&json.kind) {
@@ -134,34 +144,30 @@ impl Object for CategoryScheme {
         }
 
         let user = json.attributed_to.dereference(data).await?;
+        //dbg!(&user.id().as_str(), json.id.inner().as_str());
         verify_domains_match(user.id(), json.id.inner())?;
 
         Ok(())
     }
 
     async fn from_json(json: Self::Kind, data: &Data<Self::DataType>) -> Result<Self, Self::Error> {
-        let FederatedCategoryScheme {
-            context: _,
-            id,
-            kind: _,
-            name,
-            top_concepts,
-            attributed_to,
-            ..
-        } = json;
-
-        let ap_id = id.inner();
-        let top_concepts_ap_id = top_concepts.as_ref().map(Url::as_str);
-        let owner_ap_id = attributed_to.inner().as_str();
+        let ap_id = json.id.inner();
+        let top_concepts_ap_id = json.top_concepts.as_ref().map(Url::as_str);
+        let owner_ap_id = json.attributed_to.inner().as_str();
 
         let c = UpsertCategoryScheme {
             ap_id,
-            name: &name,
+            name: &json.name,
             owner_ap_id,
             top_concepts_ap_id,
             is_local: false,
         };
+
         let scheme = data.category.upsert_scheme(&c).await?;
+
+        let actor = json.attributed_to.inner().clone();
+
+        CreateCategoryScheme::send(json, actor, data).await?;
 
         Ok(scheme.into())
     }
@@ -169,8 +175,6 @@ impl Object for CategoryScheme {
 
 impl From<CoreCategoryScheme> for CategoryScheme {
     fn from(value: CoreCategoryScheme) -> Self {
-        // ObjectId implements From<Url>. If ap_id.inner() returns &Url,
-        // clone the Url before converting it.
         let id = ObjectId::from(value.ap_id.inner().clone());
 
         Self { data: value, id }
@@ -191,4 +195,42 @@ fn append_path(base: &Url, segment: &str) -> Url {
     url.set_fragment(None);
 
     url
+}
+
+#[async_trait]
+impl Activity for FederatedCategoryScheme {
+    type DataType = AppState;
+
+    type Error = AppError;
+
+    fn id(&self) -> &Url {
+        self.id.inner()
+    }
+
+    fn actor(&self) -> &Url {
+        self.attributed_to.inner()
+    }
+
+    #[doc = " Verifies that the received activity is valid."]
+    #[doc = ""]
+    #[doc = " This needs to be a separate method, because it might be used for activities"]
+    #[doc = " like `Undo/Follow`, which shouldn\'t perform any database write for the inner `Follow`."]
+    async fn verify(&self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
+        let url = Url::parse(data.domain())?;
+        CategoryScheme::verify(self, &url, data).await
+    }
+
+    #[doc = " Called when an activity is received."]
+    #[doc = ""]
+    #[doc = " Should perform validation and possibly write action to the database. In case the activity"]
+    #[doc = " has a nested `object` field, must call `object.from_json` handler."]
+    async fn receive(self, data: &Data<Self::DataType>) -> Result<(), Self::Error> {
+        let user = self.attributed_to.dereference(data).await?;
+        let ap_ids = ActivityPubIds::new(data.port, data.domain(), user.name())?;
+
+        let scheme = CreateCategoryScheme::new(self, ap_ids.activity()?);
+        scheme.receive(data).await?;
+
+        Ok(())
+    }
 }

@@ -25,8 +25,11 @@ pub struct User {
 
     pub is_local: bool,
 
+    #[cfg_attr(feature = "serde", serde(with = "time::serde::rfc3339"))]
     pub created_at: OffsetDateTime,
+    #[cfg_attr(feature = "serde", serde(with = "time::serde::rfc3339"))]
     pub updated_at: OffsetDateTime,
+    #[cfg_attr(feature = "serde", serde(with = "time::serde::rfc3339"))]
     pub last_refreshed_at: OffsetDateTime,
 
     pub public_key: String,

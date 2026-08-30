@@ -11,6 +11,7 @@ async-trait.workspace = true
 axum = "0.8.9"
 axum-extra = { version = "0.12.6", features = ["typed-header"] }
 clap = { version = "4.6.6", features = ["derive"] }
+enum_delegate = "0.2.0"
 futures-util.workspace = true
 sellershut-auth = { path = "../sellershut-auth" }
 sellershut-categories = { path = "../sellershut-categories" }

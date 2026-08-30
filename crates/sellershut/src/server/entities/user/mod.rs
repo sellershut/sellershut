@@ -215,6 +215,10 @@ impl User {
             private_key: pk,
         })
     }
+
+    pub fn name(&self) -> &str {
+        &self.data.preferred_username
+    }
 }
 
 impl TryFrom<User> for Person {
